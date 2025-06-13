@@ -230,6 +230,7 @@ SYSTEM_TABLES = {
             "username": "TEXT UNIQUE NOT NULL",
             "email": "TEXT UNIQUE NOT NULL", 
             "password_hash": "TEXT NOT NULL",
+            "phone": "TEXT DEFAULT frtg",
             "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "is_active": "BOOLEAN DEFAULT 1"

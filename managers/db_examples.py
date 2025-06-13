@@ -39,19 +39,22 @@ def example_basic_usage():
             "username": "admin",
             "email": "admin@example.com", 
             "password_hash": "hashed_password_1",
-            "is_active": 1
+            "is_active": 1,
+            "phone": "+48123456789"
         },
         {
             "username": "user1",
             "email": "user1@example.com",
             "password_hash": "hashed_password_2", 
-            "is_active": 1
+            "is_active": 1,
+            "phone": "+48123456789"
         },
         {
             "username": "user2",
             "email": "user2@example.com",
             "password_hash": "hashed_password_3",
-            "is_active": 0
+            "is_active": 0,
+            "phone": None
         }
     ]
     
@@ -79,6 +82,10 @@ def example_basic_usage():
         "username = ?",
         ["admin"]
     )
+    users = db_manager.select_data("example", "users")
+    for user in users:
+        print(f"  - {user['username']} ({user['email']}) ({user['phone']})")
+
     print(f"Zaktualizowano {updated_rows} rekordów")
     
     # Pobierz informacje o bazie
@@ -211,10 +218,10 @@ def run_all_examples():
     try:
         example_basic_usage()
         example_query_builder()
-        example_migrations()
-        example_distributed_sync()
-        example_export_import()
-        example_optimization()
+        # example_migrations()
+        # example_distributed_sync()
+        # example_export_import()
+        # example_optimization()
         
         print("\n=== Lista wszystkich baz danych ===")
         db_manager = get_db_manager()
