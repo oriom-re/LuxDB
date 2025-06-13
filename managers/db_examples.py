@@ -1,15 +1,19 @@
 
 """
-Przykłady użycia menedżera baz danych
+Przykłady użycia menedżera baz danych SQLAlchemy
 """
 
 from db_manager import get_db_manager, DatabaseManager
-from db_config import SYSTEM_TABLES, QueryBuilder, DatabaseConfig, Migration, MigrationType
+from db_config import (
+    User, UserSession, Log, QueryBuilder, DatabaseConfig, SYSTEM_MODELS,
+    DatabaseType
+)
 import json
+from datetime import datetime, timedelta
 
 def example_basic_usage():
-    """Podstawowe przykłady użycia"""
-    print("=== Podstawowe użycie menedżera baz danych ===")
+    """Podstawowe przykłady użycia SQLAlchemy"""
+    print("=== Podstawowe użycie menedżera baz danych SQLAlchemy ===")
     
     # Pobierz instancję menedżera
     db_manager = get_db_manager()
@@ -18,19 +22,7 @@ def example_basic_usage():
     print("Tworzenie bazy danych 'example'...")
     db_manager.create_database("example")
     
-    # Utwórz tabelę użytkowników
-    print("Tworzenie tabeli users...")
-    user_schema = SYSTEM_TABLES["users"]
-    db_manager.create_table(
-        "example", 
-        user_schema.name, 
-        user_schema.columns,
-        user_schema.constraints
-    )
-    
-    # Dodaj indeksy
-    for index_sql in user_schema.indexes:
-        db_manager.execute_custom_query("example", index_sql)
+    print("Tabele zostały utworzone automatycznie z modeli SQLAlchemy")
     
     # Wstaw przykładowych użytkowników
     print("Wstawianie przykładowych użytkowników...")
@@ -39,54 +31,73 @@ def example_basic_usage():
             "username": "admin",
             "email": "admin@example.com", 
             "password_hash": "hashed_password_1",
-            "is_active": 1,
+            "is_active": True,
             "phone": "+48123456789"
         },
         {
             "username": "user1",
             "email": "user1@example.com",
             "password_hash": "hashed_password_2", 
-            "is_active": 1,
+            "is_active": True,
             "phone": "+48123456789"
         },
         {
             "username": "user2",
             "email": "user2@example.com",
             "password_hash": "hashed_password_3",
-            "is_active": 0,
+            "is_active": False,
             "phone": None
         }
     ]
     
-    db_manager.insert_batch("example", "users", users_data)
+    db_manager.insert_batch("example", User, users_data)
     
     # Pobierz wszystkich aktywnych użytkowników
     print("Pobieranie aktywnych użytkowników...")
     active_users = db_manager.select_data(
         "example", 
-        "users", 
-        where_clause="is_active = ?",
-        where_params=[1]
+        User, 
+        filters={"is_active": True}
     )
     
     print(f"Znaleziono {len(active_users)} aktywnych użytkowników:")
     for user in active_users:
-        print(f"  - {user['username']} ({user['email']})")
+        print(f"  - {user.username} ({user.email})")
     
     # Aktualizuj dane użytkownika
     print("Aktualizacja danych użytkownika...")
     updated_rows = db_manager.update_data(
         "example",
-        "users",
+        User,
         {"email": "new_admin@example.com"},
-        "username = ?",
-        ["admin"]
+        {"username": "admin"}
     )
-    users = db_manager.select_data("example", "users")
-    for user in users:
-        print(f"  - {user['username']} ({user['email']}) ({user['phone']})")
+    
+    # Sprawdź zaktualizowane dane
+    all_users = db_manager.select_data("example", User)
+    for user in all_users:
+        print(f"  - {user.username} ({user.email}) ({user.phone})")
 
     print(f"Zaktualizowano {updated_rows} rekordów")
+    
+    # Dodaj sesje użytkowników
+    print("Dodawanie sesji użytkowników...")
+    sessions_data = [
+        {
+            "id": "session_1",
+            "user_id": 1,
+            "expires_at": datetime.now() + timedelta(hours=24),
+            "data": json.dumps({"theme": "dark", "language": "pl"})
+        },
+        {
+            "id": "session_2", 
+            "user_id": 2,
+            "expires_at": datetime.now() + timedelta(hours=12),
+            "data": json.dumps({"theme": "light", "language": "en"})
+        }
+    ]
+    
+    db_manager.insert_batch("example", UserSession, sessions_data)
     
     # Pobierz informacje o bazie
     print("\nInformacje o bazie danych:")
@@ -94,37 +105,98 @@ def example_basic_usage():
     print(json.dumps(db_info, indent=2, default=str))
 
 def example_query_builder():
-    """Przykład użycia QueryBuilder"""
-    print("\n=== Przykład QueryBuilder ===")
+    """Przykład użycia QueryBuilder SQLAlchemy"""
+    print("\n=== Przykład QueryBuilder SQLAlchemy ===")
     
     db_manager = get_db_manager()
     
-    # Utwórz builder zapytań
-    builder = QueryBuilder("users")
+    # Utwórz builder zapytań dla użytkowników
+    try:
+        with db_manager.get_session("example") as session:
+            builder = QueryBuilder(User)
+            builder.set_session(session)
+            
+            # Pobierz aktywnych użytkowników
+            active_users = builder.select().filter(User.is_active == True).order_by(User.username).all()
+            
+            print(f"QueryBuilder - aktywni użytkownicy: {len(active_users)}")
+            for user in active_users:
+                print(f"  - {user.username} ({user.email})")
+            
+            # Złożone zapytanie z joinami
+            builder.reset()
+            users_with_sessions = (builder
+                                 .select()
+                                 .join(UserSession)
+                                 .filter(UserSession.expires_at > datetime.now())
+                                 .all())
+            
+            print(f"Użytkownicy z aktywnymi sesjami: {len(users_with_sessions)}")
+            for user in users_with_sessions:
+                print(f"  - {user.username}")
+                
+    except Exception as e:
+        print(f"Błąd QueryBuilder: {e}")
+
+def example_advanced_queries():
+    """Przykład zaawansowanych zapytań SQLAlchemy"""
+    print("\n=== Przykład zaawansowanych zapytań ===")
     
-    # Złożone zapytanie z joinami
-    sql, params = builder.select("u.username", "u.email", "s.id as session_id") \
-                         .join("sessions s", "s.user_id = u.id") \
-                         .where("u.is_active = ?", 1) \
-                         .where("s.expires_at > datetime('now')") \
-                         .order_by("u.username") \
-                         .limit(10) \
-                         .build_select()
+    db_manager = get_db_manager()
     
-    print(f"Wygenerowane zapytanie SQL: {sql}")
-    print(f"Parametry: {params}")
+    # Surowe zapytanie SQL
+    print("Wykonywanie surowego zapytania SQL...")
+    sql_result = db_manager.execute_raw_sql(
+        "example",
+        "SELECT u.username, u.email, COUNT(s.id) as session_count FROM users u LEFT JOIN sessions s ON u.id = s.user_id GROUP BY u.id, u.username, u.email"
+    )
     
-    # Zapytanie UPDATE
-    builder.reset()
-    update_sql, update_params = builder.where("username = ?", "admin") \
-                                     .build_update({"email": "updated@example.com"})
+    print("Wyniki surowego zapytania:")
+    for row in sql_result:
+        print(f"  - {row['username']}: {row['session_count']} sesji")
+
+def example_models_and_relationships():
+    """Przykład pracy z modelami i relacjami"""
+    print("\n=== Przykład modeli i relacji SQLAlchemy ===")
     
-    print(f"UPDATE SQL: {update_sql}")
-    print(f"Parametry: {update_params}")
+    db_manager = get_db_manager()
+    
+    try:
+        # Pobierz użytkowników wraz z sesjami (lazy loading)
+        users = db_manager.select_data("example", User)
+        
+        print("Użytkownicy i ich sesje:")
+        for user in users:
+            print(f"  - {user.username}")
+            # Dostęp do sesji przez relację (może wymagać osobnej sesji)
+            
+        # Dodaj logi
+        logs_data = [
+            {
+                "level": "INFO",
+                "message": "Użytkownik zalogowany",
+                "module": "auth",
+                "user_id": 1,
+                "ip_address": "192.168.1.1"
+            },
+            {
+                "level": "WARNING", 
+                "message": "Nieudana próba logowania",
+                "module": "auth",
+                "user_id": None,
+                "ip_address": "192.168.1.100"
+            }
+        ]
+        
+        db_manager.insert_batch("example", Log, logs_data)
+        print("Dodano logi systemowe")
+        
+    except Exception as e:
+        print(f"Błąd podczas pracy z modelami: {e}")
 
 def example_migrations():
-    """Przykład systemu migracji"""
-    print("\n=== Przykład migracji ===")
+    """Przykład systemu migracji SQLAlchemy"""
+    print("\n=== Przykład migracji SQLAlchemy ===")
     
     db_manager = get_db_manager()
     
@@ -132,53 +204,20 @@ def example_migrations():
     current_version = db_manager.get_database_version("example")
     print(f"Aktualna wersja bazy: {current_version}")
     
-    # Przygotuj migrację - dodanie kolumny 'phone'
+    # Przygotuj migrację - dodanie indeksu
     migration_sql = """
-    ALTER TABLE users ADD COLUMN phone TEXT;
-    CREATE INDEX idx_users_phone ON users(phone);
+    CREATE INDEX IF NOT EXISTS idx_users_email_active ON users(email, is_active);
+    CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
     """
     
     print("Wykonywanie migracji...")
-    success = db_manager.create_migration("example", migration_sql, "Dodanie pola telefonu")
+    success = db_manager.create_migration("example", migration_sql, "Dodanie indeksów wydajnościowych")
     
     if success:
         new_version = db_manager.get_database_version("example")
         print(f"Migracja zakończona. Nowa wersja: {new_version}")
-        
-        # Dodaj numer telefonu do istniejącego użytkownika
-        db_manager.update_data(
-            "example",
-            "users", 
-            {"phone": "+48123456789"},
-            "username = ?",
-            ["admin"]
-        )
-        print("Dodano numer telefonu dla admina")
     else:
         print("Migracja nie powiodła się")
-
-def example_distributed_sync():
-    """Przykład synchronizacji między bazami"""
-    print("\n=== Przykład synchronizacji baz ===")
-    
-    db_manager = get_db_manager()
-    
-    # Utwórz bazę backup
-    print("Tworzenie bazy backup...")
-    db_manager.create_database("example_backup")
-    
-    # Synchronizuj dane
-    print("Synchronizacja danych...")
-    success = db_manager.sync_databases("example", "example_backup", ["users"])
-    
-    if success:
-        print("Synchronizacja zakończona")
-        
-        # Sprawdź dane w backup
-        backup_users = db_manager.select_data("example_backup", "users")
-        print(f"Baza backup zawiera {len(backup_users)} użytkowników")
-    else:
-        print("Synchronizacja nie powiodła się")
 
 def example_export_import():
     """Przykład eksportu i importu danych"""
@@ -186,47 +225,26 @@ def example_export_import():
     
     db_manager = get_db_manager()
     
-    # Eksport do SQL
-    print("Eksport bazy do SQL...")
-    sql_export_path = db_manager.export_database("example", "sql")
-    if sql_export_path:
-        print(f"Eksport SQL zapisany w: {sql_export_path}")
-    
     # Eksport do JSON
     print("Eksport bazy do JSON...")
     json_export_path = db_manager.export_database("example", "json")
     if json_export_path:
         print(f"Eksport JSON zapisany w: {json_export_path}")
 
-def example_optimization():
-    """Przykład optymalizacji bazy"""
-    print("\n=== Przykład optymalizacji ===")
-    
-    db_manager = get_db_manager()
-    
-    # Optymalizuj bazę
-    print("Optymalizacja bazy danych...")
-    success = db_manager.optimize_database("example")
-    
-    if success:
-        print("Optymalizacja zakończona")
-    else:
-        print("Optymalizacja nie powiodła się")
-
 def run_all_examples():
-    """Uruchamia wszystkie przykłady"""
+    """Uruchamia wszystkie przykłady SQLAlchemy"""
     try:
         example_basic_usage()
         example_query_builder()
+        example_advanced_queries()
+        example_models_and_relationships()
         # example_migrations()
-        # example_distributed_sync()
         # example_export_import()
-        # example_optimization()
         
         print("\n=== Lista wszystkich baz danych ===")
         db_manager = get_db_manager()
         databases = db_manager.list_databases()
-        print("Dostępne bazy danych:")
+        print("Dostępne bazy danych SQLAlchemy:")
         for db_name in databases:
             print(f"  - {db_name}")
         
@@ -239,7 +257,7 @@ def run_all_examples():
         # Zamknij wszystkie połączenia
         db_manager = get_db_manager()
         db_manager.close_all_connections()
-        print("\nZamknięte wszystkie połączenia")
+        print("\nZamknięte wszystkie połączenia SQLAlchemy")
 
 if __name__ == "__main__":
     run_all_examples()

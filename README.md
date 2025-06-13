@@ -1,243 +1,279 @@
 
-# System Asty - Zaawansowany Menedżer Baz Danych SQLite
+# System Asty - Zaawansowany Menedżer Baz Danych SQLAlchemy
 
-Kompleksowy system zarządzania bazami danych SQLite z obsługą wersjonowania, migracji, synchronizacji i replikacji dla rozproszonego systemu Asty.
+Kompleksowy system zarządzania bazami danych z użyciem SQLAlchemy ORM, obsługujący wersjonowanie, migracje, synchronizację i replikację dla rozproszonego systemu Asty.
 
 ## 🚀 Funkcje
 
-### Podstawowe zarządzanie bazami
-- ✅ Tworzenie i usuwanie baz danych
-- ✅ Zarządzanie tabelami (tworzenie, usuwanie, modyfikacja)
-- ✅ Operacje CRUD (Create, Read, Update, Delete)
+### SQLAlchemy ORM
+- ✅ Modele ORM z relacjami i constraint'ami
+- ✅ Automatyczne tworzenie tabel z modeli
+- ✅ Type hints i bezpieczeństwo typów
+- ✅ Lazy loading i eager loading relacji
+- ✅ Query expressions i funkcje agregujące
+
+### Obsługa wielu baz danych
+- ✅ SQLite (domyślnie)
+- ✅ PostgreSQL (przez psycopg2)
+- ✅ MySQL (przez PyMySQL)
+- ✅ Connection pooling SQLAlchemy
+- ✅ Transakcje i rollback
+
+### Zarządzanie danymi
+- ✅ Operacje CRUD przez ORM
 - ✅ Wsadowe operacje na danych
-- ✅ Bezpieczne połączenia z Connection pooling
-
-### Wersjonowanie i migracje
-- ✅ Automatyczne wersjonowanie schematów
-- ✅ System migracji z możliwością rollback
-- ✅ Kompatybilność wsteczna
-- ✅ Śledzenie zmian w schematach
-- ✅ Backup przed migracjami
-
-### Synchronizacja i replikacja
-- ✅ Synchronizacja między bazami
-- ✅ Obsługa wielu instancji baz
-- ✅ Replikacja danych
-- ✅ Rozproszony system współpracujących baz
+- ✅ QueryBuilder oparty na SQLAlchemy
+- ✅ Surowe zapytania SQL z parametryzacją
+- ✅ Migracje z wersjonowaniem
 
 ### Narzędzia i optymalizacja
-- ✅ Query Builder do złożonych zapytań
-- ✅ Eksport/import (SQL, JSON)
+- ✅ Eksport/import (JSON)
 - ✅ Optymalizacja baz (VACUUM, ANALYZE)
 - ✅ Monitoring i statystyki
 - ✅ Logowanie operacji
+- ✅ Synchronizacja między bazami
 
 ## 📁 Struktura projektu
 
 ```
 /
 ├── managers/
-│   ├── db_manager.py      # Główny menedżer baz danych
-│   ├── db_config.py       # Konfiguracja i klasy pomocnicze
+│   ├── db_manager.py      # Główny menedżer SQLAlchemy
+│   ├── db_config.py       # Modele ORM i konfiguracja
 │   └── db_examples.py     # Przykłady użycia
 ├── db/                    # Katalog z plikami baz danych
 │   ├── _metadata.db       # Baza metadanych systemu
-│   └── *.db              # Pliki baz danych użytkownika
+│   └── *.db              # Pliki baz danych SQLite
 ├── main.py               # Główny plik aplikacji
 └── README.md            # Dokumentacja
 ```
 
 ## 🛠️ Instalacja i uruchomienie
 
-1. Sklonuj projekt do Replit
-2. Uruchom główny plik:
+System automatycznie zainstaluje SQLAlchemy i Alembic:
 
 ```bash
 python main.py
 ```
 
-System automatycznie utworzy potrzebne katalogi i bazę metadanych.
-
 ## 📖 Przykłady użycia
 
-### Podstawowe operacje
+### Podstawowe operacje ORM
 
 ```python
 from managers.db_manager import get_db_manager
+from managers.db_config import User, UserSession
 
 # Pobierz instancję menedżera
 db_manager = get_db_manager()
 
-# Utwórz nową bazę
+# Utwórz nową bazę (tabele tworzone automatycznie)
 db_manager.create_database("my_app")
 
-# Utwórz tabelę
-columns = {
-    "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
-    "name": "TEXT NOT NULL",
-    "email": "TEXT UNIQUE NOT NULL",
-    "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-}
-db_manager.create_table("my_app", "users", columns)
-
-# Wstaw dane
+# Wstaw użytkownika przez ORM
 user_data = {
-    "name": "Jan Kowalski",
-    "email": "jan@example.com"
+    "username": "jan_kowalski",
+    "email": "jan@example.com",
+    "password_hash": "hashed_password",
+    "is_active": True
 }
-db_manager.insert_data("my_app", "users", user_data)
+db_manager.insert_data("my_app", User, user_data)
 
-# Pobierz dane
-users = db_manager.select_data("my_app", "users", 
-                              where_clause="name LIKE ?",
-                              where_params=["%Jan%"])
+# Pobierz aktywnych użytkowników
+active_users = db_manager.select_data("my_app", User, {"is_active": True})
 ```
 
-### Query Builder
+### QueryBuilder SQLAlchemy
 
 ```python
-from managers.db_config import QueryBuilder
+from managers.db_config import QueryBuilder, User, UserSession
 
-# Utwórz builder
-builder = QueryBuilder("users")
-
-# Złożone zapytanie
-sql, params = builder.select("name", "email") \
-                    .where("created_at > ?", "2024-01-01") \
-                    .order_by("name") \
-                    .limit(10) \
-                    .build_select()
-
-# Wykonaj zapytanie
-results = db_manager.execute_custom_query("my_app", sql, params)
+# Utwórz zaawansowane zapytanie
+with db_manager.get_session("my_app") as session:
+    builder = QueryBuilder(User)
+    builder.set_session(session)
+    
+    # Złożone zapytanie z joinami i filtrami
+    users = (builder
+             .select()
+             .join(UserSession)
+             .filter(User.is_active == True)
+             .filter(UserSession.expires_at > datetime.now())
+             .order_by(User.username)
+             .limit(10)
+             .all())
 ```
 
-### Migracje
+### Modele z relacjami
+
+```python
+from managers.db_config import User, UserSession, Log
+
+# Relacje są automatycznie ładowane
+user = db_manager.select_data("my_app", User, {"id": 1})[0]
+
+# Dostęp do sesji użytkownika (lazy loading)
+user_sessions = user.sessions
+
+# Dostęp do logów użytkownika
+user_logs = user.logs
+```
+
+### Migracje schematów
 
 ```python
 # Sprawdź wersję bazy
 version = db_manager.get_database_version("my_app")
-print(f"Aktualna wersja: {version}")
 
-# Wykonaj migrację
+# Wykonaj migrację z SQL
 migration_sql = """
-ALTER TABLE users ADD COLUMN phone TEXT;
-CREATE INDEX idx_users_phone ON users(phone);
+ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
+CREATE INDEX idx_users_last_login ON users(last_login);
 """
 
-success = db_manager.create_migration("my_app", migration_sql, 
-                                    "Dodanie pola telefonu")
+db_manager.create_migration("my_app", migration_sql, "Dodanie pola last_login")
 ```
 
-### Synchronizacja
+### Surowe zapytania SQL
 
 ```python
-# Synchronizuj dane między bazami
-db_manager.sync_databases("source_db", "target_db", ["users", "orders"])
-
-# Utwórz backup
-db_manager._create_database_backup("my_app", "my_app_backup_20241201")
-```
-
-## 🔧 Konfiguracja
-
-System używa predefiniowanych konfiguracji w `db_config.py`:
-
-```python
-from managers.db_config import DatabaseConfig, DatabaseType
-
-# Konfiguracja bazy głównej
-main_config = DatabaseConfig(
-    name="main",
-    type=DatabaseType.SQLITE,
-    max_connections=20,
-    backup_enabled=True,
-    auto_optimize=True,
-    replication_enabled=True,
-    replica_targets=["backup_db", "analytics_db"]
+# Wykonaj niestandardowe zapytanie
+results = db_manager.execute_raw_sql(
+    "my_app",
+    "SELECT u.username, COUNT(s.id) as session_count FROM users u LEFT JOIN sessions s ON u.id = s.user_id GROUP BY u.id",
+    {}
 )
 ```
 
-## 📊 Monitoring
+## 🔧 Konfiguracja baz danych
 
+### SQLite (domyślnie)
 ```python
-# Informacje o bazie
-info = db_manager.get_database_info("my_app")
-print(f"Baza: {info['name']}")
-print(f"Wersja: {info['version']}")
-print(f"Rozmiar: {info['size']} bajtów")
-print(f"Tabele: {len(info['tables'])}")
+from managers.db_config import DatabaseConfig, DatabaseType
 
-# Lista wszystkich baz
-databases = db_manager.list_databases()
-for db_name in databases:
-    print(f"- {db_name}")
+config = DatabaseConfig(
+    name="my_app",
+    type=DatabaseType.SQLITE,
+    connection_string="sqlite:///db/my_app.db",
+    max_connections=10
+)
 ```
 
-## 🔄 Eksport/Import
+### PostgreSQL
+```python
+config = DatabaseConfig(
+    name="my_app",
+    type=DatabaseType.POSTGRESQL,
+    connection_string="postgresql://user:password@localhost/my_app",
+    max_connections=20
+)
+```
+
+### MySQL
+```python
+config = DatabaseConfig(
+    name="my_app", 
+    type=DatabaseType.MYSQL,
+    connection_string="mysql+pymysql://user:password@localhost/my_app",
+    max_connections=15
+)
+```
+
+## 📊 Modele systemowe
+
+System zawiera predefiniowane modele:
 
 ```python
-# Eksport do SQL
-sql_file = db_manager.export_database("my_app", "sql")
-print(f"Eksport SQL: {sql_file}")
+# Model użytkownika
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True)
+    username = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    phone = Column(String(20))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.current_timestamp())
+    
+    # Relacje
+    sessions = relationship("Session", back_populates="user")
+    logs = relationship("Log", back_populates="user")
+```
+
+## 🔄 Synchronizacja i backup
+
+```python
+# Synchronizuj dane między bazami
+db_manager.sync_databases("source_db", "target_db", [User, UserSession])
 
 # Eksport do JSON
-json_file = db_manager.export_database("my_app", "json")
-print(f"Eksport JSON: {json_file}")
+export_path = db_manager.export_database("my_app", "json")
 ```
 
 ## 🛡️ Bezpieczeństwo
 
-- **Connection pooling** - zarządzanie połączeniami
-- **Thread-safe** - bezpieczne operacje wielowątkowe
-- **Transakcje** - atomowość operacji
+- **Connection pooling** SQLAlchemy
+- **Transakcje** atomowe z rollback
 - **Parametryzowane zapytania** - ochrona przed SQL injection
-- **Backup** - automatyczne kopie przed zmianami
+- **Type safety** - kontrola typów w czasie wykonania
+- **Session management** - bezpieczne zarządzanie sesjami
 
 ## 🚀 Funkcje zaawansowane
 
-### Distributed System Support
-- Obsługa wielu współpracujących baz
-- Automatyczna replikacja
-- Konflikt resolution
-- Load balancing
+### ORM Features
+- Lazy/eager loading relacji
+- Cascade operations
+- Custom validators
+- Hybrid properties
+- Event listeners
 
-### Version Management
-- Semantic versioning
-- Dependency tracking
-- Rollback capabilities
-- Schema evolution
-
-### Performance Optimization
+### Database Features
 - Connection pooling
+- Transaction management
 - Query optimization
 - Index management
-- VACUUM scheduling
+- Schema migrations
 
-## 📝 Logowanie
+### Integration Features
+- Multi-database support
+- Cross-database synchronization
+- Export/import utilities
+- Monitoring and logging
 
-System automatycznie loguje wszystkie operacje:
+## 📝 Przykłady zaawansowane
 
+### Custom QueryBuilder
+```python
+class UserQueryBuilder(QueryBuilder):
+    def active_users(self):
+        return self.filter(User.is_active == True)
+    
+    def with_recent_login(self, days=30):
+        cutoff = datetime.now() - timedelta(days=days)
+        return self.filter(User.last_login > cutoff)
+
+# Użycie
+builder = UserQueryBuilder(User)
+recent_active = builder.active_users().with_recent_login(7).all()
 ```
-INFO - Utworzono bazę danych: my_app
-INFO - Utworzono tabelę users w bazie my_app
-INFO - Migracja bazy my_app z wersji 1 do 2 zakończona
-INFO - Synchronizacja z source_db do target_db zakończona
+
+### Bulk Operations
+```python
+# Bulk insert
+users_data = [{"username": f"user{i}", "email": f"user{i}@test.com"} for i in range(1000)]
+db_manager.insert_batch("my_app", User, users_data)
+
+# Bulk update
+db_manager.update_data("my_app", User, {"is_active": False}, {"last_login": None})
 ```
-
-## 🤝 Rozwój
-
-Aby rozszerzyć system:
-
-1. Dodaj nowe metody do `DatabaseManager`
-2. Rozszerz `QueryBuilder` o dodatkowe funkcje
-3. Utwórz nowe typy migracji w `MigrationType`
-4. Dodaj własne schematy tabel do `SYSTEM_TABLES`
 
 ## 📞 Wsparcie
 
-System został zaprojektowany jako self-contained i nie wymaga zewnętrznych zależności poza standardową biblioteką Pythona.
+System wykorzystuje SQLAlchemy 2.0+ i wymaga Python 3.8+. Automatycznie instaluje potrzebne zależności:
+- `sqlalchemy` - ORM i Core
+- `alembic` - Migracje schematów
 
 ---
 
-**System Asty Database Manager** - Profesjonalne zarządzanie bazami danych SQLite dla nowoczesnych aplikacji.
+**System Asty SQLAlchemy Manager** - Profesjonalne zarządzanie bazami danych z mocą ORM.
