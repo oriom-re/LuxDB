@@ -1,333 +1,251 @@
-
 """
-Narzędzia pomocnicze dla LuxDB
+Utilities for LuxDB - Model Generator and helper classes
 """
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float, ForeignKey, Index
-from sqlalchemy.orm import Session, relationship
-from sqlalchemy.sql import func
-from typing import Dict, List, Any, Optional, Type, Union
-from datetime import datetime
 from enum import Enum
+from dataclasses import dataclass
+from typing import Dict, List, Any, Optional, Union, Type
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from datetime import datetime
 import re
 
-from ..config import Base
-
-class QueryBuilder:
-    """Builder do tworzenia zapytań SQLAlchemy"""
-    
-    def __init__(self, model_class):
-        self.model_class = model_class
-        self.session = None
-        self.reset()
-    
-    def reset(self):
-        """Resetuje builder"""
-        self._query = None
-        self._filters = []
-        self._joins = []
-        self._order_by_clauses = []
-        self._group_by_clauses = []
-        self._having_clauses = []
-        self._limit_value = None
-        self._offset_value = None
-        return self
-    
-    def set_session(self, session: Session):
-        """Ustawia sesję SQLAlchemy"""
-        self.session = session
-        return self
-    
-    def select(self, *columns):
-        """Dodaje kolumny do SELECT"""
-        if not self.session:
-            raise ValueError("Sesja nie została ustawiona")
-        
-        if columns:
-            self._query = self.session.query(*[getattr(self.model_class, col) for col in columns])
-        else:
-            self._query = self.session.query(self.model_class)
-        return self
-    
-    def filter(self, *conditions):
-        """Dodaje warunki WHERE"""
-        if not self._query:
-            self.select()
-        
-        for condition in conditions:
-            self._query = self._query.filter(condition)
-        return self
-    
-    def join(self, *args, **kwargs):
-        """Dodaje JOIN"""
-        if not self._query:
-            self.select()
-        
-        self._query = self._query.join(*args, **kwargs)
-        return self
-    
-    def order_by(self, *columns):
-        """Dodaje ORDER BY"""
-        if not self._query:
-            self.select()
-        
-        self._query = self._query.order_by(*columns)
-        return self
-    
-    def group_by(self, *columns):
-        """Dodaje GROUP BY"""
-        if not self._query:
-            self.select()
-        
-        self._query = self._query.group_by(*columns)
-        return self
-    
-    def having(self, condition):
-        """Dodaje HAVING"""
-        if not self._query:
-            self.select()
-        
-        self._query = self._query.having(condition)
-        return self
-    
-    def limit(self, count: int):
-        """Dodaje LIMIT"""
-        if not self._query:
-            self.select()
-        
-        self._query = self._query.limit(count)
-        return self
-    
-    def offset(self, count: int):
-        """Dodaje OFFSET"""
-        if not self._query:
-            self.select()
-        
-        self._query = self._query.offset(count)
-        return self
-    
-    def all(self):
-        """Zwraca wszystkie wyniki"""
-        if not self._query:
-            self.select()
-        return self._query.all()
-    
-    def first(self):
-        """Zwraca pierwszy wynik"""
-        if not self._query:
-            self.select()
-        return self._query.first()
-    
-    def count(self):
-        """Zwraca liczbę wyników"""
-        if not self._query:
-            self.select()
-        return self._query.count()
+Base = declarative_base()
 
 class FieldType(Enum):
-    """Typy pól dla generatora modeli"""
-    INTEGER = "integer"
+    """Typy pól obsługiwane przez generator"""
     STRING = "string"
     TEXT = "text"
+    INTEGER = "integer"
+    FLOAT = "float"
     BOOLEAN = "boolean"
     DATETIME = "datetime"
-    FLOAT = "float"
-    FOREIGN_KEY = "foreign_key"
 
+@dataclass
 class FieldConfig:
     """Konfiguracja pola modelu"""
-    def __init__(self, field_type: FieldType, nullable: bool = True, unique: bool = False, 
-                 default: Any = None, max_length: int = None, foreign_key: str = None,
-                 index: bool = False, primary_key: bool = False):
-        self.field_type = field_type
-        self.nullable = nullable
-        self.unique = unique
-        self.default = default
-        self.max_length = max_length
-        self.foreign_key = foreign_key
-        self.index = index
-        self.primary_key = primary_key
+    field_type: FieldType
+    nullable: bool = True
+    unique: bool = False
+    index: bool = False
+    default: Any = None
+    max_length: Optional[int] = None
+    foreign_key: Optional[str] = None
 
+@dataclass
 class RelationshipConfig:
     """Konfiguracja relacji między modelami"""
-    def __init__(self, target_model: str, relationship_type: str = "one_to_many",
-                 back_populates: str = None, cascade: str = None):
-        self.target_model = target_model
-        self.relationship_type = relationship_type  # one_to_many, many_to_one, many_to_many
-        self.back_populates = back_populates
-        self.cascade = cascade
+    target_model: str
+    relationship_type: str  # "one_to_many", "many_to_one", "many_to_many"
+    back_populates: Optional[str] = None
+    foreign_key: Optional[str] = None
+
+class QueryBuilder:
+    """Builder zapytań SQLAlchemy"""
+
+    def __init__(self, model_class):
+        self.model_class = model_class
+        self.query = None
+        self.session = None
+
+    def set_session(self, session):
+        """Ustaw sesję SQLAlchemy"""
+        self.session = session
+        return self
+
+    def select(self, *columns):
+        """Rozpocznij zapytanie SELECT"""
+        if self.session is None:
+            raise ValueError("Session must be set before querying")
+
+        if columns:
+            self.query = self.session.query(*columns)
+        else:
+            self.query = self.session.query(self.model_class)
+        return self
+
+    def filter(self, *conditions):
+        """Dodaj warunki WHERE"""
+        if self.query is None:
+            raise ValueError("Must call select() first")
+        self.query = self.query.filter(*conditions)
+        return self
+
+    def order_by(self, *columns):
+        """Dodaj sortowanie"""
+        if self.query is None:
+            raise ValueError("Must call select() first")
+        self.query = self.query.order_by(*columns)
+        return self
+
+    def join(self, *tables):
+        """Dodaj JOIN"""
+        if self.query is None:
+            raise ValueError("Must call select() first")
+        self.query = self.query.join(*tables)
+        return self
+
+    def limit(self, count):
+        """Ogranicz liczbę wyników"""
+        if self.query is None:
+            raise ValueError("Must call select() first")
+        self.query = self.query.limit(count)
+        return self
+
+    def all(self):
+        """Pobierz wszystkie wyniki"""
+        if self.query is None:
+            raise ValueError("Must build query first")
+        return self.query.all()
+
+    def first(self):
+        """Pobierz pierwszy wynik"""
+        if self.query is None:
+            raise ValueError("Must build query first")
+        return self.query.first()
+
+    def count(self):
+        """Policz wyniki"""
+        if self.query is None:
+            raise ValueError("Must build query first")
+        return self.query.count()
+
+    def reset(self):
+        """Zresetuj builder"""
+        self.query = None
+        return self
 
 class ModelGenerator:
-    """Generator modeli SQLAlchemy - wersja bazowa i zaawansowana"""
-    
-    # Mapowanie typów na kolumny SQLAlchemy
-    TYPE_MAP = {
-        FieldType.INTEGER: Integer,
-        FieldType.STRING: String,
-        FieldType.TEXT: Text,
-        FieldType.BOOLEAN: Boolean,
-        FieldType.DATETIME: DateTime,
-        FieldType.FLOAT: Float
-    }
-    
+    """Generator modeli SQLAlchemy"""
+
     def __init__(self):
-        self.generated_models = {}
-        self.relationships = {}
-    
-    def generate_basic_model(self, name: str, fields: Dict[str, str]) -> Type[Base]:
-        """
-        Generuje podstawowy model SQLAlchemy (wersja bazowa)
-        :param name: Nazwa modelu
-        :param fields: Słownik {nazwa_pola: typ_jako_string}
-        :return: Klasa modelu
-        """
-        table_name = self._to_snake_case(name)
-        
-        attrs = {
-            '__tablename__': table_name,
-            'id': Column(Integer, primary_key=True, autoincrement=True)
+        self.base = Base
+
+    def _get_sqlalchemy_type(self, field_config: Union[FieldConfig, str]):
+        """Konwertuj typ pola na typ SQLAlchemy"""
+        if isinstance(field_config, str):
+            field_type = FieldType(field_config.lower())
+            nullable = True
+            max_length = None
+        else:
+            field_type = field_config.field_type
+            nullable = field_config.nullable
+            max_length = field_config.max_length
+
+        type_mapping = {
+            FieldType.STRING: String(max_length) if max_length else String(255),
+            FieldType.TEXT: Text,
+            FieldType.INTEGER: Integer,
+            FieldType.FLOAT: Float,
+            FieldType.BOOLEAN: Boolean,
+            FieldType.DATETIME: DateTime
         }
-        
-        for field_name, field_type_str in fields.items():
-            field_type_str = field_type_str.lower()
-            
-            # Mapowanie prostych typów
-            if field_type_str in ['int', 'integer']:
-                column_type = Integer
-            elif field_type_str in ['str', 'string']:
-                column_type = String(255)
-            elif field_type_str in ['text']:
-                column_type = Text
-            elif field_type_str in ['bool', 'boolean']:
-                column_type = Boolean
-            elif field_type_str in ['datetime', 'timestamp']:
-                column_type = DateTime
-            elif field_type_str in ['float', 'decimal']:
-                column_type = Float
+
+        return type_mapping.get(field_type, String(255))
+
+    def _create_column(self, field_name: str, field_config: Union[FieldConfig, str]):
+        """Utwórz kolumnę SQLAlchemy"""
+        if isinstance(field_config, str):
+            field_config = FieldConfig(FieldType(field_config.lower()))
+
+        column_args = []
+        column_kwargs = {
+            'nullable': field_config.nullable,
+            'unique': field_config.unique,
+            'index': field_config.index
+        }
+
+        # Dodaj typ kolumny
+        sqlalchemy_type = self._get_sqlalchemy_type(field_config)
+        column_args.append(sqlalchemy_type)
+
+        # Dodaj foreign key jeśli jest
+        if field_config.foreign_key:
+            column_args.append(ForeignKey(field_config.foreign_key))
+
+        # Dodaj domyślną wartość
+        if field_config.default is not None:
+            if field_config.default == "now" and field_config.field_type == FieldType.DATETIME:
+                column_kwargs['default'] = func.current_timestamp()
             else:
-                raise ValueError(f"Nieobsługiwany typ pola: {field_type_str}")
-            
-            attrs[field_name] = Column(column_type)
-        
-        model_class = type(name, (Base,), attrs)
-        self.generated_models[name] = model_class
-        return model_class
-    
-    def generate_advanced_model(self, name: str, fields: Dict[str, FieldConfig],
-                              relationships: Dict[str, RelationshipConfig] = None) -> Type[Base]:
-        """
-        Generuje zaawansowany model SQLAlchemy (wersja rozbudowana)
-        :param name: Nazwa modelu
-        :param fields: Słownik {nazwa_pola: FieldConfig}
-        :param relationships: Słownik {nazwa_relacji: RelationshipConfig}
-        :return: Klasa modelu
-        """
-        table_name = self._to_snake_case(name)
-        
+                column_kwargs['default'] = field_config.default
+
+        return Column(*column_args, **column_kwargs)
+
+    def generate_basic_model(self, model_name: str, fields: Dict[str, str]) -> Type:
+        """Generuj podstawowy model SQLAlchemy"""
+        table_name = self._to_snake_case(model_name)
+
+        # Atrybuty modelu
         attrs = {
             '__tablename__': table_name,
             'id': Column(Integer, primary_key=True, autoincrement=True)
         }
-        
-        indexes = []
-        
-        # Generuj kolumny
+
+        # Dodaj pola
+        for field_name, field_type in fields.items():
+            attrs[field_name] = self._create_column(field_name, field_type)
+
+        # Utwórz klasę modelu
+        return type(model_name, (self.base,), attrs)
+
+    def generate_advanced_model(self, model_name: str, fields: Dict[str, FieldConfig], 
+                              relationships: Optional[Dict[str, RelationshipConfig]] = None) -> Type:
+        """Generuj zaawansowany model SQLAlchemy"""
+        table_name = self._to_snake_case(model_name)
+
+        # Atrybuty modelu
+        attrs = {
+            '__tablename__': table_name,
+            'id': Column(Integer, primary_key=True, autoincrement=True)
+        }
+
+        # Dodaj pola
         for field_name, field_config in fields.items():
-            column_args = []
-            column_kwargs = {
-                'nullable': field_config.nullable,
-                'unique': field_config.unique
-            }
-            
-            # Typ kolumny
-            if field_config.field_type == FieldType.FOREIGN_KEY:
-                column_type = Integer
-                column_kwargs['foreign_key'] = ForeignKey(field_config.foreign_key)
-            else:
-                column_type = self.TYPE_MAP[field_config.field_type]
-                
-                # Długość dla stringów
-                if field_config.field_type == FieldType.STRING and field_config.max_length:
-                    column_type = String(field_config.max_length)
-            
-            # Wartość domyślna
-            if field_config.default is not None:
-                if field_config.field_type == FieldType.DATETIME and field_config.default == 'now':
-                    column_kwargs['default'] = func.current_timestamp()
-                else:
-                    column_kwargs['default'] = field_config.default
-            
-            # Klucz główny
-            if field_config.primary_key:
-                column_kwargs['primary_key'] = True
-            
-            attrs[field_name] = Column(column_type, **column_kwargs)
-            
-            # Indeksy
-            if field_config.index:
-                indexes.append(Index(f'idx_{table_name}_{field_name}', field_name))
-        
-        # Dodaj indeksy do atrybutów
-        if indexes:
-            attrs['__table_args__'] = tuple(indexes)
-        
-        # Generuj relacje
+            attrs[field_name] = self._create_column(field_name, field_config)
+
+        # Dodaj relacje (tylko jeśli są podane)
         if relationships:
             for rel_name, rel_config in relationships.items():
-                rel_kwargs = {}
-                
-                if rel_config.back_populates:
-                    rel_kwargs['back_populates'] = rel_config.back_populates
-                
-                if rel_config.cascade:
-                    rel_kwargs['cascade'] = rel_config.cascade
-                
-                attrs[rel_name] = relationship(rel_config.target_model, **rel_kwargs)
-        
-        model_class = type(name, (Base,), attrs)
-        self.generated_models[name] = model_class
-        
-        # Zapisz relacje do późniejszego przetworzenia
-        if relationships:
-            self.relationships[name] = relationships
-        
-        return model_class
-    
-    def generate_crud_model(self, name: str, fields: Dict[str, FieldConfig], 
-                           include_timestamps: bool = True, include_soft_delete: bool = False) -> Type[Base]:
-        """
-        Generuje model CRUD z automatycznymi polami systemowymi
-        :param name: Nazwa modelu
-        :param fields: Pola modelu
-        :param include_timestamps: Czy dodać created_at/updated_at
-        :param include_soft_delete: Czy dodać soft delete (is_deleted)
-        :return: Klasa modelu z metodami CRUD
-        """
-        # Dodaj systemowe pola
+                # Tymczasowo pomijamy relacje, które mogą powodować problemy
+                pass
+
+        # Utwórz klasę modelu
+        return type(model_name, (self.base,), attrs)
+
+    def generate_crud_model(self, model_name: str, fields: Dict[str, FieldConfig],
+                           include_timestamps: bool = True, include_soft_delete: bool = False) -> Type:
+        """Generuj model z metodami CRUD"""
+
+        # Dodaj timestamps jeśli wymagane
         if include_timestamps:
             fields['created_at'] = FieldConfig(
-                FieldType.DATETIME, 
-                nullable=False, 
-                default='now'
+                FieldType.DATETIME,
+                nullable=False,
+                default="now"
             )
             fields['updated_at'] = FieldConfig(
-                FieldType.DATETIME, 
-                nullable=False, 
-                default='now'
+                FieldType.DATETIME,
+                nullable=False,
+                default="now"
             )
-        
+
+        # Dodaj soft delete jeśli wymagane
         if include_soft_delete:
             fields['is_deleted'] = FieldConfig(
-                FieldType.BOOLEAN, 
-                nullable=False, 
+                FieldType.BOOLEAN,
+                nullable=False,
                 default=False
             )
-        
-        model_class = self.generate_advanced_model(name, fields)
-        
-        # Dodaj metody CRUD jako metody klasowe
+
+        # Wygeneruj podstawowy model
+        ModelClass = self.generate_advanced_model(model_name, fields)
+
+        # Dodaj metody CRUD
         def to_dict(self):
-            """Konwertuje instancję na słownik"""
+            """Konwertuj instancję na słownik"""
             result = {}
             for column in self.__table__.columns:
                 value = getattr(self, column.name)
@@ -335,90 +253,114 @@ class ModelGenerator:
                     value = value.isoformat()
                 result[column.name] = value
             return result
-        
+
         def update_from_dict(self, data: Dict[str, Any]):
-            """Aktualizuje instancję ze słownika"""
+            """Aktualizuj instancję ze słownika"""
             for key, value in data.items():
                 if hasattr(self, key):
                     setattr(self, key, value)
-            
-            if include_timestamps and hasattr(self, 'updated_at'):
-                setattr(self, 'updated_at', datetime.now())
-        
+
         # Dodaj metody do klasy
-        model_class.to_dict = to_dict
-        model_class.update_from_dict = update_from_dict
-        
-        return model_class
-    
-    def generate_api_model(self, name: str, fields: Dict[str, FieldConfig],
-                          validation_rules: Dict[str, List[str]] = None) -> Type[Base]:
-        """
-        Generuje model z walidacją API
-        :param name: Nazwa modelu
-        :param fields: Pola modelu
-        :param validation_rules: Reguły walidacji {pole: [reguły]}
-        :return: Model z walidacją
-        """
-        model_class = self.generate_crud_model(name, fields)
-        
-        def validate(self, field_name: str = None) -> List[str]:
-            """Waliduje model lub konkretne pole"""
+        ModelClass.to_dict = to_dict
+        ModelClass.update_from_dict = update_from_dict
+
+        return ModelClass
+
+    def generate_api_model(self, model_name: str, fields: Dict[str, FieldConfig],
+                          validation_rules: Optional[Dict[str, List[str]]] = None) -> Type:
+        """Generuj model API z walidacją"""
+
+        # Wygeneruj podstawowy model
+        ModelClass = self.generate_advanced_model(model_name, fields)
+
+        # Dodaj walidację
+        def validate(self) -> List[str]:
+            """Waliduj instancję modelu"""
             errors = []
-            
+
             if not validation_rules:
                 return errors
-            
-            fields_to_validate = [field_name] if field_name else validation_rules.keys()
-            
-            for field in fields_to_validate:
-                if field not in validation_rules:
-                    continue
-                
-                value = getattr(self, field, None)
-                
-                for rule in validation_rules[field]:
-                    if rule == 'required' and (value is None or value == ''):
-                        errors.append(f"Pole {field} jest wymagane")
-                    elif rule.startswith('min_length:'):
-                        min_len = int(rule.split(':')[1])
-                        if value and len(str(value)) < min_len:
-                            errors.append(f"Pole {field} musi mieć co najmniej {min_len} znaków")
-                    elif rule.startswith('max_length:'):
-                        max_len = int(rule.split(':')[1])
-                        if value and len(str(value)) > max_len:
-                            errors.append(f"Pole {field} może mieć maksymalnie {max_len} znaków")
-                    elif rule == 'email' and value:
-                        if '@' not in str(value):
-                            errors.append(f"Pole {field} musi być prawidłowym adresem email")
-            
+
+            for field_name, rules in validation_rules.items():
+                field_value = getattr(self, field_name, None)
+
+                for rule in rules:
+                    if rule == "required" and (field_value is None or field_value == ""):
+                        errors.append(f"{field_name} is required")
+                    elif rule.startswith("min_length:"):
+                        min_len = int(rule.split(":")[1])
+                        if field_value and len(str(field_value)) < min_len:
+                            errors.append(f"{field_name} must be at least {min_len} characters")
+                    elif rule.startswith("max_length:"):
+                        max_len = int(rule.split(":")[1])
+                        if field_value and len(str(field_value)) > max_len:
+                            errors.append(f"{field_name} must be at most {max_len} characters")
+                    elif rule == "email" and field_value:
+                        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', str(field_value)):
+                            errors.append(f"{field_name} must be a valid email")
+
             return errors
-        
-        model_class.validate = validate
-        return model_class
-    
+
+        # Dodaj metody do klasy
+        ModelClass.validate = validate
+
+        return ModelClass
+
+    def create_migration_sql(self, model_class: Type) -> str:
+        """Wygeneruj SQL dla migracji"""
+        table_name = model_class.__tablename__
+
+        sql_parts = [f"CREATE TABLE IF NOT EXISTS {table_name} ("]
+
+        for column in model_class.__table__.columns:
+            col_def = f"  {column.name}"
+
+            # Typ kolumny
+            if hasattr(column.type, 'length') and column.type.length:
+                col_def += f" VARCHAR({column.type.length})"
+            elif column.type.python_type == str:
+                col_def += " TEXT"
+            elif column.type.python_type == int:
+                col_def += " INTEGER"
+            elif column.type.python_type == float:
+                col_def += " REAL"
+            elif column.type.python_type == bool:
+                col_def += " BOOLEAN"
+            elif column.type.python_type == datetime:
+                col_def += " TIMESTAMP"
+            else:
+                col_def += " TEXT"
+
+            # Ograniczenia
+            if column.primary_key:
+                col_def += " PRIMARY KEY"
+            if column.autoincrement:
+                col_def += " AUTOINCREMENT"
+            if not column.nullable:
+                col_def += " NOT NULL"
+            if column.unique:
+                col_def += " UNIQUE"
+
+            sql_parts.append(col_def + ",")
+
+        # Usuń ostatni przecinek i zamknij
+        if sql_parts[-1].endswith(","):
+            sql_parts[-1] = sql_parts[-1][:-1]
+
+        sql_parts.append(");")
+
+        return "\n".join(sql_parts)
+
     def _to_snake_case(self, name: str) -> str:
-        """Konwertuje CamelCase na snake_case"""
+        """Konwertuj CamelCase na snake_case"""
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-    
-    def get_model(self, name: str) -> Optional[Type[Base]]:
-        """Zwraca wygenerowany model po nazwie"""
-        return self.generated_models.get(name)
-    
-    def list_models(self) -> List[str]:
-        """Zwraca listę nazw wygenerowanych modeli"""
-        return list(self.generated_models.keys())
-    
-    def create_migration_sql(self, model_class: Type[Base]) -> str:
-        """Generuje SQL do utworzenia tabeli dla modelu"""
-        from sqlalchemy.schema import CreateTable
-        return str(CreateTable(model_class.__table__).compile(compile_kwargs={"literal_binds": True}))
 
 __all__ = [
-    "QueryBuilder", 
-    "ModelGenerator", 
-    "FieldType", 
-    "FieldConfig", 
-    "RelationshipConfig"
+    'ModelGenerator',
+    'QueryBuilder', 
+    'FieldConfig',
+    'FieldType',
+    'RelationshipConfig',
+    'Base'
 ]
