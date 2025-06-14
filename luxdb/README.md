@@ -3,6 +3,8 @@
 
 LuxDB to potężna, niezależna biblioteka Python do zarządzania wieloma bazami danych przy użyciu SQLAlchemy. Oferuje zaawansowane funkcje jak migracje, synchronizację, generowanie modeli oraz intuicyjny QueryBuilder.
 
+> 📖 **[Przeczytaj Manifest LuxDB](MANIFEST.md)** – Filozofia i duchowe założenia tej biblioteki
+
 ## 🚀 Funkcje
 
 - **Multi-database support** - Zarządzanie wieloma bazami jednocześnie
