@@ -17,15 +17,15 @@ from sqlalchemy import create_engine, MetaData, inspect, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import (
+from .config import (
     Base, DatabaseConfig, DatabaseType, ConnectionPool,
     DEFAULT_CONFIGS
 )
-from models import (
+from .models import (
     User, UserSession, Log, DatabaseSchema, Migration, TableDefinition,
     SYSTEM_MODELS
 )
-from utils import QueryBuilder
+from .utils import QueryBuilder
 
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)

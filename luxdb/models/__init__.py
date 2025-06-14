@@ -3,13 +3,7 @@
 Modele SQLAlchemy dla LuxDB
 """
 
-import sys
-import os
-
-# Dodaj główny katalog do ścieżki
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-from config import Base, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, relationship, func
+from ..config import Base, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, relationship, func
 
 # Modele SQLAlchemy
 class User(Base):
@@ -90,14 +84,14 @@ class TableDefinition(Base):
     created_at = Column(DateTime, default=func.current_timestamp(), nullable=False)
 
 # Lista wszystkich modeli systemu
-SYSTEM_MODELS = [
-    User,
-    UserSession,
-    Log,
-    DatabaseSchema,
-    Migration,
-    TableDefinition
-]
+SYSTEM_MODELS = {
+    'User': User,
+    'UserSession': UserSession,
+    'Log': Log,
+    'DatabaseSchema': DatabaseSchema,
+    'Migration': Migration,
+    'TableDefinition': TableDefinition
+}
 
 __all__ = [
     'User',
