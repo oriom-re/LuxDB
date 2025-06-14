@@ -267,6 +267,25 @@ class FieldType(Enum):
     FOREIGN_KEY = "foreign_key"
 ```
 
+## 📁 Przykłady
+
+Katalog `examples/` zawiera gotowe przykłady użycia:
+
+- **01_basic_setup.py** - Podstawowe operacje (tworzenie bazy, insert, select)
+- **02_querybuilder_usage.py** - Zaawansowane zapytania z QueryBuilder
+- **03_migrations.py** - System migracji (dodanie kolumn, indeksów)
+- **04_sync_databases.py** - Synchronizacja między bazami danych
+- **05_raw_sql_examples.py** - Surowe zapytania SQL z JOIN i GROUP BY
+
+```bash
+cd examples/
+python 01_basic_setup.py
+python 02_querybuilder_usage.py
+# ... itd
+```
+
+Szczegóły w [examples/README.md](examples/README.md).
+
 ## 🤝 Rozwój
 
 LuxDB jest aktywnie rozwijana. Zachęcamy do:
