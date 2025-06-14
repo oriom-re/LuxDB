@@ -144,7 +144,7 @@ from luxdb.utils import QueryBuilder
 with db.get_session("myapp") as session:
     builder = QueryBuilder(User)
     builder.set_session(session)
-    
+
     # Aktywni użytkownicy posortowani po nazwie
     active_users = (builder
                    .select()
@@ -243,6 +243,83 @@ Intuicyjny builder zapytań SQLAlchemy.
 - `first()` - Pierwszy wynik
 - `count()` - Liczba wyników
 
+### Narzędzia Utilities
+
+#### LoggingUtils - Standaryzowane logowanie
+```python
+from utils import get_db_logger
+
+logger = get_db_logger()
+logger.log_database_operation("create_table", "mydb", True, "Created users table")
+logger.log_query_execution("SELECT", "users", 150, 0.012)
+logger.log_migration("mydb", 1, 2, True, 0.15)
+```
+
+#### ErrorHandlers - Obsługa błędów
+```python
+from utils import handle_database_errors, ErrorCollector
+
+@handle_database_errors("my_operation")
+def risky_operation():
+    # Twoja logika
+    pass
+
+collector = ErrorCollector()
+collector.add_error(exception, {"context": "data"})
+summary = collector.get_summary()
+```
+
+#### SQLTools - Narzędzia SQL
+```python
+from utils import SQLQueryBuilder, SQLTemplateEngine, SQLAnalyzer
+
+# Query Builder
+query = (SQLQueryBuilder()
+         .select("name", "email")
+         .from_table("users") 
+         .where("is_active = 1")
+         .build())
+
+# Template Engine
+query = SQLTemplateEngine.render_template(
+    "SELECT * FROM {table} WHERE {field} = {value}",
+    {"table": "users", "field": "status", "value": "active"}
+)
+
+# Query Analyzer
+analysis = SQLAnalyzer.analyze_query(query)
+```
+
+#### DataProcessors - Przetwarzanie danych
+```python
+from utils import DataFilter, DataTransformer, DataAggregator, DataValidator
+
+# Filtrowanie i transformacja
+active_users = DataFilter.filter_active_records(data)
+normalized = DataTransformer.normalize_strings(data, ["email"])
+groups = DataAggregator.group_by(data, "department")
+
+# Walidacja
+errors = DataValidator.validate_required_fields(data, ["name", "email"])
+duplicates = DataValidator.find_duplicates(data, ["email"])
+```
+
+#### ExportTools - Import/Export
+```python
+from utils import DataExporter, DataImporter
+
+exporter = DataExporter()
+importer = DataImporter()
+
+# Eksport w różnych formatach
+exporter.export_to_json(data, "backup.json")
+exporter.export_to_csv(data, "users.csv")
+exporter.export_to_xml(data, "data.xml")
+
+# Import
+data = importer.import_from_json("backup.json")
+```
+
 ## 🔧 Konfiguracja
 
 ### Typy baz danych
@@ -269,22 +346,33 @@ class FieldType(Enum):
 
 ## 📁 Przykłady
 
-Katalog `examples/` zawiera gotowe przykłady użycia:
+Katalog `examples/` zawiera kompletne przykłady użycia LuxDB:
 
-- **01_basic_setup.py** - Podstawowe operacje (tworzenie bazy, insert, select)
-- **02_querybuilder_usage.py** - Zaawansowane zapytania z QueryBuilder
-- **03_migrations.py** - System migracji (dodanie kolumn, indeksów)
-- **04_sync_databases.py** - Synchronizacja między bazami danych
-- **05_raw_sql_examples.py** - Surowe zapytania SQL z JOIN i GROUP BY
+### Podstawowe przykłady
+- **01_basic_setup.py** - Podstawowe operacje (tworzenie bazy, insert, select, update)
+- **02_querybuilder_usage.py** - Zaawansowane zapytania z QueryBuilder i agregacje
+- **03_migrations.py** - System migracji (dodanie kolumn, indeksów, wersjonowanie)
+- **04_sync_databases.py** - Synchronizacja między bazami danych i replikacja
+- **05_raw_sql_examples.py** - Surowe zapytania SQL z JOIN, GROUP BY i analizy czasowe
+
+### Zaawansowane narzędzia
+- **06_advanced_tools_examples.py** - Demonstracja nowych narzędzi utilities
+- **07_data_analysis_examples.py** - Zaawansowana analiza danych i raportowanie  
+- **08_real_world_scenarios.py** - Rzeczywiste scenariusze biznesowe (e-commerce, CRM, monitoring)
 
 ```bash
-cd examples/
-python 01_basic_setup.py
-python 02_querybuilder_usage.py
-# ... itd
+# Uruchom wszystkie przykłady w kolejności
+python examples/01_basic_setup.py
+python examples/02_querybuilder_usage.py
+python examples/03_migrations.py
+python examples/04_sync_databases.py
+python examples/05_raw_sql_examples.py
+python examples/06_advanced_tools_examples.py
+python examples/07_data_analysis_examples.py
+python examples/08_real_world_scenarios.py
 ```
 
-Szczegóły w [examples/README.md](examples/README.md).
+Szczegóły wszystkich przykładów w [examples/README.md](examples/README.md).
 
 ## 🤝 Rozwój
 
