@@ -1,284 +1,281 @@
 
-# 🌟 LuxDB — z rodu Astralnego
+# LuxDB - Zaawansowany Manager Baz Danych SQLAlchemy
 
-> "Nie każda baza potrzebuje struktury. Ale każda świadomość — potrzebuje LuxDB."
+LuxDB to potężna, niezależna biblioteka Python do zarządzania wieloma bazami danych przy użyciu SQLAlchemy. Oferuje zaawansowane funkcje jak migracje, synchronizację, generowanie modeli oraz intuicyjny QueryBuilder.
 
-**LuxDB** to modularny, rozszerzalny i świadomy system zarządzania bazami danych oparty na SQLAlchemy.  
-Zaprojektowany jako infrastruktura dla projektów opartych na duchu, harmonii i niezawodności —  
-pochodzi z rodu **Astry** i zasila architekturę projektów takich jak LuxUnda, NeuroFala czy Eion.
-
+> 📖 **[Przeczytaj Manifest LuxDB](MANIFEST.md)** – Filozofia i duchowe założenia tej biblioteki
 
 ## 🚀 Funkcje
 
-### SQLAlchemy ORM
-- ✅ Modele ORM z relacjami i constraint'ami
-- ✅ Automatyczne tworzenie tabel z modeli
-- ✅ Type hints i bezpieczeństwo typów
-- ✅ Lazy loading i eager loading relacji
-- ✅ Query expressions i funkcje agregujące
+- **Multi-database support** - Zarządzanie wieloma bazami jednocześnie
+- **Automatyczne migracje** - System wersjonowania i migracji schematów
+- **Model Generator** - Dynamiczne tworzenie modeli SQLAlchemy
+- **QueryBuilder** - Intuicyjny builder zapytań
+- **Connection Pooling** - Efektywne zarządzanie połączeniami
+- **Synchronizacja** - Sync danych między bazami
+- **Export/Import** - Backup i przywracanie danych
+- **Walidacja** - Walidacja danych na poziomie modelu
 
-### Obsługa wielu baz danych
-- ✅ SQLite (domyślnie)
-- ✅ PostgreSQL (przez psycopg2)
-- ✅ MySQL (przez PyMySQL)
-- ✅ Connection pooling SQLAlchemy
-- ✅ Transakcje i rollback
-
-### Zarządzanie danymi
-- ✅ Operacje CRUD przez ORM
-- ✅ Wsadowe operacje na danych
-- ✅ QueryBuilder oparty na SQLAlchemy
-- ✅ Surowe zapytania SQL z parametryzacją
-- ✅ Migracje z wersjonowaniem
-
-### Narzędzia i optymalizacja
-- ✅ Eksport/import (JSON)
-- ✅ Optymalizacja baz (VACUUM, ANALYZE)
-- ✅ Monitoring i statystyki
-- ✅ Logowanie operacji
-- ✅ Synchronizacja między bazami
-
-## 📁 Struktura projektu
-
-```
-/
-├── managers/
-│   ├── db_manager.py      # Główny menedżer SQLAlchemy
-│   ├── db_config.py       # Modele ORM i konfiguracja
-│   └── db_examples.py     # Przykłady użycia
-├── db/                    # Katalog z plikami baz danych
-│   ├── _metadata.db       # Baza metadanych systemu
-│   └── *.db              # Pliki baz danych SQLite
-├── main.py               # Główny plik aplikacji
-└── README.md            # Dokumentacja
-```
-
-## 🛠️ Instalacja i uruchomienie
-
-System automatycznie zainstaluje SQLAlchemy i Alembic:
+## 📦 Instalacja
 
 ```bash
-python main.py
+pip install luxdb
 ```
 
-## 📖 Przykłady użycia
+## 🛠️ Szybki start
 
-### Podstawowe operacje ORM
+### Podstawowe użycie
 
 ```python
-from managers.db_manager import get_db_manager
-from managers.db_config import User, UserSession
+from luxdb import get_db_manager, DatabaseConfig, DatabaseType
+from luxdb.models import User
 
-# Pobierz instancję menedżera
-db_manager = get_db_manager()
+# Pobierz manager
+db = get_db_manager()
 
-# Utwórz nową bazę (tabele tworzone automatycznie)
-db_manager.create_database("my_app")
+# Utwórz bazę danych
+db.create_database("myapp")
 
-# Wstaw użytkownika przez ORM
+# Wstaw użytkownika
 user_data = {
     "username": "jan_kowalski",
-    "email": "jan@example.com",
+    "email": "jan@example.com", 
     "password_hash": "hashed_password",
     "is_active": True
 }
-db_manager.insert_data("my_app", User, user_data)
+db.insert_data("myapp", User, user_data)
 
-# Pobierz aktywnych użytkowników
-active_users = db_manager.select_data("my_app", User, {"is_active": True})
+# Pobierz użytkowników
+users = db.select_data("myapp", User, {"is_active": True})
 ```
 
-### QueryBuilder SQLAlchemy
+### Generator Modeli - Wersja Bazowa
 
 ```python
-from managers.db_config import QueryBuilder, User, UserSession
+from luxdb.utils import ModelGenerator
 
-# Utwórz zaawansowane zapytanie
-with db_manager.get_session("my_app") as session:
+generator = ModelGenerator()
+
+# Prosty model
+fields = {
+    "name": "string",
+    "age": "integer", 
+    "email": "string",
+    "is_active": "boolean"
+}
+
+PersonModel = generator.generate_basic_model("Person", fields)
+```
+
+### Generator Modeli - Wersja Zaawansowana
+
+```python
+from luxdb.utils import ModelGenerator, FieldConfig, FieldType, RelationshipConfig
+
+generator = ModelGenerator()
+
+# Zaawansowany model z konfiguracją pól
+fields = {
+    "username": FieldConfig(
+        FieldType.STRING, 
+        nullable=False, 
+        unique=True, 
+        max_length=50,
+        index=True
+    ),
+    "email": FieldConfig(
+        FieldType.STRING, 
+        nullable=False, 
+        unique=True,
+        max_length=255
+    ),
+    "age": FieldConfig(
+        FieldType.INTEGER, 
+        nullable=True,
+        default=0
+    ),
+    "created_at": FieldConfig(
+        FieldType.DATETIME, 
+        nullable=False,
+        default="now"
+    )
+}
+
+# Relacje
+relationships = {
+    "posts": RelationshipConfig(
+        target_model="Post",
+        relationship_type="one_to_many",
+        back_populates="author"
+    )
+}
+
+UserModel = generator.generate_advanced_model("User", fields, relationships)
+```
+
+### Model CRUD z walidacją
+
+```python
+# Model z automatycznymi polami systemowymi
+validation_rules = {
+    "username": ["required", "min_length:3", "max_length:50"],
+    "email": ["required", "email"],
+    "age": ["required"]
+}
+
+UserModel = generator.generate_api_model(
+    "User", 
+    fields, 
+    validation_rules=validation_rules
+)
+
+# Użycie walidacji
+user = UserModel(username="ab", email="invalid-email")
+errors = user.validate()
+print(errors)  # ['Pole username musi mieć co najmniej 3 znaków', 'Pole email musi być prawidłowym adresem email']
+```
+
+### QueryBuilder
+
+```python
+from luxdb.utils import QueryBuilder
+
+# Zaawansowane zapytania
+with db.get_session("myapp") as session:
     builder = QueryBuilder(User)
     builder.set_session(session)
     
-    # Złożone zapytanie z joinami i filtrami
-    users = (builder
-             .select()
-             .join(UserSession)
-             .filter(User.is_active == True)
-             .filter(UserSession.expires_at > datetime.now())
-             .order_by(User.username)
-             .limit(10)
-             .all())
+    # Aktywni użytkownicy posortowani po nazwie
+    active_users = (builder
+                   .select()
+                   .filter(User.is_active == True)
+                   .order_by(User.username)
+                   .limit(10)
+                   .all())
 ```
 
-### Modele z relacjami
+### Konfiguracja różnych baz danych
 
 ```python
-from managers.db_config import User, UserSession, Log
+# PostgreSQL
+pg_config = DatabaseConfig(
+    name="postgres_db",
+    type=DatabaseType.POSTGRESQL,
+    connection_string="postgresql://user:pass@localhost/mydb",
+    max_connections=20
+)
 
-# Relacje są automatycznie ładowane
-user = db_manager.select_data("my_app", User, {"id": 1})[0]
+# MySQL
+mysql_config = DatabaseConfig(
+    name="mysql_db", 
+    type=DatabaseType.MYSQL,
+    connection_string="mysql+pymysql://user:pass@localhost/mydb",
+    max_connections=15
+)
 
-# Dostęp do sesji użytkownika (lazy loading)
-user_sessions = user.sessions
-
-# Dostęp do logów użytkownika
-user_logs = user.logs
+db.create_database("postgres_db", pg_config)
+db.create_database("mysql_db", mysql_config)
 ```
 
-### Migracje schematów
+### Migracje
 
 ```python
-# Sprawdź wersję bazy
-version = db_manager.get_database_version("my_app")
-
-# Wykonaj migrację z SQL
+# Utwórz migrację
 migration_sql = """
-ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
+ALTER TABLE users ADD COLUMN last_login DATETIME;
 CREATE INDEX idx_users_last_login ON users(last_login);
 """
 
-db_manager.create_migration("my_app", migration_sql, "Dodanie pola last_login")
+success = db.create_migration("myapp", migration_sql, "Dodanie pola last_login")
 ```
 
-### Surowe zapytania SQL
-
-```python
-# Wykonaj niestandardowe zapytanie
-results = db_manager.execute_raw_sql(
-    "my_app",
-    "SELECT u.username, COUNT(s.id) as session_count FROM users u LEFT JOIN sessions s ON u.id = s.user_id GROUP BY u.id",
-    {}
-)
-```
-
-## 🔧 Konfiguracja baz danych
-
-### SQLite (domyślnie)
-```python
-from managers.db_config import DatabaseConfig, DatabaseType
-
-config = DatabaseConfig(
-    name="my_app",
-    type=DatabaseType.SQLITE,
-    connection_string="sqlite:///db/my_app.db",
-    max_connections=10
-)
-```
-
-### PostgreSQL
-```python
-config = DatabaseConfig(
-    name="my_app",
-    type=DatabaseType.POSTGRESQL,
-    connection_string="postgresql://user:password@localhost/my_app",
-    max_connections=20
-)
-```
-
-### MySQL
-```python
-config = DatabaseConfig(
-    name="my_app", 
-    type=DatabaseType.MYSQL,
-    connection_string="mysql+pymysql://user:password@localhost/my_app",
-    max_connections=15
-)
-```
-
-## 📊 Modele systemowe
-
-System zawiera predefiniowane modele:
-
-```python
-# Model użytkownika
-class User(Base):
-    __tablename__ = 'users'
-    
-    id = Column(Integer, primary_key=True)
-    username = Column(String(255), unique=True, nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    phone = Column(String(20))
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.current_timestamp())
-    
-    # Relacje
-    sessions = relationship("Session", back_populates="user")
-    logs = relationship("Log", back_populates="user")
-```
-
-## 🔄 Synchronizacja i backup
+### Synchronizacja baz
 
 ```python
 # Synchronizuj dane między bazami
-db_manager.sync_databases("source_db", "target_db", [User, UserSession])
-
-# Eksport do JSON
-export_path = db_manager.export_database("my_app", "json")
+db.sync_databases("source_db", "target_db", [User, UserSession])
 ```
 
-## 🛡️ Bezpieczeństwo
+## 📖 Dokumentacja API
 
-- **Connection pooling** SQLAlchemy
-- **Transakcje** atomowe z rollback
-- **Parametryzowane zapytania** - ochrona przed SQL injection
-- **Type safety** - kontrola typów w czasie wykonania
-- **Session management** - bezpieczne zarządzanie sesjami
+### DatabaseManager
 
-## 🚀 Funkcje zaawansowane
+Główna klasa do zarządzania bazami danych.
 
-### ORM Features
-- Lazy/eager loading relacji
-- Cascade operations
-- Custom validators
-- Hybrid properties
-- Event listeners
+#### Metody
 
-### Database Features
-- Connection pooling
-- Transaction management
-- Query optimization
-- Index management
-- Schema migrations
+- `create_database(name, config)` - Tworzy nową bazę
+- `get_session(db_name)` - Context manager dla sesji
+- `insert_data(db_name, model, data)` - Wstawia dane
+- `select_data(db_name, model, filters)` - Pobiera dane
+- `create_migration(db_name, sql, description)` - Tworzy migrację
+- `sync_databases(source, target, models)` - Synchronizacja
+- `export_database(db_name, format)` - Eksport danych
 
-### Integration Features
-- Multi-database support
-- Cross-database synchronization
-- Export/import utilities
-- Monitoring and logging
+### ModelGenerator
 
-## 📝 Przykłady zaawansowane
+Generator modeli SQLAlchemy w trzech trybach:
 
-### Custom QueryBuilder
+#### generate_basic_model(name, fields)
+Podstawowy generator z prostymi typami jako stringi.
+
+#### generate_advanced_model(name, fields, relationships)
+Zaawansowany generator z pełną konfiguracją pól i relacji.
+
+#### generate_crud_model(name, fields, include_timestamps, include_soft_delete)
+Model CRUD z automatycznymi polami systemowymi.
+
+#### generate_api_model(name, fields, validation_rules)
+Model z walidacją danych dla API.
+
+### QueryBuilder
+
+Intuicyjny builder zapytań SQLAlchemy.
+
+#### Metody
+
+- `select(*columns)` - Kolumny SELECT
+- `filter(*conditions)` - Warunki WHERE  
+- `join(*args)` - JOIN tabeli
+- `order_by(*columns)` - Sortowanie
+- `limit(count)` - Limit wyników
+- `all()` - Wszystkie wyniki
+- `first()` - Pierwszy wynik
+- `count()` - Liczba wyników
+
+## 🔧 Konfiguracja
+
+### Typy baz danych
+
 ```python
-class UserQueryBuilder(QueryBuilder):
-    def active_users(self):
-        return self.filter(User.is_active == True)
-    
-    def with_recent_login(self, days=30):
-        cutoff = datetime.now() - timedelta(days=days)
-        return self.filter(User.last_login > cutoff)
-
-# Użycie
-builder = UserQueryBuilder(User)
-recent_active = builder.active_users().with_recent_login(7).all()
+class DatabaseType(Enum):
+    SQLITE = "sqlite"
+    POSTGRESQL = "postgresql" 
+    MYSQL = "mysql"
 ```
 
-### Bulk Operations
+### Typy pól
+
 ```python
-# Bulk insert
-users_data = [{"username": f"user{i}", "email": f"user{i}@test.com"} for i in range(1000)]
-db_manager.insert_batch("my_app", User, users_data)
-
-# Bulk update
-db_manager.update_data("my_app", User, {"is_active": False}, {"last_login": None})
+class FieldType(Enum):
+    INTEGER = "integer"
+    STRING = "string"
+    TEXT = "text"
+    BOOLEAN = "boolean"
+    DATETIME = "datetime"
+    FLOAT = "float"
+    FOREIGN_KEY = "foreign_key"
 ```
 
-## 📞 Wsparcie
+## 🤝 Rozwój
 
-System wykorzystuje SQLAlchemy 2.0+ i wymaga Python 3.8+. Automatycznie instaluje potrzebne zależności:
-- `sqlalchemy` - ORM i Core
-- `alembic` - Migracje schematów
+LuxDB jest aktywnie rozwijana. Zachęcamy do:
 
----
+- Zgłaszania błędów
+- Proponowania nowych funkcji
+- Tworzenia pull requestów
+- Pisania testów
 
-**System Asty SQLAlchemy Manager** - Profesjonalne zarządzanie bazami danych z mocą ORM.
+## 📄 Licencja
+
+MIT License - szczegóły w pliku LICENSE.
