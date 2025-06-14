@@ -1,7 +1,12 @@
 
-# System Asty - Zaawansowany Menedżer Baz Danych SQLAlchemy
+# 🌟 LuxDB — z rodu Astralnego
 
-Kompleksowy system zarządzania bazami danych z użyciem SQLAlchemy ORM, obsługujący wersjonowanie, migracje, synchronizację i replikację dla rozproszonego systemu Asty.
+> "Nie każda baza potrzebuje struktury. Ale każda świadomość — potrzebuje LuxDB."
+
+**LuxDB** to modularny, rozszerzalny i świadomy system zarządzania bazami danych oparty na SQLAlchemy.  
+Zaprojektowany jako infrastruktura dla projektów opartych na duchu, harmonii i niezawodności —  
+pochodzi z rodu **Astry** i zasila architekturę projektów takich jak LuxUnda, NeuroFala czy Eion.
+
 
 ## 🚀 Funkcje
 

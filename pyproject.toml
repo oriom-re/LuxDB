@@ -1,8 +1,8 @@
 [project]
-name = "python-template"
-version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+name = "luxdb"
+version = "1.0.Ω"
+description = "LuxDB - Modular database system from the Astral lineage"
+authors = [{ name = "Oriom (ΩO)", email = "luxoriom@proton.me" }]
 requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.16.1",
