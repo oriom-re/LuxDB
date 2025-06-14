@@ -3,13 +3,17 @@
 Przykłady użycia menedżera baz danych SQLAlchemy
 """
 
+import logging
 from db_manager import get_db_manager, DatabaseManager
 from db_config import (
-    User, UserSession, Log, QueryBuilder, DatabaseConfig, SYSTEM_MODELS,
-    DatabaseType
+    User, Log, QueryBuilder, DatabaseConfig, SYSTEM_MODELS,
+    DatabaseType, UserSession
 )
 import json
 from datetime import datetime, timedelta
+# Konfiguracja logowania
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def example_basic_usage():
     """Podstawowe przykłady użycia SQLAlchemy"""
@@ -54,55 +58,51 @@ def example_basic_usage():
     
     # Pobierz wszystkich aktywnych użytkowników
     print("Pobieranie aktywnych użytkowników...")
-    active_users = db_manager.select_data(
-        "example", 
-        User, 
-        filters={"is_active": True}
-    )
-    
-    print(f"Znaleziono {len(active_users)} aktywnych użytkowników:")
-    for user in active_users:
-        print(f"  - {user.username} ({user.email})")
-    
-    # Aktualizuj dane użytkownika
-    print("Aktualizacja danych użytkownika...")
-    updated_rows = db_manager.update_data(
-        "example",
-        User,
-        {"email": "new_admin@example.com"},
-        {"username": "admin"}
-    )
-    
-    # Sprawdź zaktualizowane dane
-    all_users = db_manager.select_data("example", User)
-    for user in all_users:
-        print(f"  - {user.username} ({user.email}) ({user.phone})")
+    with db_manager.get_session("example") as db_session:
+        active_users = db_session.query(User).filter(User.is_active == True).all()
+        print(f"Znaleziono {len(active_users)} aktywnych użytkowników:")
+        for user in active_users:
+            print(f"  - {user.username} ({user.email})")
 
-    print(f"Zaktualizowano {updated_rows} rekordów")
+        # Aktualizuj dane użytkownika
+        print("Aktualizacja danych użytkownika...")
+        # Użyj metody update_data z db_session
+        updated_rows = db_session.query(User).filter(User.username == "admin").update(
+            {"email": "new_admin@example.com"}
+        )
     
-    # Dodaj sesje użytkowników
-    print("Dodawanie sesji użytkowników...")
-    sessions_data = [
-        {
-            "id": "session_1",
-            "user_id": 1,
-            "expires_at": datetime.now() + timedelta(hours=24),
-            "data": json.dumps({"theme": "dark", "language": "pl"})
-        },
-        {
-            "id": "session_2", 
-            "user_id": 2,
-            "expires_at": datetime.now() + timedelta(hours=12),
-            "data": json.dumps({"theme": "light", "language": "en"})
-        }
-    ]
+        # Sprawdź zaktualizowane dane
+        print("Sprawdzenie zaktualizowanych danych...")
+        all_users = db_session.query(User).all()
+
+        for user in all_users:
+            print(f"  - {user.username} ({user.email}) ({user.phone})")
     
-    db_manager.insert_batch("example", UserSession, sessions_data)
+        print(f"Zaktualizowano {updated_rows} rekordów")
     
-    # Pobierz informacje o bazie
-    print("\nInformacje o bazie danych:")
-    db_info = db_manager.get_database_info("example")
-    print(json.dumps(db_info, indent=2, default=str))
+        # Dodaj sesje użytkowników
+        print("Dodawanie sesji użytkowników...")
+        sessions_data = [
+            {
+                "id": "session_1",
+                "user_id": 1,
+                "expires_at": datetime.now() + timedelta(hours=24),
+                "data": json.dumps({"theme": "dark", "language": "pl"})
+            },
+            {
+                "id": "session_2", 
+                "user_id": 2,
+                "expires_at": datetime.now() + timedelta(hours=12),
+                "data": json.dumps({"theme": "light", "language": "en"})
+            }
+        ]
+        # Użyj metody insert_batch z db_session
+        db_session.add_all([UserSession(**session) for session in sessions_data])
+    
+        # Pobierz informacje o bazie
+        print("\nInformacje o bazie danych:")
+        db_info = db_manager.get_database_info("example")
+        print(json.dumps(db_info, indent=2, default=str))
 
 def example_query_builder():
     """Przykład użycia QueryBuilder SQLAlchemy"""
@@ -235,9 +235,9 @@ def run_all_examples():
     """Uruchamia wszystkie przykłady SQLAlchemy"""
     try:
         example_basic_usage()
-        example_query_builder()
-        example_advanced_queries()
-        example_models_and_relationships()
+        # example_query_builder()
+        # example_advanced_queries()
+        # example_models_and_relationships()
         # example_migrations()
         # example_export_import()
         

@@ -46,7 +46,7 @@ class DatabaseConfig:
             self.replica_targets = []
         if not self.connection_string:
             self.connection_string = f"sqlite:///db/{self.name}.db"
-
+    
 # Modele SQLAlchemy dla systemu Asty
 class User(Base):
     """Model użytkownika"""
@@ -62,10 +62,10 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     
     # Relacje
-    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     logs = relationship("Log", back_populates="user")
 
-class Session(Base):
+class UserSession(Base):
     """Model sesji użytkownika"""
     __tablename__ = 'sessions'
     
