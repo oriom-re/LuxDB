@@ -1,10 +1,73 @@
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "luxdb"
-version = "1.0.Ω"
-description = "LuxDB - Modular database system from the Astral lineage"
-authors = [{ name = "Oriom (ΩO)", email = "luxoriom@proton.me" }]
-requires-python = ">=3.11"
-dependencies = [
-    "alembic>=1.16.1",
-    "sqlalchemy>=2.0.41",
+version = "1.0.0"
+description = "Zaawansowany manager baz danych SQLAlchemy z generatorem modeli"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "LuxDB Team", email = "team@luxdb.dev"}
 ]
+keywords = ["database", "sqlalchemy", "orm", "migration", "model-generator"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "sqlalchemy>=1.4.0,<3.0.0",
+    "typing-extensions>=4.0.0;python_version<'3.11'",
+]
+
+[project.optional-dependencies]
+postgresql = ["psycopg2-binary>=2.9.0"]
+mysql = ["PyMySQL>=1.0.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "isort>=5.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/luxdb/luxdb"
+Documentation = "https://luxdb.readthedocs.io"
+Repository = "https://github.com/luxdb/luxdb.git"
+Issues = "https://github.com/luxdb/luxdb/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["luxdb"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "--cov=luxdb --cov-report=html --cov-report=term-missing"
