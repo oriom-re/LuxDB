@@ -207,13 +207,6 @@ def test_migration_sql_generation():
     print("Wygenerowany SQL migracji:")
     print(migration_sql)
 
-def test_original_examples():
-    """Test oryginalnych przykładów"""
-    print("\n=== Test oryginalnych przykładów ===")
-
-    from managers.db_examples import run_all_examples
-    run_all_examples()
-
 def main():
     """Główna funkcja demonstrująca LuxDB"""
     try:
@@ -226,7 +219,6 @@ def main():
         test_api_model_with_validation()
         test_database_operations()
         test_migration_sql_generation()
-        test_original_examples()
 
         print("\n✅ Wszystkie testy zakończone pomyślnie!")
 
