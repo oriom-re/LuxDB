@@ -356,11 +356,49 @@ class ModelGenerator:
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
+from .logging_utils import DatabaseLogger, get_db_logger
+from .error_handlers import (
+    LuxDBError, DatabaseConnectionError, ModelValidationError, 
+    MigrationError, QueryExecutionError, SynchronizationError,
+    handle_database_errors, ErrorCollector
+)
+from .sql_tools import SQLQueryBuilder, SQLTemplateEngine, SQLAnalyzer, execute_sql_safely
+from .export_tools import DataExporter, DataImporter, ExportFormat, export_model_data
+from .data_processors import (
+    DataFilter, DataTransformer, DataAggregator, DataValidator, 
+    DataCleaner, process_model_data, create_data_summary
+)
+
 __all__ = [
     'ModelGenerator',
     'QueryBuilder', 
     'FieldConfig',
     'FieldType',
     'RelationshipConfig',
-    'Base'
+    'Base',
+    'DatabaseLogger',
+    'get_db_logger',
+    'LuxDBError',
+    'DatabaseConnectionError',
+    'ModelValidationError',
+    'MigrationError',
+    'QueryExecutionError',
+    'SynchronizationError',
+    'handle_database_errors',
+    'ErrorCollector',
+    'SQLQueryBuilder',
+    'SQLTemplateEngine',
+    'SQLAnalyzer',
+    'execute_sql_safely',
+    'DataExporter',
+    'DataImporter',
+    'ExportFormat',
+    'export_model_data',
+    'DataFilter',
+    'DataTransformer',
+    'DataAggregator',
+    'DataValidator',
+    'DataCleaner',
+    'process_model_data',
+    'create_data_summary'
 ]
