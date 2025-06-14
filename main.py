@@ -1,3 +1,4 @@
+
 """
 System Asty - Główny plik aplikacji
 Demonstracja użycia zaawansowanego menedżera baz danych SQLAlchemy
@@ -10,10 +11,10 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 # Import z nowej struktury LuxDB
-from manager import get_db_manager, DatabaseManager
-from config import DatabaseConfig, DatabaseType
-from models import User, UserSession, Log
-from utils import ModelGenerator, FieldConfig, FieldType, RelationshipConfig
+from luxdb import get_db_manager, DatabaseManager
+from luxdb.config import DatabaseConfig, DatabaseType
+from luxdb.models import User, UserSession, Log
+from luxdb.utils import ModelGenerator, FieldConfig, FieldType, RelationshipConfig
 
 def test_basic_model_generator():
     """Test podstawowego generatora modeli"""
