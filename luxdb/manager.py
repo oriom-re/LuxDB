@@ -27,8 +27,8 @@ from .models import (
 from .utils import QueryBuilder
 
 # Konfiguracja logowania
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from .console_logger import get_console_logger
+console = get_console_logger()
 
 class DatabaseError(Exception):
     """Wyjątek dla błędów bazy danych"""
@@ -74,7 +74,7 @@ class DatabaseManager:
 
         metadata_base.metadata.create_all(bind=self.metadata_pool.engine)
 
-        logger.info("Zainicjalizowano bazę metadanych SQLAlchemy")
+        console.info("Zainicjalizowano bazę metadanych SQLAlchemy")
 
     @contextmanager
     def get_session(self, db_name: str):
@@ -94,7 +94,7 @@ class DatabaseManager:
             if hasattr(e, '__class__'):
                 error_msg += f" ({type(e).__name__})"
 
-            logger.error(f"Błąd sesji z bazą {db_name}: {e}")
+            console.error(f"Błąd sesji z bazą {db_name}", e)
             raise DatabaseError(error_msg)
         finally:
             session.close()
@@ -107,7 +107,7 @@ class DatabaseManager:
             yield session
             session.commit()
         except Exception as e:
-            logger.error(f"Błąd sesji metadanych: {e}")
+            console.error("Błąd sesji metadanych", e)
             raise DatabaseError(f"Błąd sesji metadanych: {e}")
         finally:
             session.close()
@@ -140,11 +140,11 @@ class DatabaseManager:
             # Zarejestruj w metadanych
             self._register_database(db_name, config.version)
 
-            logger.info(f"Utworzono bazę danych SQLAlchemy: {db_name}")
+            console.success(f"Utworzono bazę danych: {db_name}")
             return True
 
         except Exception as e:
-            logger.error(f"Błąd tworzenia bazy {db_name}: {e}")
+            console.error(f"Błąd tworzenia bazy {db_name}", e)
             return False
 
     def _register_database(self, db_name: str, version: int = 1):
@@ -166,9 +166,9 @@ class DatabaseManager:
                     )
                     session.add(db_schema)
 
-                logger.info(f"Zarejestrowano bazę {db_name} w metadanych")
+                console.info(f"Zarejestrowano bazę {db_name} w metadanych")
         except Exception as e:
-            logger.error(f"Błąd rejestracji bazy {db_name}: {e}")
+            console.error(f"Błąd rejestracji bazy {db_name}", e)
 
     def _calculate_schema_hash(self, db_name: str) -> str:
         """Oblicza hash schematu bazy danych"""
@@ -188,7 +188,7 @@ class DatabaseManager:
             schema_str = '|'.join(schema_info)
             return hashlib.md5(schema_str.encode()).hexdigest()
         except Exception as e:
-            logger.error(f"Błąd obliczania hash schematu dla {db_name}: {e}")
+            console.error(f"Błąd obliczania hash schematu dla {db_name}", e)
             return ""
 
     def create_table_from_model(self, db_name: str, model_class: Type[Base]) -> bool:
@@ -205,11 +205,11 @@ class DatabaseManager:
             # Zapisz definicję tabeli
             self._save_table_definition(db_name, model_class.__tablename__, str(model_class.__table__))
 
-            logger.info(f"Utworzono tabelę {model_class.__tablename__} w bazie {db_name}")
+            console.success(f"Utworzono tabelę {model_class.__tablename__} w bazie {db_name}")
             return True
 
         except Exception as e:
-            logger.error(f"Błąd tworzenia tabeli {model_class.__tablename__} w bazie {db_name}: {e}")
+            console.error(f"Błąd tworzenia tabeli {model_class.__tablename__} w bazie {db_name}", e)
             return False
 
     def _save_table_definition(self, db_name: str, table_name: str, definition: str):
@@ -226,7 +226,7 @@ class DatabaseManager:
                 )
                 session.merge(table_def)
         except Exception as e:
-            logger.error(f"Błąd zapisywania definicji tabeli {table_name}: {e}")
+            console.error(f"Błąd zapisywania definicji tabeli {table_name}", e)
 
     def insert_data(self, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> Dict[str, Any]:
         """Wstawia dane do tabeli
@@ -252,11 +252,10 @@ class DatabaseManager:
         result = safe_database_operation(_insert_operation)
 
         if result["success"]:
-            logger.info(f"Wstawiono dane do {model_class.__tablename__}")
+            console.success(f"Wstawiono dane do {model_class.__tablename__}")
         else:
             error_info = result["error"]
-            logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: "
-                        f"[{error_info.get('code', 'UNKNOWN')}] {error_info.get('message', 'Unknown error')}")
+            console.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: {error_info.get('message', 'Unknown error')}")
 
         return result
 
@@ -286,7 +285,7 @@ class DatabaseManager:
         result = safe_database_operation(_batch_insert_operation)
 
         if result["success"]:
-            logger.info(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
+            console.success(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
         else:
             # Dla batch operacji, spróbuj wstawić rekordy pojedynczo w przypadku błędu
             collector = ErrorCollector()
@@ -317,7 +316,7 @@ class DatabaseManager:
                 }
             }
 
-            logger.warning(f"Batch insert do {model_class.__tablename__}: "
+            console.warning(f"Batch insert do {model_class.__tablename__}: "
                           f"{collector.success_count}/{len(data_list)} rekordów wstawionych pomyślnie")
 
         return result
@@ -342,7 +341,7 @@ class DatabaseManager:
                 return query.all()
 
         except Exception as e:
-            logger.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}: {e}")
+            console.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}", e)
             return []
 
     def get_query_builder(self, db_name: str, model_class: Type[Base]) -> QueryBuilder:
@@ -377,7 +376,7 @@ class DatabaseManager:
                     return [{"affected_rows": result.rowcount}]
 
         except Exception as e:
-            logger.error(f"Błąd wykonywania SQL w bazie {db_name}: {e}")
+            console.error(f"Błąd wykonywania SQL w bazie {db_name}", e)
             return []
 
     def get_database_version(self, db_name: str) -> int:
@@ -387,7 +386,7 @@ class DatabaseManager:
                 db_schema = session.query(DatabaseSchema).filter_by(db_name=db_name).first()
                 return db_schema.version if db_schema else 1
         except Exception as e:
-            logger.error(f"Błąd pobierania wersji bazy {db_name}: {e}")
+            console.error(f"Błąd pobierania wersji bazy {db_name}", e)
             return 1
 
     def create_migration(self, db_name: str, migration_sql: str, description: str = "") -> bool:
@@ -427,11 +426,11 @@ class DatabaseManager:
                         db_schema.schema_hash = self._calculate_schema_hash(db_name)
                         db_schema.updated_at = datetime.now()
 
-                logger.info(f"Migracja bazy {db_name} z wersji {current_version} do {new_version} zakończona")
+                console.success(f"Migracja bazy {db_name} z wersji {current_version} do {new_version} zakończona")
                 return True
 
         except Exception as e:
-            logger.error(f"Błąd migracji bazy {db_name}: {e}")
+            console.error(f"Błąd migracji bazy {db_name}", e)
             return False
 
     def sync_databases(self, source_db: str, target_db: str, models: List[Type[Base]] = None) -> bool:
@@ -462,11 +461,11 @@ class DatabaseManager:
 
                     self.insert_batch(target_db, model, data_dicts)
 
-            logger.info(f"Synchronizacja z {source_db} do {target_db} zakończona")
+            console.success(f"Synchronizacja z {source_db} do {target_db} zakończona")
             return True
 
         except Exception as e:
-            logger.error(f"Błąd synchronizacji baz {source_db} -> {target_db}: {e}")
+            console.error(f"Błąd synchronizacji baz {source_db} -> {target_db}", e)
             return False
 
     def get_database_info(self, db_name: str) -> Dict[str, Any]:
@@ -509,7 +508,7 @@ class DatabaseManager:
             return info
 
         except Exception as e:
-            logger.error(f"Błąd pobierania informacji o bazie {db_name}: {e}")
+            console.error(f"Błąd pobierania informacji o bazie {db_name}", e)
             return {}
 
     def list_databases(self) -> List[str]:
@@ -533,11 +532,11 @@ class DatabaseManager:
                     conn.execute(text("ANALYZE"))
                     conn.commit()
 
-            logger.info(f"Optymalizacja bazy {db_name} zakończona")
+            console.success(f"Optymalizacja bazy {db_name} zakończona")
             return True
 
         except Exception as e:
-            logger.error(f"Błąd optymalizacji bazy {db_name}: {e}")
+            console.error(f"Błąd optymalizacji bazy {db_name}", e)
             return False
 
     def export_database(self, db_name: str, format: str = "json") -> str:
@@ -573,11 +572,11 @@ class DatabaseManager:
                 with open(export_path, 'w', encoding='utf-8') as f:
                     json.dump(export_data, f, indent=2, default=str)
 
-                logger.info(f"Eksport bazy {db_name} do {export_path}")
+                console.success(f"Eksport bazy {db_name} do {export_path}")
                 return export_path
 
         except Exception as e:
-            logger.error(f"Błąd eksportu bazy {db_name}: {e}")
+            console.error(f"Błąd eksportu bazy {db_name}", e)
             return ""
 
     def close_all_connections(self):
@@ -595,7 +594,7 @@ class DatabaseManager:
                 pass
 
             self.connection_pools.clear()
-            logger.info("Zamknięto wszystkie połączenia SQLAlchemy")
+            console.info("Zamknięto wszystkie połączenia SQLAlchemy")
 
 # Singleton instance dla globalnego dostępu
 _db_manager_instance = None

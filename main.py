@@ -212,18 +212,19 @@ def test_migration_sql_generation():
 
 def main():
     """Główna funkcja demonstrująca LuxDB"""
+    from luxdb.console_logger import get_console_logger
+    console = get_console_logger()
+    
     try:
         print("🚀 LuxDB - Zaawansowany Manager Baz Danych SQLAlchemy")
         print("=" * 60)
         
+        console.info("Rozpoczynam testy LuxDB...")
+        
         test_basic_model_generator()
-        # test_advanced_model_generator()
-        # test_crud_model()
-        # test_api_model_with_validation()
         test_database_operations()
-        # test_migration_sql_generation()
 
-        print("\n✅ Wszystkie testy zakończone pomyślnie!")
+        console.success("Wszystkie testy zakończone pomyślnie!")
 
         # Informacje o bibliotece
         print(f"\n📦 LuxDB v1.0.0")
@@ -231,15 +232,16 @@ def main():
         print("📚 Dokumentacja: https://luxdb.readthedocs.io")
 
     except Exception as e:
-        print(f"❌ Błąd podczas testów: {e}")
-        import traceback
-        traceback.print_exc()
+        console.error("Krytyczny błąd podczas testów", e)
 
     finally:
         # Zamknij wszystkie połączenia
-        db = get_db_manager()
-        db.close_all_connections()
-        print("\n🔒 Zamknięto wszystkie połączenia")
+        try:
+            db = get_db_manager()
+            db.close_all_connections()
+            console.info("Zamknięto wszystkie połączenia")
+        except Exception as e:
+            console.error("Błąd zamykania połączeń", e)
 
 if __name__ == "__main__":
     main()

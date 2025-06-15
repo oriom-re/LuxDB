@@ -425,7 +425,7 @@ try:
         """Analizuje wyjątek SQLAlchemy i zwraca odpowiedni kod błędu"""
         error_message = str(exception).lower()
         exception_type = type(exception).__name__.lower()
-        
+
         # Błędy SQLAlchemy
         if 'integrityerror' in exception_type:
             if 'unique' in error_message:
@@ -438,7 +438,7 @@ try:
             return LuxDBErrorCode.INVALID_DATA_FORMAT
         elif 'programmingerror' in exception_type:
             return LuxDBErrorCode.OPERATION_FAILED
-        
+
         # Fallback do ogólnej analizy
         from luxerrors.error_codes import detect_error_from_exception
         return detect_error_from_exception(exception)
@@ -456,7 +456,7 @@ except ImportError:
         detect_error_from_exception,
         ERROR_DATABASE
     )
-    
+
     # Podstawowe klasy błędów
     class LuxDBError(Exception):
         def __init__(self, message: str, code=None, context=None):
@@ -464,11 +464,11 @@ except ImportError:
             self.code = code
             self.context = context or {}
             super().__init__(message)
-    
+
     DatabaseConnectionError = LuxDBError
     ModelValidationError = LuxDBError
     QueryExecutionError = LuxDBError
-    
+
     def analyze_sqlalchemy_error(exception):
         return detect_error_from_exception(exception)
 

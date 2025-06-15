@@ -427,3 +427,65 @@ def validate_data_types(data: Dict[str, Any], type_definitions: Dict[str, type])
             "Data type validation failed",
             type_errors
         )
+
+def handle_database_errors(operation_name: str = None, logger = None):
+    """Dekorator specjalizujący się w błędach bazy danych"""
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                # Twórz user-friendly błąd bazy danych
+                if "UNIQUE constraint failed" in str(e):
+                    raise DuplicateDataError(
+                        "Rekord o podanych danych już istnieje",
+                        context={"operation": operation_name or func.__name__}
+                    )
+                elif "FOREIGN KEY constraint failed" in str(e):
+                    raise ValidationError(
+                        "Błąd relacji - powiązany rekord nie istnieje",
+                        context={"operation": operation_name or func.__name__}
+                    )
+                elif "database is locked" in str(e):
+                    raise OperationError(
+                        "Baza danych jest zablokowana",
+                        operation_name=operation_name or func.__name__
+                    )
+                else:
+                    # Ogólny błąd bazy danych
+                    raise OperationError(
+                        f"Błąd operacji bazy danych: {str(e)}",
+                        operation_name=operation_name or func.__name__
+                    )
+        return wrapper
+    return decorator
+
+def safe_database_operation(operation_func: Callable) -> Dict[str, Any]:
+    """Bezpieczne wykonanie operacji bazy danych z pełną obsługą błędów"""
+    try:
+        result = operation_func()
+        return {
+            "success": True,
+            "data": result
+        }
+    except LuxError as e:
+        return {
+            "success": False,
+            "error": {
+                "code": e.error_code.name,
+                "message": str(e),
+                "details": e.get_detailed_info()
+            }
+        }
+    except Exception as e:
+        # Automatyczna konwersja nieznanych błędów
+        error_code, message, context = analyze_exception(e)
+        return {
+            "success": False,
+            "error": {
+                "code": error_code.name,
+                "message": message,
+                "context": context
+            }
+        }
