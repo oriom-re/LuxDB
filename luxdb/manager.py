@@ -321,11 +321,16 @@ class DatabaseManager:
 
         return result
 
-    def select_data(self, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
-                   order_by: str = None, limit: int = None) -> List[Any]:
+    def select_data(self, 
+                    db_name: str, 
+                    model_class: Type[Base], 
+                    filters: Dict[str, Any] = None,
+                    order_by: str = None, 
+                    limit: int = None, 
+                    session: Optional[Session] = None) -> List[Any]:
         """Pobiera dane z tabeli"""
         try:
-            with self.get_session(db_name) as session:
+            def _get_query(session):
                 query = session.query(model_class)
 
                 if filters:
@@ -339,6 +344,11 @@ class DatabaseManager:
                     query = query.limit(limit)
 
                 return query.all()
+
+            if session is not None:
+                return _get_query(session)
+            with self.get_session(db_name) as session:
+                return _get_query(session)
 
         except Exception as e:
             console.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}", e)

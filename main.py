@@ -154,43 +154,45 @@ def test_database_operations():
 
     # Utwórz bazę testową
     db.create_database("test_luxdb")
+    
 
-    # Test z wbudowanymi modelami
-    user_data = {
-        "username": "test_user",
-        "email": "test@example.com",
-        "password_hash": "hashed_password",
-        "is_active": True
-    }
+    with db.get_session("test_luxdb") as session:
 
-    success = db.insert_data("test_luxdb", User, user_data)
-    print(f"Wstawiono użytkownika: {success.get('success')}")
-
-    # Pobierz użytkowników
-    users = db.select_data("test_luxdb", User, {"is_active": True})
-    print(f"Znaleziono {len(users)} aktywnych użytkowników")
-    print(f"Pierwszy użytkownik: {users[0].username}")
-
-    # Test z wygenerowanym modelem
-    generator = ModelGenerator()
-    ProductModel = generator.generate_basic_model("Product", {
-        "name": "string",
-        "price": "float",
-        "in_stock": "boolean"
-    })
-
-    # Utwórz tabelę dla nowego modelu
-    db.create_table_from_model("test_luxdb", ProductModel)
-
-    # Wstaw dane do nowego modelu
-    product_data = {
-        "name": "Test Product",
-        "price": 99.99,
-        "in_stock": True
-    }
-
-    success = db.insert_data("test_luxdb", ProductModel, product_data)
-    print(f"Wstawiono produkt: {success}")
+        # Test z wbudowanymi modelami
+        user_data = {
+            "username": "test_user",
+            "email": "test@example.com",
+            "password_hash": "hashed_password",
+            "is_active": True
+        }
+    
+        success = db.insert_data("test_luxdb", User, user_data)
+        print(f"Wstawiono użytkownika: {success.get('success')}")
+        # Pobierz użytkowników
+        users = db.select_data("test_luxdb", User, {"is_active": True}, session=session)
+        print(f"Znaleziono {len(users)} aktywnych użytkowników")
+        print(f"Pierwszy użytkownik: {users[0].username}")
+    
+        # Test z wygenerowanym modelem
+        generator = ModelGenerator()
+        ProductModel = generator.generate_basic_model("Product", {
+            "name": "string",
+            "price": "float",
+            "in_stock": "boolean"
+        })
+    
+        # Utwórz tabelę dla nowego modelu
+        db.create_table_from_model("test_luxdb", ProductModel)
+    
+        # Wstaw dane do nowego modelu
+        product_data = {
+            "name": "Test Product",
+            "price": 99.99,
+            "in_stock": True
+        }
+    
+        success = db.insert_data("test_luxdb", ProductModel, product_data)
+        print(f"Wstawiono produkt: {success}")
 
 def test_migration_sql_generation():
     """Test generowania SQL dla migracji"""
@@ -221,8 +223,13 @@ def main():
         
         console.info("Rozpoczynam testy LuxDB...")
         
-        test_basic_model_generator()
-        test_database_operations()
+        # test_basic_model_generator()
+        # test_database_operations()
+        # test_advanced_model_generator()
+        # test_crud_model()
+        test_api_model_with_validation()
+        # test_migration_sql_generation()
+        
 
         console.success("Wszystkie testy zakończone pomyślnie!")
 
