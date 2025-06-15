@@ -39,7 +39,14 @@ class LuxError(Exception):
         return info
     
     def __str__(self) -> str:
-        return f"[{self.error_code.name}] {self.error_info.message}: {super().__str__()}"
+        base_message = f"[{self.error_code.name}] {self.error_info.message}: {super().__str__()}"
+        
+        # Dodaj informację o lokalizacji jeśli dostępna
+        location_info = self.error_info.get_error_location_info()
+        if location_info:
+            base_message += f" (at {location_info})"
+        
+        return base_message
 
 class ValidationError(LuxError):
     """Błąd walidacji danych"""

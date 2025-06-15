@@ -6,6 +6,8 @@ Może być używany w dowolnym projekcie Python
 
 from enum import Enum
 from typing import Dict, Any, Optional, Union
+import traceback
+import inspect
 
 class LuxErrorCode(Enum):
     """Uniwersalne kody błędów"""
@@ -84,16 +86,74 @@ class ErrorInfo:
                  description: str,
                  recovery_hint: str = "", 
                  severity: ErrorSeverity = ErrorSeverity.ERROR,
-                 category: str = "general"):
+                 category: str = "general",
+                 auto_capture_location: bool = True):
         self.code = code
         self.message = message
         self.description = description
         self.recovery_hint = recovery_hint
         self.severity = severity
         self.category = category
+        
+        # Automatyczne zbieranie informacji o lokalizacji
+        if auto_capture_location:
+            self.caller_info = self._get_caller_info()
+        else:
+            self.caller_info = None
+    
+    def _get_caller_info(self) -> Optional[Dict[str, Any]]:
+        """Zbiera informacje o miejscu wywołania błędu"""
+        try:
+            # Pobierz stos wywołań
+            stack = inspect.stack()
+            
+            # Znajdź pierwszą ramkę spoza tego modułu
+            for frame_info in stack[2:]:  # Pomijamy bieżącą funkcję i konstruktor
+                filename = frame_info.filename
+                # Pomijamy wewnętrzne pliki luxerrors
+                if not filename.endswith(('error_codes.py', 'error_handlers.py')):
+                    return {
+                        'filename': filename,
+                        'line_number': frame_info.lineno,
+                        'function_name': frame_info.function,
+                        'code_context': frame_info.code_context[0].strip() if frame_info.code_context else None,
+                        'file_link': f"file://{filename}:{frame_info.lineno}"
+                    }
+            
+            # Jeśli nie znaleziono odpowiedniej ramki, użyj pierwszej dostępnej
+            if len(stack) > 2:
+                frame_info = stack[2]
+                return {
+                    'filename': frame_info.filename,
+                    'line_number': frame_info.lineno,
+                    'function_name': frame_info.function,
+                    'code_context': frame_info.code_context[0].strip() if frame_info.code_context else None,
+                    'file_link': f"file://{frame_info.filename}:{frame_info.lineno}"
+                }
+                
+        except Exception:
+            # W przypadku błędu podczas zbierania informacji, nie przerywamy działania
+            pass
+        
+        return None
+    
+    def get_error_location_link(self) -> Optional[str]:
+        """Zwraca link do lokalizacji błędu"""
+        if self.caller_info:
+            return self.caller_info.get('file_link')
+        return None
+    
+    def get_error_location_info(self) -> Optional[str]:
+        """Zwraca czytelną informację o lokalizacji błędu"""
+        if self.caller_info:
+            filename = self.caller_info['filename'].split('/')[-1]  # Tylko nazwa pliku
+            line_num = self.caller_info['line_number']
+            func_name = self.caller_info['function_name']
+            return f"{filename}:{line_num} in {func_name}()"
+        return None
     
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "code": self.code.value,
             "code_name": self.code.name,
             "message": self.message,
@@ -102,6 +162,19 @@ class ErrorInfo:
             "severity": self.severity.value,
             "category": self.category
         }
+        
+        # Dodaj informacje o lokalizacji jeśli są dostępne
+        if self.caller_info:
+            result["location"] = {
+                "file": self.caller_info['filename'].split('/')[-1],
+                "line": self.caller_info['line_number'],
+                "function": self.caller_info['function_name'],
+                "code": self.caller_info.get('code_context'),
+                "link": self.caller_info['file_link'],
+                "info": self.get_error_location_info()
+            }
+        
+        return result
 
 # Globalna baza informacji o błędach
 ERROR_DATABASE: Dict[LuxErrorCode, ErrorInfo] = {
