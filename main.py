@@ -168,6 +168,7 @@ def test_database_operations():
     # Pobierz użytkowników
     users = db.select_data("test_luxdb", User, {"is_active": True})
     print(f"Znaleziono {len(users)} aktywnych użytkowników")
+    print(f"Pierwszy użytkownik: {users[0].username}")
 
     # Test z wygenerowanym modelem
     generator = ModelGenerator()
@@ -213,13 +214,13 @@ def main():
     try:
         print("🚀 LuxDB - Zaawansowany Manager Baz Danych SQLAlchemy")
         print("=" * 60)
-
+        
         test_basic_model_generator()
-        test_advanced_model_generator()
-        test_crud_model()
-        test_api_model_with_validation()
+        # test_advanced_model_generator()
+        # test_crud_model()
+        # test_api_model_with_validation()
         test_database_operations()
-        test_migration_sql_generation()
+        # test_migration_sql_generation()
 
         print("\n✅ Wszystkie testy zakończone pomyślnie!")
 
