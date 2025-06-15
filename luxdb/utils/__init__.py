@@ -358,9 +358,16 @@ class ModelGenerator:
 
 from .logging_utils import DatabaseLogger, get_db_logger
 from .error_handlers import (
-    LuxDBError, DatabaseConnectionError, ModelValidationError, 
+    LuxDBError, DatabaseConnectionError, ModelValidationError,
     MigrationError, QueryExecutionError, SynchronizationError,
-    handle_database_errors, ErrorCollector
+    UniqueConstraintError, DuplicateKeyError,
+    handle_database_errors, safe_execute, validate_db_name,
+    validate_model_data, ErrorCollector, safe_database_operation,
+    create_error_response, analyze_sqlalchemy_error
+)
+from .error_codes import (
+    LuxDBErrorCode, ErrorInfo, get_error_info, detect_error_from_exception,
+    ERROR_DATABASE
 )
 from .sql_tools import SQLQueryBuilder, SQLTemplateEngine, SQLAnalyzer, execute_sql_safely
 from .export_tools import DataExporter, DataImporter, ExportFormat, export_model_data
@@ -384,8 +391,21 @@ __all__ = [
     'MigrationError',
     'QueryExecutionError',
     'SynchronizationError',
+    'UniqueConstraintError',
+    'DuplicateKeyError',
     'handle_database_errors',
+    'safe_execute',
+    'validate_db_name',
+    'validate_model_data',
     'ErrorCollector',
+    'safe_database_operation',
+    'create_error_response',
+    'analyze_sqlalchemy_error',
+    'LuxDBErrorCode',
+    'ErrorInfo',
+    'get_error_info',
+    'detect_error_from_exception',
+    'ERROR_DATABASE',
     'SQLQueryBuilder',
     'SQLTemplateEngine',
     'SQLAnalyzer',

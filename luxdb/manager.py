@@ -222,36 +222,99 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Błąd zapisywania definicji tabeli {table_name}: {e}")
     
-    def insert_data(self, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> bool:
-        """Wstawia dane do tabeli"""
-        try:
+    def insert_data(self, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> Dict[str, Any]:
+        """Wstawia dane do tabeli
+        
+        Returns:
+            Dict z kluczami 'success' (bool) i 'data'/'error' w zależności od wyniku
+        """
+        from .utils.error_handlers import safe_database_operation
+        
+        def _insert_operation():
             with self.get_session(db_name) as session:
                 instance = model_class(**data)
                 session.add(instance)
+                session.flush()  # Wymusza wykonanie INSERT i sprawdzenie błędów
                 
+                # Zwróć ID nowo utworzonego rekordu
+                return {
+                    "record_id": getattr(instance, 'id', None),
+                    "table": model_class.__tablename__,
+                    "operation": "insert"
+                }
+        
+        result = safe_database_operation(_insert_operation)
+        
+        if result["success"]:
             logger.info(f"Wstawiono dane do {model_class.__tablename__}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: {e}")
-            return False
+        else:
+            error_info = result["error"]
+            logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: "
+                        f"[{error_info.get('code', 'UNKNOWN')}] {error_info.get('message', 'Unknown error')}")
+        
+        return result
     
-    def insert_batch(self, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> bool:
-        """Wstawia wiele rekordów jednocześnie"""
+    def insert_batch(self, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Wstawia wiele rekordów jednocześnie
+        
+        Returns:
+            Dict z kluczami 'success' (bool) i 'data'/'error' w zależności od wyniku
+        """
+        from .utils.error_handlers import ErrorCollector, safe_database_operation
+        
         if not data_list:
-            return True
-            
-        try:
+            return {"success": True, "data": {"inserted_count": 0, "errors": []}}
+        
+        def _batch_insert_operation():
             with self.get_session(db_name) as session:
                 instances = [model_class(**data) for data in data_list]
                 session.add_all(instances)
+                session.flush()  # Wymusza sprawdzenie błędów
                 
+                return {
+                    "inserted_count": len(data_list),
+                    "table": model_class.__tablename__,
+                    "operation": "batch_insert"
+                }
+        
+        result = safe_database_operation(_batch_insert_operation)
+        
+        if result["success"]:
             logger.info(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
-            return True
+        else:
+            # Dla batch operacji, spróbuj wstawić rekordy pojedynczo w przypadku błędu
+            collector = ErrorCollector()
+            successful_inserts = []
             
-        except Exception as e:
-            logger.error(f"Błąd wstawiania batch do {model_class.__tablename__} w bazie {db_name}: {e}")
-            return False
+            for i, data in enumerate(data_list):
+                collector.increment_total()
+                single_result = self.insert_data(db_name, model_class, data)
+                
+                if single_result["success"]:
+                    collector.add_success()
+                    successful_inserts.append(i)
+                else:
+                    # Konwertuj błąd pojedynczego rekordu na Exception dla ErrorCollector
+                    error = Exception(single_result["error"].get("message", "Unknown error"))
+                    collector.add_error(error, {"record_index": i, "record_data": data})
+            
+            summary = collector.get_summary()
+            result = {
+                "success": collector.success_count > 0,  # Sukces jeśli chociaż jeden rekord się udał
+                "data": {
+                    "inserted_count": collector.success_count,
+                    "failed_count": len(collector.errors),
+                    "total_count": len(data_list),
+                    "successful_indexes": successful_inserts,
+                    "error_summary": summary,
+                    "error_codes": collector.get_error_codes_summary()
+                }
+            }
+            
+            logger.warning(f"Batch insert do {model_class.__tablename__}: "
+                          f"{collector.success_count}/{len(data_list)} rekordów wstawionych pomyślnie")
+        
+        return result
     
     def select_data(self, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
                    order_by: str = None, limit: int = None) -> List[Any]:
