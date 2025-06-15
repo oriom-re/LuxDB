@@ -107,9 +107,9 @@ def main():
         # 6. Pobieranie z filtrowaniem
         print("6. Pobieranie aktywnych sesji...")
         with db.get_session("example_basic") as session:
-            active_sessions = db.select_data("example_basic", session, UserSession, {
-                "expires_at": (">=", datetime.now())
-            })
+            # Używamy bezpośredniego zapytania SQLAlchemy dla operatorów porównania
+            current_time = datetime.now()
+            active_sessions = session.query(UserSession).filter(UserSession.expires_at >= current_time).all()
             print(f"📊 Aktywnych sesji: {len(active_sessions)}")
         
         # 7. Dodawanie logów
