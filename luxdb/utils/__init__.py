@@ -357,18 +357,105 @@ class ModelGenerator:
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 from .logging_utils import DatabaseLogger, get_db_logger
-from .error_handlers import (
-    LuxDBError, DatabaseConnectionError, ModelValidationError,
-    MigrationError, QueryExecutionError, SynchronizationError,
-    UniqueConstraintError, DuplicateKeyError,
-    handle_database_errors, safe_execute, validate_db_name,
-    validate_model_data, ErrorCollector, safe_database_operation,
-    create_error_response, analyze_sqlalchemy_error
-)
-from .error_codes import (
-    LuxDBErrorCode, ErrorInfo, get_error_info, detect_error_from_exception,
-    ERROR_DATABASE
-)
+
+# Import from external LuxErrors library
+try:
+    from luxerrors import (
+        LuxError as LuxDBError,
+        LuxErrorCode as LuxDBErrorCode,
+        ErrorInfo,
+        ValidationError as ModelValidationError,
+        ConnectionError as DatabaseConnectionError,
+        OperationError as QueryExecutionError,
+        DataNotFoundError,
+        DuplicateDataError as DuplicateKeyError,
+        ErrorCollector,
+        handle_errors as handle_database_errors,
+        safe_execute,
+        create_error_response,
+        safe_operation as safe_database_operation,
+        get_error_info,
+        analyze_exception as analyze_sqlalchemy_error,
+        get_error_logger
+    )
+
+    # LuxDB specific error types
+    class MigrationError(LuxDBError):
+        """Błąd migracji bazy danych"""
+        def __init__(self, message: str, context=None):
+            from luxerrors.error_codes import LuxErrorCode
+            super().__init__(message, LuxErrorCode.OPERATION_FAILED, context)
+
+    class SynchronizationError(LuxDBError):
+        """Błąd synchronizacji baz danych"""
+        def __init__(self, message: str, context=None):
+            from luxerrors.error_codes import LuxErrorCode
+            super().__init__(message, LuxErrorCode.OPERATION_FAILED, context)
+
+    class UniqueConstraintError(LuxDBError):
+        """Błąd naruszenia ograniczenia unikalności"""
+        def __init__(self, message: str, constraint_name: str = None, 
+                     table_name: str = None, context=None):
+            from luxerrors.error_codes import LuxErrorCode
+            error_context = context or {}
+            error_context.update({
+                "constraint_name": constraint_name,
+                "table_name": table_name
+            })
+            super().__init__(message, LuxErrorCode.DUPLICATE_DATA, error_context)
+
+    # Utility functions for LuxDB compatibility
+    def validate_db_name(db_name: str) -> None:
+        """Walidacja nazwy bazy danych"""
+        if not db_name or not isinstance(db_name, str):
+            raise DatabaseConnectionError("Database name must be a non-empty string")
+
+        if not db_name.replace('_', '').replace('-', '').isalnum():
+            raise DatabaseConnectionError("Database name can only contain letters, numbers, underscores and hyphens")
+
+    def validate_model_data(data: dict, required_fields: list = None) -> None:
+        """Walidacja danych modelu"""
+        if not isinstance(data, dict):
+            raise ModelValidationError("Model data must be a dictionary")
+
+        if required_fields:
+            missing_fields = [field for field in required_fields if field not in data]
+            if missing_fields:
+                raise ModelValidationError(f"Missing required fields: {missing_fields}")
+
+    # Legacy compatibility
+    ERROR_DATABASE = {}
+    detect_error_from_exception = analyze_sqlalchemy_error
+
+except ImportError:
+    # Fallback to built-in error system if LuxErrors is not available
+    from .error_codes import (
+        LuxDBErrorCode,
+        ErrorInfo,
+        get_error_info,
+        detect_error_from_exception,
+        ERROR_DATABASE
+    )
+
+    from .error_handlers import (
+        LuxDBError,
+        DatabaseConnectionError,
+        ModelValidationError,
+        MigrationError,
+        QueryExecutionError,
+        SynchronizationError,
+        UniqueConstraintError,
+        DuplicateKeyError,
+        analyze_sqlalchemy_error,
+        handle_database_errors,
+        safe_execute,
+        validate_db_name,
+        validate_model_data,
+        create_error_response,
+        safe_database_operation,
+        ErrorCollector
+    )
+
 from .sql_tools import SQLQueryBuilder, SQLTemplateEngine, SQLAnalyzer, execute_sql_safely
 from .export_tools import DataExporter, DataImporter, ExportFormat, export_model_data
 from .data_processors import (
