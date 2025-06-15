@@ -248,7 +248,7 @@ class DatabaseManager:
             logger.error(f"Błąd wstawiania batch do {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
     
-    def select_data(self, db_name: str, session, model_class: Type[Base], filters: Dict[str, Any] = None,
+    def select_data(self, session, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
                    order_by: str = None, limit: int = None) -> List[Any]:
         """Pobiera dane z tabeli"""
         try:
@@ -356,11 +356,12 @@ class DatabaseManager:
             
             for model in models:
                 # Pobierz dane z bazy źródłowej
-                source_data = self.select_data(source_db, model)
-                
-                # Usuń istniejące dane z bazy docelowej
-                with self.get_session(target_db) as session:
-                    session.query(model).delete()
+                with self.get_session(source_db) as session:
+                    source_data = self.select_data(source_db, model)
+                    
+                    # Usuń istniejące dane z bazy docelowej
+                    with self.get_session(target_db) as session:
+                        session.query(model).delete()
                 
                 # Wstaw dane do bazy docelowej
                 if source_data:

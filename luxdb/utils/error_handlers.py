@@ -8,6 +8,8 @@ import traceback
 from typing import Callable, Any, Optional, Dict
 from .logging_utils import get_db_logger
 
+class DatabaseError():
+    pass
 class LuxDBError(Exception):
     """Bazowy wyjątek dla LuxDB"""
     def __init__(self, message: str, context: Optional[Dict[str, Any]] = None):

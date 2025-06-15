@@ -11,9 +11,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from manager import get_db_manager
-from models import User, UserSession, Log
-from config import DatabaseConfig, DatabaseType
+from luxdb.manager import get_db_manager
+from luxdb.models import User, UserSession, Log
+from luxdb.config import DatabaseConfig, DatabaseType
 from datetime import datetime, timedelta
 import json
 
@@ -83,9 +83,10 @@ def example_full_sync():
             print("✅ Synchronizacja zakończona pomyślnie")
             
             # Sprawdź dane w backup_db
-            backup_users = db.select_data("backup_db", User)
-            backup_sessions = db.select_data("backup_db", UserSession)
-            backup_logs = db.select_data("backup_db", Log)
+            with db.get_session("backup_db") as backup_session:
+                backup_users = db.query(User).all()
+                backup_sessions = db.query(UserSession).all()
+                backup_logs = db.query(Log).all()
             
             print(f"📊 Zsynchronizowano:")
             print(f"  - Użytkowników: {len(backup_users)}")
@@ -108,20 +109,24 @@ def example_selective_sync():
         print("1. Synchronizacja aktywnych użytkowników...")
         
         # Pobierz aktywnych użytkowników ze źródła
-        active_users = db.select_data("source_db", User, {"is_active": True})
-        
-        # Wstaw do analytics_db
-        for user in active_users:
-            user_data = {
-                "username": user.username,
-                "email": user.email,
-                "password_hash": user.password_hash,
-                "is_active": user.is_active,
-                "phone": user.phone
-            }
-            db.insert_data("analytics_db", User, user_data)
-        
-        print(f"✅ Zsynchronizowano {len(active_users)} aktywnych użytkowników")
+        with db.get_session("source_db") as source_session:
+            active_users = db.query(User).filter(User.is_active == True).all()
+            # active_users = db.select_data("source_db", User, {"is_active": True})
+            
+            # Wstaw do analytics_db
+            for user in active_users:
+                user_data = {
+                    "username": user.username,
+                    "email": user.email,
+                    "password_hash": user.password_hash,
+                    "is_active": user.is_active,
+                    "phone": user.phone
+                }
+                instamce = model_class(**data)
+                source_sessiom.add(instamce)
+                # db.insert_data("analytics_db", User, user_data)
+            
+            print(f"✅ Zsynchronizowano {len(active_users)} aktywnych użytkowników")
         
         # Synchronizuj tylko logi błędów i ostrzeżeń
         print("\n2. Synchronizacja logów błędów i ostrzeżeń...")

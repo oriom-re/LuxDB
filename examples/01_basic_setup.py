@@ -62,11 +62,11 @@ def main():
         
         # Wszyscy użytkownicy
         with db.get_session("example_basic") as session:
-            all_users = db.select_data("example_basic", session, User)
+            all_users = db.select_data(session, "example_basic", User)
             print(f"📊 Wszystkich użytkowników: {len(all_users)}")
             
             # Tylko aktywni użytkownicy
-            active_users = db.select_data("example_basic", session, User, {"is_active": True})
+            active_users = db.select_data(session, "example_basic", User, {"is_active": True})
             print(f"📊 Aktywnych użytkowników: {len(active_users)}")
             
             print("\nLista aktywnych użytkowników:")
