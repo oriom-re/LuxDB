@@ -1,6 +1,4 @@
-"""
-Utilities for LuxDB - Model Generator and helper classes
-"""
+"""Utilities for LuxDB - Model Generator and helper classes"""
 
 from enum import Enum
 from dataclasses import dataclass
@@ -493,3 +491,4 @@ __all__ = [
     'process_model_data',
     'create_data_summary'
 ]
+```

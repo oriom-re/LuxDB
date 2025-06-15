@@ -14,6 +14,11 @@ from .error_codes import (
 
 from .error_handlers import (
     LuxError,
+    ValidationError,
+    ConnectionError,
+    DataNotFoundError,
+    DuplicateDataError,
+    OperationError,
     ErrorCollector,
     handle_errors,
     safe_execute,
@@ -42,6 +47,11 @@ __all__ = [
     
     # Error handlers
     'LuxError',
+    'ValidationError',
+    'ConnectionError',
+    'DataNotFoundError', 
+    'DuplicateDataError',
+    'OperationError',
     'ErrorCollector',
     'handle_errors',
     'safe_execute',
