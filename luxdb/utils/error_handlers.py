@@ -8,8 +8,6 @@ import traceback
 from typing import Callable, Any, Optional, Dict
 from .logging_utils import get_db_logger
 
-class DatabaseError():
-    pass
 class LuxDBError(Exception):
     """Bazowy wyjątek dla LuxDB"""
     def __init__(self, message: str, context: Optional[Dict[str, Any]] = None):
@@ -34,6 +32,14 @@ class QueryExecutionError(LuxDBError):
 
 class SynchronizationError(LuxDBError):
     """Błąd synchronizacji baz danych"""
+    pass
+
+class DatabaseError(LuxDBError):
+    """Błąd bazy danych"""
+    pass
+
+class MigrationError(LuxDBError):
+    """Błąd migracji bazy danych"""
     pass
 
 def handle_database_errors(operation_name: str = None):

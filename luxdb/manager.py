@@ -217,13 +217,11 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Błąd zapisywania definicji tabeli {table_name}: {e}")
     
-    def insert_data(self, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> bool:
+    def insert_data(self, session, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> bool:
         """Wstawia dane do tabeli"""
         try:
-            with self.get_session(db_name) as session:
-                instance = model_class(**data)
-                session.add(instance)
-                
+            instance = model_class(**data)
+            session.add(instance)
             logger.info(f"Wstawiono dane do {model_class.__tablename__}")
             return True
             
@@ -231,16 +229,14 @@ class DatabaseManager:
             logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
     
-    def insert_batch(self, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> bool:
+    def insert_batch(self, session, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> bool:
         """Wstawia wiele rekordów jednocześnie"""
         if not data_list:
             return True
             
         try:
-            with self.get_session(db_name) as session:
-                instances = [model_class(**data) for data in data_list]
-                session.add_all(instances)
-                
+            instances = [model_class(**data) for data in data_list]
+            session.add_all(instances)
             logger.info(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
             return True
             
@@ -356,23 +352,23 @@ class DatabaseManager:
             
             for model in models:
                 # Pobierz dane z bazy źródłowej
-                with self.get_session(source_db) as session:
-                    source_data = self.select_data(source_db, model)
+                with self.get_session(source_db) as source_session:
+                    source_data = self.select_data(source_session, source_db, model)
                     
-                    # Usuń istniejące dane z bazy docelowej
-                    with self.get_session(target_db) as session:
-                        session.query(model).delete()
-                
-                # Wstaw dane do bazy docelowej
-                if source_data:
-                    data_dicts = []
-                    for item in source_data:
-                        data_dict = {}
-                        for column in model.__table__.columns:
-                            data_dict[column.name] = getattr(item, column.name)
-                        data_dicts.append(data_dict)
-                    
-                    self.insert_batch(target_db, model, data_dicts)
+                    # Usuń istniejące dane z bazy docelowej i wstaw nowe
+                    with self.get_session(target_db) as target_session:
+                        target_session.query(model).delete()
+                        
+                        # Wstaw dane do bazy docelowej
+                        if source_data:
+                            data_dicts = []
+                            for item in source_data:
+                                data_dict = {}
+                                for column in model.__table__.columns:
+                                    data_dict[column.name] = getattr(item, column.name)
+                                data_dicts.append(data_dict)
+                            
+                            self.insert_batch(target_session, target_db, model, data_dicts)
             
             logger.info(f"Synchronizacja z {source_db} do {target_db} zakończona")
             return True
@@ -462,8 +458,9 @@ class DatabaseManager:
                 
                 for model_name, model_class in SYSTEM_MODELS.items():
                     try:
-                        data = self.select_data(db_name, model_class)
-                        export_data[model_name] = []
+                        with self.get_session(db_name) as session:
+                            data = self.select_data(session, db_name, model_class)
+                            export_data[model_name] = []
                         
                         for item in data:
                             item_dict = {}

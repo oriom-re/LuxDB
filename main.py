@@ -1,4 +1,3 @@
-
 """
 System Asty - Główny plik aplikacji
 Demonstracja użycia zaawansowanego menedżera baz danych SQLAlchemy
