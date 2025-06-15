@@ -25,7 +25,7 @@ from .models import (
     User, UserSession, Log, DatabaseSchema, Migration, TableDefinition,
     SYSTEM_MODELS
 )
-from .utils import QueryBuilder
+# QueryBuilder usunięty - używamy czystego SQLAlchemy
 
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
@@ -270,15 +270,7 @@ class DatabaseManager:
             logger.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}: {e}")
             return []
     
-    def get_query_builder(self, db_name: str, model_class: Type[Base]) -> QueryBuilder:
-        """Zwraca QueryBuilder dla danego modelu"""
-        if db_name not in self.connection_pools:
-            raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-        
-        builder = QueryBuilder(model_class)
-        session = self.connection_pools[db_name].get_session()
-        builder.set_session(session)
-        return builder
+    # QueryBuilder usunięty - używamy bezpośrednio session.query() jak w duchowych praktykach
     
     def execute_raw_sql(self, db_name: str, sql: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """Wykonuje surowe zapytanie SQL"""
