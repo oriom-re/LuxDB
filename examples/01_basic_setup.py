@@ -10,8 +10,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from manager import get_db_manager
-from models import User, UserSession, Log
+from luxdb.manager import get_db_manager
+from luxdb.models import User, UserSession, Log
 from datetime import datetime, timedelta
 import json
 
@@ -61,16 +61,17 @@ def main():
         print("3. Pobieranie użytkowników...")
         
         # Wszyscy użytkownicy
-        all_users = db.select_data("example_basic", User)
-        print(f"📊 Wszystkich użytkowników: {len(all_users)}")
-        
-        # Tylko aktywni użytkownicy
-        active_users = db.select_data("example_basic", User, {"is_active": True})
-        print(f"📊 Aktywnych użytkowników: {len(active_users)}")
-        
-        print("\nLista aktywnych użytkowników:")
-        for user in active_users:
-            print(f"  - {user.username} ({user.email}) - Tel: {user.phone}")
+        with db.get_session("example_basic") as session:
+            all_users = db.select_data("example_basic", session, User)
+            print(f"📊 Wszystkich użytkowników: {len(all_users)}")
+            
+            # Tylko aktywni użytkownicy
+            active_users = db.select_data("example_basic", session, User, {"is_active": True})
+            print(f"📊 Aktywnych użytkowników: {len(active_users)}")
+            
+            print("\nLista aktywnych użytkowników:")
+            for user in active_users:
+                print(f"  - {user.username} ({user.email}) - Tel: {user.phone}")
         
         # 4. Aktualizacja danych
         print("\n4. Aktualizacja danych użytkownika...")
@@ -101,14 +102,15 @@ def main():
         ]
         
         db.insert_batch("example_basic", UserSession, sessions_data)
-        print(f"✅ Dodano {len(sessions_data)} sesji użytkowników\n")
+        print(f"✅ Dodano {len(sessions_data)} sesji użytkowników\n dsd{sessions_data[0]['expires_at']}")
         
         # 6. Pobieranie z filtrowaniem
         print("6. Pobieranie aktywnych sesji...")
-        active_sessions = db.select_data("example_basic", UserSession, {
-            "expires_at": (">=", datetime.now())
-        })
-        print(f"📊 Aktywnych sesji: {len(active_sessions)}")
+        with db.get_session("example_basic") as session:
+            active_sessions = db.select_data("example_basic", session, UserSession, {
+                "expires_at": (">=", datetime.now())
+            })
+            print(f"📊 Aktywnych sesji: {len(active_sessions)}")
         
         # 7. Dodawanie logów
         print("\n7. Dodawanie logów systemowych...")

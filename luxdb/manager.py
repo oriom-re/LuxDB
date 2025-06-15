@@ -248,24 +248,23 @@ class DatabaseManager:
             logger.error(f"Błąd wstawiania batch do {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
     
-    def select_data(self, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
+    def select_data(self, db_name: str, session, model_class: Type[Base], filters: Dict[str, Any] = None,
                    order_by: str = None, limit: int = None) -> List[Any]:
         """Pobiera dane z tabeli"""
         try:
-            with self.get_session(db_name) as session:
-                query = session.query(model_class)
-                
-                if filters:
-                    for key, value in filters.items():
-                        query = query.filter(getattr(model_class, key) == value)
-                
-                if order_by:
-                    query = query.order_by(getattr(model_class, order_by))
-                
-                if limit:
-                    query = query.limit(limit)
-                
-                return query.all()
+            query = session.query(model_class)
+            
+            if filters:
+                for key, value in filters.items():
+                    query = query.filter(getattr(model_class, key) == value)
+            
+            if order_by:
+                query = query.order_by(getattr(model_class, order_by))
+            
+            if limit:
+                query = query.limit(limit)
+            
+            return query.all()
                 
         except Exception as e:
             logger.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}: {e}")

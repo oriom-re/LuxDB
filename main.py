@@ -15,6 +15,7 @@ from luxdb import get_db_manager, DatabaseManager
 from luxdb.config import DatabaseConfig, DatabaseType
 from luxdb.models import User, UserSession, Log
 from luxdb.utils import ModelGenerator, FieldConfig, FieldType, RelationshipConfig
+import luxdb.examples as ex
 
 def test_basic_model_generator():
     """Test podstawowego generatora modeli"""
@@ -213,7 +214,7 @@ def main():
     try:
         print("🚀 LuxDB - Zaawansowany Manager Baz Danych SQLAlchemy")
         print("=" * 60)
-
+        ex.basic_setup.main()
         test_basic_model_generator()
         test_advanced_model_generator()
         test_crud_model()
