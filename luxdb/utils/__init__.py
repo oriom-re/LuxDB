@@ -373,7 +373,6 @@ try:
         create_error_response,
         safe_operation as safe_database_operation,
         get_error_info,
-        analyze_exception as analyze_sqlalchemy_error,
         get_error_logger
     )
 
@@ -421,21 +420,57 @@ try:
             if missing_fields:
                 raise ModelValidationError(f"Missing required fields: {missing_fields}")
 
+    # Funkcja analizy wyjątków SQLAlchemy
+    def analyze_sqlalchemy_error(exception: Exception) -> LuxDBErrorCode:
+        """Analizuje wyjątek SQLAlchemy i zwraca odpowiedni kod błędu"""
+        error_message = str(exception).lower()
+        exception_type = type(exception).__name__.lower()
+        
+        # Błędy SQLAlchemy
+        if 'integrityerror' in exception_type:
+            if 'unique' in error_message:
+                return LuxDBErrorCode.DUPLICATE_DATA
+            else:
+                return LuxDBErrorCode.CONSTRAINT_VIOLATION
+        elif 'operationalerror' in exception_type:
+            return LuxDBErrorCode.CONNECTION_FAILED
+        elif 'dataerror' in exception_type:
+            return LuxDBErrorCode.INVALID_DATA_FORMAT
+        elif 'programmingerror' in exception_type:
+            return LuxDBErrorCode.OPERATION_FAILED
+        
+        # Fallback do ogólnej analizy
+        from luxerrors.error_codes import detect_error_from_exception
+        return detect_error_from_exception(exception)
+
     # Legacy compatibility
     ERROR_DATABASE = {}
     detect_error_from_exception = analyze_sqlalchemy_error
 
 except ImportError:
-    # Fallback to built-in error system if LuxErrors is not available
-    from .error_codes import (
-        LuxDBErrorCode,
+    # Fallback jeśli LuxErrors nie jest dostępne
+    from luxerrors.error_codes import (
+        LuxErrorCode as LuxDBErrorCode,
         ErrorInfo,
         get_error_info,
         detect_error_from_exception,
         ERROR_DATABASE
     )
-
-    # Usunięto error_handlers - używamy luxerrors
+    
+    # Podstawowe klasy błędów
+    class LuxDBError(Exception):
+        def __init__(self, message: str, code=None, context=None):
+            self.message = message
+            self.code = code
+            self.context = context or {}
+            super().__init__(message)
+    
+    DatabaseConnectionError = LuxDBError
+    ModelValidationError = LuxDBError
+    QueryExecutionError = LuxDBError
+    
+    def analyze_sqlalchemy_error(exception):
+        return detect_error_from_exception(exception)
 
 
 from .sql_tools import SQLQueryBuilder, SQLTemplateEngine, SQLAnalyzer, execute_sql_safely
@@ -471,7 +506,7 @@ __all__ = [
     'create_error_response',
     'analyze_sqlalchemy_error',
     'LuxDBErrorCode',
-    'ErrorInfo',
+    'ErrorInfo', 
     'get_error_info',
     'detect_error_from_exception',
     'ERROR_DATABASE',

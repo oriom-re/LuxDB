@@ -234,7 +234,7 @@ class DatabaseManager:
         Returns:
             Dict z kluczami 'success' (bool) i 'data'/'error' w zależności od wyniku
         """
-        from .utils.error_handlers import safe_database_operation
+        from .utils import safe_database_operation
 
         def _insert_operation():
             with self.get_session(db_name) as session:
@@ -266,7 +266,7 @@ class DatabaseManager:
         Returns:
             Dict z kluczami 'success' (bool) i 'data'/'error' w zależności od wyniku
         """
-        from .utils.error_handlers import ErrorCollector, safe_database_operation
+        from .utils import ErrorCollector, safe_database_operation
 
         if not data_list:
             return {"success": True, "data": {"inserted_count": 0, "errors": []}}
