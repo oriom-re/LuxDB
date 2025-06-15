@@ -23,37 +23,37 @@ def setup_source_database():
     
     print("Przygotowywanie źródłowej bazy danych...")
     db.create_database("source_db")
+    with db.get_session("source_db") as session:
+        # Dodaj użytkowników
+        users_data = [
+            {"username": "admin", "email": "admin@company.com", "password_hash": "hash1", "is_active": True, "phone": "+48111111111"},
+            {"username": "manager", "email": "manager@company.com", "password_hash": "hash2", "is_active": True, "phone": "+48222222222"},
+            {"username": "employee1", "email": "emp1@company.com", "password_hash": "hash3", "is_active": True, "phone": "+48333333333"},
+            {"username": "employee2", "email": "emp2@company.com", "password_hash": "hash4", "is_active": False, "phone": None},
+            {"username": "contractor", "email": "contractor@external.com", "password_hash": "hash5", "is_active": True, "phone": "+48555555555"},
+        ]
+        db.insert_batch(session, "source_db", User, users_data)
+        
+        # Dodaj sesje
+        sessions_data = [
+            {"id": "sync_session_1", "user_id": 1, "expires_at": datetime.now() + timedelta(hours=24), "data": json.dumps({"role": "admin"})},
+            {"id": "sync_session_2", "user_id": 2, "expires_at": datetime.now() + timedelta(hours=12), "data": json.dumps({"role": "manager"})},
+            {"id": "sync_session_3", "user_id": 3, "expires_at": datetime.now() + timedelta(hours=8), "data": json.dumps({"role": "employee"})},
+        ]
+        db.insert_batch(session, "source_db", UserSession, sessions_data)
+        
+        # Dodaj logi
+        logs_data = [
+            {"level": "INFO", "message": "System started", "module": "system", "user_id": None, "ip_address": None},
+            {"level": "INFO", "message": "Admin login", "module": "auth", "user_id": 1, "ip_address": "192.168.1.10"},
+            {"level": "INFO", "message": "Manager login", "module": "auth", "user_id": 2, "ip_address": "192.168.1.20"},
+            {"level": "WARNING", "message": "Failed login attempt", "module": "auth", "user_id": None, "ip_address": "192.168.1.100"},
+            {"level": "ERROR", "message": "Database connection timeout", "module": "database", "user_id": None, "ip_address": None},
+        ]
+        db.insert_batch(session, "source_db", Log, logs_data)
+        
+        print("✅ Źródłowa baza danych przygotowana")
     
-    # Dodaj użytkowników
-    users_data = [
-        {"username": "admin", "email": "admin@company.com", "password_hash": "hash1", "is_active": True, "phone": "+48111111111"},
-        {"username": "manager", "email": "manager@company.com", "password_hash": "hash2", "is_active": True, "phone": "+48222222222"},
-        {"username": "employee1", "email": "emp1@company.com", "password_hash": "hash3", "is_active": True, "phone": "+48333333333"},
-        {"username": "employee2", "email": "emp2@company.com", "password_hash": "hash4", "is_active": False, "phone": None},
-        {"username": "contractor", "email": "contractor@external.com", "password_hash": "hash5", "is_active": True, "phone": "+48555555555"},
-    ]
-    db.insert_batch("source_db", User, users_data)
-    
-    # Dodaj sesje
-    sessions_data = [
-        {"id": "sync_session_1", "user_id": 1, "expires_at": datetime.now() + timedelta(hours=24), "data": json.dumps({"role": "admin"})},
-        {"id": "sync_session_2", "user_id": 2, "expires_at": datetime.now() + timedelta(hours=12), "data": json.dumps({"role": "manager"})},
-        {"id": "sync_session_3", "user_id": 3, "expires_at": datetime.now() + timedelta(hours=8), "data": json.dumps({"role": "employee"})},
-    ]
-    db.insert_batch("source_db", UserSession, sessions_data)
-    
-    # Dodaj logi
-    logs_data = [
-        {"level": "INFO", "message": "System started", "module": "system", "user_id": None, "ip_address": None},
-        {"level": "INFO", "message": "Admin login", "module": "auth", "user_id": 1, "ip_address": "192.168.1.10"},
-        {"level": "INFO", "message": "Manager login", "module": "auth", "user_id": 2, "ip_address": "192.168.1.20"},
-        {"level": "WARNING", "message": "Failed login attempt", "module": "auth", "user_id": None, "ip_address": "192.168.1.100"},
-        {"level": "ERROR", "message": "Database connection timeout", "module": "database", "user_id": None, "ip_address": None},
-    ]
-    db.insert_batch("source_db", Log, logs_data)
-    
-    print("✅ Źródłowa baza danych przygotowana")
-
 def create_target_databases():
     """Tworzenie docelowych baz danych"""
     db = get_db_manager()
@@ -160,22 +160,23 @@ def example_incremental_sync():
     db = get_db_manager()
     
     try:
-        # Dodaj nowe dane do źródłowej bazy
-        print("1. Dodawanie nowych danych do źródłowej bazy...")
-        
-        new_users = [
-            {"username": "new_user1", "email": "new1@company.com", "password_hash": "newhash1", "is_active": True, "phone": "+48666666666"},
-            {"username": "new_user2", "email": "new2@company.com", "password_hash": "newhash2", "is_active": True, "phone": "+48777777777"},
-        ]
-        db.insert_batch("source_db", User, new_users)
-        
-        new_logs = [
-            {"level": "INFO", "message": "New user registered", "module": "registration", "user_id": 6, "ip_address": "192.168.1.30"},
-            {"level": "INFO", "message": "New user registered", "module": "registration", "user_id": 7, "ip_address": "192.168.1.31"},
-        ]
-        db.insert_batch("source_db", Log, new_logs)
-        
-        print("✅ Dodano nowe dane do źródłowej bazy")
+        with db.get_session("source_db") as source_session:
+            # Dodaj nowe dane do źródłowej bazy
+            print("1. Dodawanie nowych danych do źródłowej bazy...")
+            
+            new_users = [
+                {"username": "new_user1", "email": "new1@company.com", "password_hash": "newhash1", "is_active": True, "phone": "+48666666666"},
+                {"username": "new_user2", "email": "new2@company.com", "password_hash": "newhash2", "is_active": True, "phone": "+48777777777"},
+            ]
+            db.insert_batch(source_session, "source_db", User, new_users)
+            
+            new_logs = [
+                {"level": "INFO", "message": "New user registered", "module": "registration", "user_id": 6, "ip_address": "192.168.1.30"},
+                {"level": "INFO", "message": "New user registered", "module": "registration", "user_id": 7, "ip_address": "192.168.1.31"},
+            ]
+            db.insert_batch(source_session, "source_db", Log, new_logs)
+            
+            print("✅ Dodano nowe dane do źródłowej bazy")
         
         # Znajdź najnowszy rekord w backup_db
         print("\n2. Synchronizacja tylko nowych danych...")
@@ -188,9 +189,8 @@ def example_incremental_sync():
             last_log_id = last_log.id if last_log else 0
         
         # Synchronizuj tylko nowe rekordy
-        with db.get_session("source_db") as source_session:
-            new_users_to_sync = source_session.query(User).filter(User.id > last_user_id).all()
-            new_logs_to_sync = source_session.query(Log).filter(Log.id > last_log_id).all()
+        new_users_to_sync = source_session.query(User).filter(User.id > last_user_id).all()
+        new_logs_to_sync = source_session.query(Log).filter(Log.id > last_log_id).all()
         
         # Wstaw nowe rekordy
         with db.get_session("backup_db") as backup_session:

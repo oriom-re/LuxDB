@@ -22,76 +22,77 @@ def setup_reporting_data():
     
     print("Przygotowywanie danych do raportowania...")
     db.create_database("reporting_db")
-    
-    # Dodaj użytkowników z różnymi rolami
-    users_data = [
-        {"username": "admin", "email": "admin@company.com", "password_hash": "hash1", "is_active": True, "phone": "+48111111111"},
-        {"username": "manager1", "email": "manager1@company.com", "password_hash": "hash2", "is_active": True, "phone": "+48222222222"},
-        {"username": "manager2", "email": "manager2@company.com", "password_hash": "hash3", "is_active": True, "phone": "+48333333333"},
-        {"username": "employee1", "email": "emp1@company.com", "password_hash": "hash4", "is_active": True, "phone": "+48444444444"},
-        {"username": "employee2", "email": "emp2@company.com", "password_hash": "hash5", "is_active": True, "phone": "+48555555555"},
-        {"username": "employee3", "email": "emp3@company.com", "password_hash": "hash6", "is_active": False, "phone": None},
-        {"username": "contractor1", "email": "cont1@external.com", "password_hash": "hash7", "is_active": True, "phone": "+48666666666"},
-        {"username": "contractor2", "email": "cont2@external.com", "password_hash": "hash8", "is_active": False, "phone": None},
-        {"username": "intern1", "email": "intern1@company.com", "password_hash": "hash9", "is_active": True, "phone": "+48777777777"},
-        {"username": "intern2", "email": "intern2@company.com", "password_hash": "hash10", "is_active": True, "phone": "+48888888888"},
-    ]
-    db.insert_batch("reporting_db", User, users_data)
-    
-    # Dodaj sesje o różnych czasach wygaśnięcia
-    base_time = datetime.now()
-    sessions_data = [
-        {"id": "report_session_1", "user_id": 1, "expires_at": base_time + timedelta(hours=24), "data": json.dumps({"role": "admin", "department": "IT"})},
-        {"id": "report_session_2", "user_id": 2, "expires_at": base_time + timedelta(hours=12), "data": json.dumps({"role": "manager", "department": "Sales"})},
-        {"id": "report_session_3", "user_id": 3, "expires_at": base_time + timedelta(hours=8), "data": json.dumps({"role": "manager", "department": "Marketing"})},
-        {"id": "report_session_4", "user_id": 4, "expires_at": base_time + timedelta(hours=6), "data": json.dumps({"role": "employee", "department": "Sales"})},
-        {"id": "report_session_5", "user_id": 5, "expires_at": base_time + timedelta(hours=4), "data": json.dumps({"role": "employee", "department": "Marketing"})},
-        {"id": "report_session_6", "user_id": 7, "expires_at": base_time - timedelta(hours=1), "data": json.dumps({"role": "contractor", "department": "External"})},
-        {"id": "report_session_7", "user_id": 9, "expires_at": base_time + timedelta(hours=2), "data": json.dumps({"role": "intern", "department": "IT"})},
-        {"id": "report_session_8", "user_id": 10, "expires_at": base_time + timedelta(hours=3), "data": json.dumps({"role": "intern", "department": "HR"})},
-    ]
-    db.insert_batch("reporting_db", UserSession, sessions_data)
-    
-    # Dodaj różnorodne logi z różnych okresów
-    logs_data = []
-    
-    # Logi z ostatnich 7 dni
-    for day in range(7):
-        log_time = base_time - timedelta(days=day)
+
+    with db.get_session("reporting_db") as session:
+        # Dodaj użytkowników z różnymi rolami
+        users_data = [
+            {"username": "admin", "email": "admin@company.com", "password_hash": "hash1", "is_active": True, "phone": "+48111111111"},
+            {"username": "manager1", "email": "manager1@company.com", "password_hash": "hash2", "is_active": True, "phone": "+48222222222"},
+            {"username": "manager2", "email": "manager2@company.com", "password_hash": "hash3", "is_active": True, "phone": "+48333333333"},
+            {"username": "employee1", "email": "emp1@company.com", "password_hash": "hash4", "is_active": True, "phone": "+48444444444"},
+            {"username": "employee2", "email": "emp2@company.com", "password_hash": "hash5", "is_active": True, "phone": "+48555555555"},
+            {"username": "employee3", "email": "emp3@company.com", "password_hash": "hash6", "is_active": False, "phone": None},
+            {"username": "contractor1", "email": "cont1@external.com", "password_hash": "hash7", "is_active": True, "phone": "+48666666666"},
+            {"username": "contractor2", "email": "cont2@external.com", "password_hash": "hash8", "is_active": False, "phone": None},
+            {"username": "intern1", "email": "intern1@company.com", "password_hash": "hash9", "is_active": True, "phone": "+48777777777"},
+            {"username": "intern2", "email": "intern2@company.com", "password_hash": "hash10", "is_active": True, "phone": "+48888888888"},
+        ]
+        db.insert_batch(session, "reporting_db", User, users_data)
         
-        # Logi systemowe
-        logs_data.extend([
-            {"level": "INFO", "message": "System backup completed", "module": "backup", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=2)},
-            {"level": "INFO", "message": "Database maintenance started", "module": "maintenance", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=3)},
-        ])
+        # Dodaj sesje o różnych czasach wygaśnięcia
+        base_time = datetime.now()
+        sessions_data = [
+            {"id": "report_session_1", "user_id": 1, "expires_at": base_time + timedelta(hours=24), "data": json.dumps({"role": "admin", "department": "IT"})},
+            {"id": "report_session_2", "user_id": 2, "expires_at": base_time + timedelta(hours=12), "data": json.dumps({"role": "manager", "department": "Sales"})},
+            {"id": "report_session_3", "user_id": 3, "expires_at": base_time + timedelta(hours=8), "data": json.dumps({"role": "manager", "department": "Marketing"})},
+            {"id": "report_session_4", "user_id": 4, "expires_at": base_time + timedelta(hours=6), "data": json.dumps({"role": "employee", "department": "Sales"})},
+            {"id": "report_session_5", "user_id": 5, "expires_at": base_time + timedelta(hours=4), "data": json.dumps({"role": "employee", "department": "Marketing"})},
+            {"id": "report_session_6", "user_id": 7, "expires_at": base_time - timedelta(hours=1), "data": json.dumps({"role": "contractor", "department": "External"})},
+            {"id": "report_session_7", "user_id": 9, "expires_at": base_time + timedelta(hours=2), "data": json.dumps({"role": "intern", "department": "IT"})},
+            {"id": "report_session_8", "user_id": 10, "expires_at": base_time + timedelta(hours=3), "data": json.dumps({"role": "intern", "department": "HR"})},
+        ]
+        db.insert_batch(session, "reporting_db", UserSession, sessions_data)
         
-        # Logi logowań
-        for user_id in [1, 2, 3, 4, 5, 7, 9, 10]:
-            if day < 3:  # Ostatnie 3 dni - więcej aktywności
-                logs_data.append({
-                    "level": "INFO", 
-                    "message": "User login successful", 
-                    "module": "auth", 
-                    "user_id": user_id, 
-                    "ip_address": f"192.168.1.{user_id + 100}",
-                    "created_at": log_time.replace(hour=8 + user_id % 8)
-                })
+        # Dodaj różnorodne logi z różnych okresów
+        logs_data = []
         
-        # Błędy - rzadziej
-        if day % 2 == 0:
+        # Logi z ostatnich 7 dni
+        for day in range(7):
+            log_time = base_time - timedelta(days=day)
+            
+            # Logi systemowe
             logs_data.extend([
-                {"level": "ERROR", "message": "Database connection timeout", "module": "database", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=14)},
-                {"level": "WARNING", "message": "High memory usage detected", "module": "monitoring", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=15)},
+                {"level": "INFO", "message": "System backup completed", "module": "backup", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=2)},
+                {"level": "INFO", "message": "Database maintenance started", "module": "maintenance", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=3)},
             ])
-        
-        # Nieudane logowania
-        logs_data.extend([
-            {"level": "WARNING", "message": "Failed login attempt", "module": "auth", "user_id": None, "ip_address": "192.168.1.200", "created_at": log_time.replace(hour=10)},
-            {"level": "WARNING", "message": "Failed login attempt", "module": "auth", "user_id": None, "ip_address": "192.168.1.201", "created_at": log_time.replace(hour=16)},
-        ])
+            
+            # Logi logowań
+            for user_id in [1, 2, 3, 4, 5, 7, 9, 10]:
+                if day < 3:  # Ostatnie 3 dni - więcej aktywności
+                    logs_data.append({
+                        "level": "INFO", 
+                        "message": "User login successful", 
+                        "module": "auth", 
+                        "user_id": user_id, 
+                        "ip_address": f"192.168.1.{user_id + 100}",
+                        "created_at": log_time.replace(hour=8 + user_id % 8)
+                    })
+            
+            # Błędy - rzadziej
+            if day % 2 == 0:
+                logs_data.extend([
+                    {"level": "ERROR", "message": "Database connection timeout", "module": "database", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=14)},
+                    {"level": "WARNING", "message": "High memory usage detected", "module": "monitoring", "user_id": None, "ip_address": None, "created_at": log_time.replace(hour=15)},
+                ])
+            
+            # Nieudane logowania
+            logs_data.extend([
+                {"level": "WARNING", "message": "Failed login attempt", "module": "auth", "user_id": None, "ip_address": "192.168.1.200", "created_at": log_time.replace(hour=10)},
+                {"level": "WARNING", "message": "Failed login attempt", "module": "auth", "user_id": None, "ip_address": "192.168.1.201", "created_at": log_time.replace(hour=16)},
+            ])
     
-    db.insert_batch("reporting_db", Log, logs_data)
-    print(f"✅ Przygotowano {len(logs_data)} wpisów logów")
+            db.insert_batch(session, "reporting_db", Log, logs_data)
+            print(f"✅ Przygotowano {len(logs_data)} wpisów logów")
 
 def example_basic_joins():
     """Podstawowe JOIN-y"""

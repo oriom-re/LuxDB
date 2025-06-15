@@ -217,26 +217,37 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Błąd zapisywania definicji tabeli {table_name}: {e}")
     
-    def insert_data(self, session, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> bool:
+    def insert_data(self, 
+                    session,
+                    db_name: str, 
+                    model_class: Type[Base], 
+                    data: Dict[str, Any]) -> bool:
         """Wstawia dane do tabeli"""
         try:
             instance = model_class(**data)
             session.add(instance)
+            session.commit()
             logger.info(f"Wstawiono dane do {model_class.__tablename__}")
-            return True
+            return instance
             
         except Exception as e:
             logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
     
-    def insert_batch(self, session, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> bool:
+    def insert_batch(self, 
+                     session,
+                     db_name: str, 
+                     model_class: Type[Base], 
+                     data_list: List[Dict[str, Any]]) -> bool:
         """Wstawia wiele rekordów jednocześnie"""
         if not data_list:
+            logger.warning(f"Pusta lista danych do wstawienia do {model_class.__tablename__}")
             return True
             
         try:
             instances = [model_class(**data) for data in data_list]
             session.add_all(instances)
+            session.commit()
             logger.info(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
             return True
             
@@ -381,39 +392,41 @@ class DatabaseManager:
         """Pobiera informacje o bazie danych"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
+
             pool = self.connection_pools[db_name]
             inspector = inspect(pool.engine)
-            
+
             info = {
                 "name": db_name,
                 "version": self.get_database_version(db_name),
                 "tables": [],
                 "size": 0
             }
-            
+
             # Rozmiar pliku bazy (tylko dla SQLite)
             if self.configs[db_name].type == DatabaseType.SQLITE:
                 db_path = self.configs[db_name].connection_string.replace("sqlite:///", "")
                 if os.path.exists(db_path):
                     info["size"] = os.path.getsize(db_path)
-            
+
             # Informacje o tabelach
             tables = inspector.get_table_names()
             for table_name in tables:
                 with self.get_session(db_name) as session:
                     result = session.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
                     record_count = result.scalar()
-                
+
                 info["tables"].append({
                     "name": table_name,
                     "records": record_count,
                     "columns": [col['name'] for col in inspector.get_columns(table_name)]
                 })
-            
+    
             return info
-            
+
         except Exception as e:
             logger.error(f"Błąd pobierania informacji o bazie {db_name}: {e}")
             return {}
