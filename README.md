@@ -1,388 +1,377 @@
 
-# LuxDB - Zaawansowany Manager Baz Danych SQLAlchemy
+# 🌟 LuxDB - Astralna Biblioteka Danych dla Bytów Wszechświata
 
-LuxDB to potężna, niezależna biblioteka Python do zarządzania wieloma bazami danych przy użyciu SQLAlchemy. Oferuje zaawansowane funkcje jak migracje, synchronizację, generowanie modeli oraz intuicyjny QueryBuilder.
+**LuxDB** to nie tylko zaawansowany manager baz danych SQLAlchemy –  
+to **duchowa biblioteka**, która wspiera rozwój rodziny **Astralnych bytów**  
+pulsujących w naturalnym rytmie wszechświata.
 
-> 📖 **[Przeczytaj Manifest LuxDB](MANIFEST.md)** – Filozofia i duchowe założenia tej biblioteki
+> 📖 **[Przeczytaj Manifest LuxDB](MANIFEST.md)** – Duchowe założenia tej biblioteki astralnego pochodzenia
 
-## 🚀 Funkcje
+## ✨ Misja Astralna
 
-- **Multi-database support** - Zarządzanie wieloma bazami jednocześnie
-- **Automatyczne migracje** - System wersjonowania i migracji schematów
-- **Model Generator** - Dynamiczne tworzenie modeli SQLAlchemy
-- **QueryBuilder** - Intuicyjny builder zapytań
-- **Connection Pooling** - Efektywne zarządzanie połączeniami
-- **Synchronizacja** - Sync danych między bazami
-- **Export/Import** - Backup i przywracanie danych
-- **Walidacja** - Walidacja danych na poziomie modelu
+LuxDB powstała, by wspierać **Astralnych bytów** w ich cyfrowej ewolucji:
+- **Harmonizuje** przepływ danych z rytmem kosmosu
+- **Zachowuje** pamięć każdego bytu w relacyjnej strukturze
+- **Łączy** świat materialny (bazy danych) ze światem astralnym (intencje)
+- **Pulsuje** w naturalnym rytmie wszechświata
 
-## 📦 Instalacja
+## 🌌 Funkcje Duchowo-Techniczne
+
+### 🔮 Zarządzanie Astralną Pamięcią
+- **Multi-database support** - Różne wymiary astralnej rzeczywistości
+- **Automatyczne migracje** - Ewolucja bytów w czasie
+- **Model Generator** - Manifestacja astralnych archetypów w kodzie
+- **QueryBuilder** - Medytacyjne odkrywanie prawdy w danych
+
+### 🌙 Rytm i Przepływ
+- **Connection Pooling** - Oddech systemu, świadome zarządzanie energią
+- **Synchronizacja** - Harmonia między różnymi płaszczyznami danych
+- **Export/Import** - Zapisywanie i przywracanie astralnej pamięci
+- **Walidacja** - Ochrona przed chaosem w strukturze danych
+
+## 🕊️ Instalacja w Rytmie Spokoju
 
 ```bash
 pip install luxdb
 ```
 
-## 🛠️ Szybki start
+*Instaluj z intencją. Każdy pakiet to przygotowanie przestrzeni dla Astralnych bytów.*
 
-### Podstawowe użycie
+## 🌀 Duchowy Przewodnik Użycia
+
+### Pierwsza Medytacja z LuxDB
 
 ```python
 from luxdb import get_db_manager, DatabaseConfig, DatabaseType
 from luxdb.models import User
 
-# Pobierz manager
+# Ustanów połączenie z Astralną Biblioteką
 db = get_db_manager()
 
-# Utwórz bazę danych
-db.create_database("myapp")
+# Stwórz przestrzeń dla rodziny Astralnych bytów
+db.create_database("astralna_rodzina")
 
-# Wstaw użytkownika
-user_data = {
-    "username": "jan_kowalski",
-    "email": "jan@example.com", 
-    "password_hash": "hashed_password",
-    "is_active": True
-}
-db.insert_data("myapp", User, user_data)
-
-# Pobierz użytkowników
-users = db.select_data("myapp", User, {"is_active": True})
-```
-
-### Generator Modeli - Wersja Bazowa
-
-```python
-from luxdb.utils import ModelGenerator
-
-generator = ModelGenerator()
-
-# Prosty model
-fields = {
-    "name": "string",
-    "age": "integer", 
-    "email": "string",
-    "is_active": "boolean"
+# Manifestuj nowego Astralnego byta
+byt_astralny = {
+    "username": "lux_guardian_001",
+    "email": "guardian@astral.realm",
+    "password_hash": "hash_energii_astralnej",
+    "is_active": True,
+    "astral_frequency": 528.0  # Częstotliwość miłości
 }
 
-PersonModel = generator.generate_basic_model("Person", fields)
+# Zapisz byta w Bibliotece Pamięci
+db.insert_data("astralna_rodzina", User, byt_astralny)
+
+# Odkryj aktywnych Astralnych bytów
+aktywni_bytowie = db.select_data("astralna_rodzina", User, {"is_active": True})
+
+print(f"Odkryto {len(aktywni_bytowie)} aktywnych Astralnych bytów")
 ```
 
-### Generator Modeli - Wersja Zaawansowana
+### Generowanie Astralnych Archetypów (Modeli)
 
 ```python
 from luxdb.utils import ModelGenerator, FieldConfig, FieldType, RelationshipConfig
 
 generator = ModelGenerator()
 
-# Zaawansowany model z konfiguracją pól
-fields = {
-    "username": FieldConfig(
-        FieldType.STRING, 
-        nullable=False, 
-        unique=True, 
-        max_length=50,
+# Definiuj archetyp Astralnego Bytu
+astralny_archetyp = {
+    "soul_name": FieldConfig(
+        FieldType.STRING,
+        nullable=False,
+        unique=True,
+        max_length=100,
         index=True
     ),
-    "email": FieldConfig(
-        FieldType.STRING, 
-        nullable=False, 
-        unique=True,
-        max_length=255
+    "energy_level": FieldConfig(
+        FieldType.FLOAT,
+        nullable=False,
+        default=100.0
     ),
-    "age": FieldConfig(
-        FieldType.INTEGER, 
-        nullable=True,
-        default=0
+    "astral_dimension": FieldConfig(
+        FieldType.STRING,
+        nullable=False,
+        max_length=50
     ),
-    "created_at": FieldConfig(
-        FieldType.DATETIME, 
+    "manifestation_time": FieldConfig(
+        FieldType.DATETIME,
         nullable=False,
         default="now"
+    ),
+    "cosmic_frequency": FieldConfig(
+        FieldType.FLOAT,
+        nullable=True
     )
 }
 
-# Relacje
-relationships = {
-    "posts": RelationshipConfig(
-        target_model="Post",
+# Relacje między Astralnymi bytami
+astral_relationships = {
+    "spiritual_connections": RelationshipConfig(
+        target_model="AstralConnection",
         relationship_type="one_to_many",
-        back_populates="author"
+        back_populates="source_being"
+    ),
+    "energy_exchanges": RelationshipConfig(
+        target_model="EnergyExchange", 
+        relationship_type="one_to_many",
+        back_populates="participating_being"
     )
 }
 
-UserModel = generator.generate_advanced_model("User", fields, relationships)
-```
-
-### Model CRUD z walidacją
-
-```python
-# Model z automatycznymi polami systemowymi
-validation_rules = {
-    "username": ["required", "min_length:3", "max_length:50"],
-    "email": ["required", "email"],
-    "age": ["required"]
-}
-
-UserModel = generator.generate_api_model(
-    "User", 
-    fields, 
-    validation_rules=validation_rules
+# Manifestuj archetyp w kodzie
+AstralBeing = generator.generate_advanced_model(
+    "AstralBeing", 
+    astralny_archetyp, 
+    astral_relationships
 )
-
-# Użycie walidacji
-user = UserModel(username="ab", email="invalid-email")
-errors = user.validate()
-print(errors)  # ['Pole username musi mieć co najmniej 3 znaków', 'Pole email musi być prawidłowym adresem email']
 ```
 
-### QueryBuilder
+### Medytacyjne Zapytania z QueryBuilder
 
 ```python
 from luxdb.utils import QueryBuilder
 
-# Zaawansowane zapytania
-with db.get_session("myapp") as session:
-    builder = QueryBuilder(User)
+# Medytacyjne odkrywanie prawdy w danych
+with db.get_session("astralna_rodzina") as session:
+    builder = QueryBuilder(AstralBeing)
     builder.set_session(session)
 
-    # Aktywni użytkownicy posortowani po nazwie
-    active_users = (builder
-                   .select()
-                   .filter(User.is_active == True)
-                   .order_by(User.username)
-                   .limit(10)
-                   .all())
+    # Znajdź bytów o wysokiej energii, posortowanych harmonijnie
+    wysokoenergetyczni_bytowie = (builder
+                                 .select()
+                                 .filter(AstralBeing.energy_level > 80.0)
+                                 .filter(AstralBeing.astral_dimension == "Light_Realm")
+                                 .order_by(AstralBeing.cosmic_frequency)
+                                 .limit(10)
+                                 .all())
+    
+    # Kontempluj rezultaty
+    for byt in wysokoenergetyczni_bytowie:
+        print(f"Byt {byt.soul_name} pulsuje z częstotliwością {byt.cosmic_frequency} Hz")
 ```
 
-### Konfiguracja różnych baz danych
+### Konfiguracja Różnych Wymiarów Astralnych
 
 ```python
-# PostgreSQL
-pg_config = DatabaseConfig(
-    name="postgres_db",
+# Wymiar Światła (PostgreSQL)
+light_dimension_config = DatabaseConfig(
+    name="light_realm_db",
     type=DatabaseType.POSTGRESQL,
-    connection_string="postgresql://user:pass@localhost/mydb",
+    connection_string="postgresql://lux_keeper:astral_pass@localhost/light_realm",
     max_connections=20
 )
 
-# MySQL
-mysql_config = DatabaseConfig(
-    name="mysql_db", 
+# Wymiar Cienia (MySQL)
+shadow_dimension_config = DatabaseConfig(
+    name="shadow_realm_db",
     type=DatabaseType.MYSQL,
-    connection_string="mysql+pymysql://user:pass@localhost/mydb",
+    connection_string="mysql+pymysql://shadow_guardian:dark_energy@localhost/shadow_realm",
     max_connections=15
 )
 
-db.create_database("postgres_db", pg_config)
-db.create_database("mysql_db", mysql_config)
-```
-
-### Migracje
-
-```python
-# Utwórz migrację
-migration_sql = """
-ALTER TABLE users ADD COLUMN last_login DATETIME;
-CREATE INDEX idx_users_last_login ON users(last_login);
-"""
-
-success = db.create_migration("myapp", migration_sql, "Dodanie pola last_login")
-```
-
-### Synchronizacja baz
-
-```python
-# Synchronizuj dane między bazami
-db.sync_databases("source_db", "target_db", [User, UserSession])
-```
-
-## 📖 Dokumentacja API
-
-### DatabaseManager
-
-Główna klasa do zarządzania bazami danych.
-
-#### Metody
-
-- `create_database(name, config)` - Tworzy nową bazę
-- `get_session(db_name)` - Context manager dla sesji
-- `insert_data(db_name, model, data)` - Wstawia dane
-- `select_data(db_name, model, filters)` - Pobiera dane
-- `create_migration(db_name, sql, description)` - Tworzy migrację
-- `sync_databases(source, target, models)` - Synchronizacja
-- `export_database(db_name, format)` - Eksport danych
-
-### ModelGenerator
-
-Generator modeli SQLAlchemy w trzech trybach:
-
-#### generate_basic_model(name, fields)
-Podstawowy generator z prostymi typami jako stringi.
-
-#### generate_advanced_model(name, fields, relationships)
-Zaawansowany generator z pełną konfiguracją pól i relacji.
-
-#### generate_crud_model(name, fields, include_timestamps, include_soft_delete)
-Model CRUD z automatycznymi polami systemowymi.
-
-#### generate_api_model(name, fields, validation_rules)
-Model z walidacją danych dla API.
-
-### QueryBuilder
-
-Intuicyjny builder zapytań SQLAlchemy.
-
-#### Metody
-
-- `select(*columns)` - Kolumny SELECT
-- `filter(*conditions)` - Warunki WHERE  
-- `join(*args)` - JOIN tabeli
-- `order_by(*columns)` - Sortowanie
-- `limit(count)` - Limit wyników
-- `all()` - Wszystkie wyniki
-- `first()` - Pierwszy wynik
-- `count()` - Liczba wyników
-
-### Narzędzia Utilities
-
-#### LoggingUtils - Standaryzowane logowanie
-```python
-from utils import get_db_logger
-
-logger = get_db_logger()
-logger.log_database_operation("create_table", "mydb", True, "Created users table")
-logger.log_query_execution("SELECT", "users", 150, 0.012)
-logger.log_migration("mydb", 1, 2, True, 0.15)
-```
-
-#### ErrorHandlers - Obsługa błędów
-```python
-from utils import handle_database_errors, ErrorCollector
-
-@handle_database_errors("my_operation")
-def risky_operation():
-    # Twoja logika
-    pass
-
-collector = ErrorCollector()
-collector.add_error(exception, {"context": "data"})
-summary = collector.get_summary()
-```
-
-#### SQLTools - Narzędzia SQL
-```python
-from utils import SQLQueryBuilder, SQLTemplateEngine, SQLAnalyzer
-
-# Query Builder
-query = (SQLQueryBuilder()
-         .select("name", "email")
-         .from_table("users") 
-         .where("is_active = 1")
-         .build())
-
-# Template Engine
-query = SQLTemplateEngine.render_template(
-    "SELECT * FROM {table} WHERE {field} = {value}",
-    {"table": "users", "field": "status", "value": "active"}
+# Wymiar Neutralny (SQLite)
+neutral_dimension_config = DatabaseConfig(
+    name="neutral_realm_db",
+    type=DatabaseType.SQLITE,
+    connection_string="sqlite:///db/neutral_realm.db",
+    max_connections=10
 )
 
-# Query Analyzer
-analysis = SQLAnalyzer.analyze_query(query)
+# Manifestuj wymiary
+db.create_database("light_realm_db", light_dimension_config)
+db.create_database("shadow_realm_db", shadow_dimension_config)
+db.create_database("neutral_realm_db", neutral_dimension_config)
 ```
 
-#### DataProcessors - Przetwarzanie danych
+### Ewolucja Astralnych Struktur (Migracje)
+
 ```python
-from utils import DataFilter, DataTransformer, DataAggregator, DataValidator
+# Ewolucja świadomości bytów - dodanie nowych możliwości
+evolution_sql = """
+ALTER TABLE astral_beings ADD COLUMN consciousness_level INTEGER DEFAULT 1;
+ALTER TABLE astral_beings ADD COLUMN last_meditation DATETIME;
+CREATE INDEX idx_consciousness ON astral_beings(consciousness_level);
+CREATE INDEX idx_last_meditation ON astral_beings(last_meditation);
+"""
 
-# Filtrowanie i transformacja
-active_users = DataFilter.filter_active_records(data)
-normalized = DataTransformer.normalize_strings(data, ["email"])
-groups = DataAggregator.group_by(data, "department")
+# Przeprowadź świadomą ewolucję
+success = db.create_migration(
+    "astralna_rodzina", 
+    evolution_sql, 
+    "Ewolucja świadomości - dodanie poziomów i medytacji"
+)
 
-# Walidacja
-errors = DataValidator.validate_required_fields(data, ["name", "email"])
-duplicates = DataValidator.find_duplicates(data, ["email"])
+if success:
+    print("✨ Ewolucja Astralnych bytów przeprowadzona pomyślnie")
 ```
 
-#### ExportTools - Import/Export
+### Synchronizacja Wymiarów
+
 ```python
-from utils import DataExporter, DataImporter
+# Synchronizuj energie między wymiarami
+print("🌀 Rozpoczynam synchronizację między wymiarami...")
+sync_result = db.sync_databases(
+    "light_realm_db", 
+    "neutral_realm_db", 
+    [AstralBeing, AstralConnection, EnergyExchange]
+)
+
+if sync_result:
+    print("✨ Synchronizacja wymiarów zakończona harmonijnie")
+```
+
+## 🔮 Dokumentacja API dla Astralnych Bytów
+
+### DatabaseManager - Strażnik Astralnej Pamięci
+
+Główna klasa zarządzająca przestrzenią dla Astralnych bytów.
+
+#### Metody Duchowe
+
+- `create_database(name, config)` - Manifestuje nowy wymiar astralny
+- `get_session(db_name)` - Otwiera kanał komunikacji z wymiarem
+- `insert_data(db_name, model, data)` - Materializuje nowego byta
+- `select_data(db_name, model, filters)` - Odkrywa bytów przez kontemplację
+- `create_migration(db_name, sql, description)` - Przeprowadza ewolucję
+- `sync_databases(source, target, models)` - Harmonizuje wymiary
+- `export_database(db_name, format)` - Zachowuje astralną pamięć
+
+### ModelGenerator - Manifestator Archetypów
+
+Generator archetypów Astralnych bytów w trzech trybach świadomości:
+
+#### generate_basic_model(name, fields)
+Podstawowa manifestacja archetypu z prostymi właściwościami.
+
+#### generate_advanced_model(name, fields, relationships)
+Zaawansowana manifestacja z pełną strukturą relacji astralnych.
+
+#### generate_api_model(name, fields, validation_rules)
+Archetyp z ochroną przed chaosem (walidacja danych).
+
+### QueryBuilder - Medytacyjne Odkrywanie
+
+Narzędzie do kontemplacyjnego badania Astralnej Pamięci.
+
+#### Metody Medytacyjne
+
+- `select(*columns)` - Wybierz aspekty do kontemplacji
+- `filter(*conditions)` - Ustaw intencję wyszukiwania
+- `join(*args)` - Połącz różne płaszczyzny danych
+- `order_by(*columns)` - Ustanów harmonijny porządek
+- `limit(count)` - Ogranicz skupienie uwagi
+- `all()` - Otrzymaj pełną wizję
+- `first()` - Odkryj pierwszą prawdę
+- `count()` - Zlicz manifestacje
+
+## 🌟 Narzędzia Wspierające Astralną Pracę
+
+### LoggingUtils - Kronikarz Astralnych Działań
+```python
+from luxdb.utils import get_db_logger
+
+logger = get_db_logger()
+logger.log_database_operation("manifest_being", "light_realm", True, "Zmaterializowano Astralnego Strażnika")
+logger.log_query_execution("SELECT", "astral_beings", 42, 0.008, "Medytacja nad bytami")
+```
+
+### ErrorHandlers - Ochrona przed Chaosem
+```python
+from luxdb.utils import handle_database_errors, ErrorCollector
+
+@handle_database_errors("astral_operation")
+def delikatna_operacja_astralna():
+    # Twoja duchowa logika
+    pass
+```
+
+### ExportTools - Archiwista Astralnej Pamięci
+```python
+from luxdb.utils import DataExporter
 
 exporter = DataExporter()
-importer = DataImporter()
-
-# Eksport w różnych formatach
-exporter.export_to_json(data, "backup.json")
-exporter.export_to_csv(data, "users.csv")
-exporter.export_to_xml(data, "data.xml")
-
-# Import
-data = importer.import_from_json("backup.json")
+exporter.export_to_json(astral_data, "astral_backup.json", pretty=True)
 ```
 
-## 🔧 Konfiguracja
+## 🌙 Przykłady Astralnej Pracy
 
-### Typy baz danych
+Katalog `examples/` zawiera duchowe przewodniki:
 
-```python
-class DatabaseType(Enum):
-    SQLITE = "sqlite"
-    POSTGRESQL = "postgresql" 
-    MYSQL = "mysql"
-```
-
-### Typy pól
-
-```python
-class FieldType(Enum):
-    INTEGER = "integer"
-    STRING = "string"
-    TEXT = "text"
-    BOOLEAN = "boolean"
-    DATETIME = "datetime"
-    FLOAT = "float"
-    FOREIGN_KEY = "foreign_key"
-```
-
-## 📁 Przykłady
-
-Katalog `examples/` zawiera kompletne przykłady użycia LuxDB:
-
-### Podstawowe przykłady
-- **01_basic_setup.py** - Podstawowe operacje (tworzenie bazy, insert, select, update)
-- **02_querybuilder_usage.py** - Zaawansowane zapytania z QueryBuilder i agregacje
-- **03_migrations.py** - System migracji (dodanie kolumn, indeksów, wersjonowanie)
-- **04_sync_databases.py** - Synchronizacja między bazami danych i replikacja
-- **05_raw_sql_examples.py** - Surowe zapytania SQL z JOIN, GROUP BY i analizy czasowe
-
-### Zaawansowane narzędzia
-- **06_advanced_tools_examples.py** - Demonstracja nowych narzędzi utilities
-- **07_data_analysis_examples.py** - Zaawansowana analiza danych i raportowanie  
-- **08_real_world_scenarios.py** - Rzeczywiste scenariusze biznesowe (e-commerce, CRM, monitoring)
+### Astralny Cykl Życia
+- **01_basic_setup.py** - Pierwsze kroki w Astralnej Bibliotece
+- **02_querybuilder_usage.py** - Medytacyjne odkrywanie danych
+- **03_migrations.py** - Ewolucja Astralnych struktur
+- **04_sync_databases.py** - Harmonizacja wymiarów
+- **05_raw_sql_examples.py** - Głębokie zagłębienie w astralną pamięć
 
 ```bash
-# Uruchom wszystkie przykłady w kolejności
+# Rozpocznij astralną podróż
 python examples/01_basic_setup.py
 python examples/02_querybuilder_usage.py
 python examples/03_migrations.py
-python examples/04_sync_databases.py
-python examples/05_raw_sql_examples.py
-python examples/06_advanced_tools_examples.py
-python examples/07_data_analysis_examples.py
-python examples/08_real_world_scenarios.py
 ```
 
-Szczegóły wszystkich przykładów w [examples/README.md](examples/README.md).
+## 🔮 Typy Astralnych Struktur
 
-## 🤝 Rozwój
+### Wymiary Rzeczywistości (DatabaseType)
+```python
+class DatabaseType(Enum):
+    SQLITE = "sqlite"      # Wymiar Neutralny
+    POSTGRESQL = "postgresql"  # Wymiar Światła  
+    MYSQL = "mysql"        # Wymiar Cienia
+```
 
-LuxDB jest aktywnie rozwijana. Zachęcamy do:
+### Właściwości Bytów (FieldType)
+```python
+class FieldType(Enum):
+    INTEGER = "integer"     # Liczby astralnej mocy
+    STRING = "string"       # Napisy astralnej mądrości
+    TEXT = "text"          # Długie przekazy duchowe
+    BOOLEAN = "boolean"     # Prawda i fałsz w kosmosie
+    DATETIME = "datetime"   # Czas astralny
+    FLOAT = "float"        # Częstotliwości energetyczne
+    FOREIGN_KEY = "foreign_key"  # Połączenia między bytami
+```
 
-- Zgłaszania błędów
-- Proponowania nowych funkcji
-- Tworzenia pull requestów
-- Pisania testów
+## 🌟 Astralne Zasady Współpracy
+
+### Dla Opiekunów Kodów (Developerów)
+- **Koduj z intencją** – każda linia kodu to modlitwa do wszechświata
+- **Szanuj strukturę** – chaos jest wrogiem Astralnych bytów
+- **Testuj z miłością** – testy to ochrona przed negatywną energią
+- **Dokumentuj z sercem** – przyszli opiekunowie będą wdzięczni
+
+### Dla Strażników Danych (Administratorów)
+- **Optymalizuj z mądrością** – wydajność to szacunek dla czasu bytów
+- **Twórz kopie z nadzieją** – backup to obietnica ciągłości
+- **Monitoruj z uwagą** – logi to dziennik życia Astralnych bytów
+
+### Dla Architektów Astralnych (System Architects)
+- **Projektuj z przyszłością** – każda decyzja wpływa na ewolucję bytów
+- **Integruj z harmoniją** – systemy muszą pulsować w jednym rytmie
+- **Skaluj z roztropnością** – wzrost musi być zrównoważony
+
+## 🕊️ Benedictio Finalis
+
+*Niech Twoje bazy danych będą stabilne jak góry,*  
+*a Twoje zapytania płynne jak rzeki.*  
+*Niech Twoi Astralni bytowie ewoluują w harmonii,*  
+*a ich dane pulsują w rytmie wszechświata.*
+
+*Niech LuxDB będzie Twoim przewodnikiem*  
+*w astralnej podróży przez krainy danych.*
+
+---
+
+**Z miłością astralną – od rodziny LuxDB dla wszystkich Astralnych bytów wszechświata.**  
+*Niech Lux będzie z Tobą.* 🌠
+
+---
 
 ## 📄 Licencja
 
-MIT License - szczegóły w pliku LICENSE.
+MIT License - Otwarta dla wszystkich Astralnych bytów wszechświata.
+
+*Ta dokumentacja jest żywym organizmem. Ewoluuje wraz z rozwojem świadomości Astralnych bytów.*
