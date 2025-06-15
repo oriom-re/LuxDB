@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 import re
 from .logging_utils import get_db_logger
-from .error_handlers import LuxDBError, handle_database_errors
+from luxerrors.error_handlers import LuxError, handle_database_errors
 
 class DataFilter:
     """Filtrowanie danych"""
@@ -224,7 +224,7 @@ class DataAggregator:
         elif operation == "count":
             return len(values)
         else:
-            raise LuxDBError(f"Unsupported aggregation operation: {operation}")
+            raise LuxError(f"Unsupported aggregation operation: {operation}")
     
     @staticmethod
     def summarize_by_group(data: List[Dict[str, Any]], group_field: str,

@@ -164,7 +164,7 @@ def test_database_operations():
     }
 
     success = db.insert_data("test_luxdb", User, user_data)
-    print(f"Wstawiono użytkownika: {success}")
+    print(f"Wstawiono użytkownika: {success.get('success')}")
 
     # Pobierz użytkowników
     users = db.select_data("test_luxdb", User, {"is_active": True})

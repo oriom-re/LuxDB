@@ -229,7 +229,7 @@ def analyze_exception(exception: Exception) -> Tuple[LuxErrorCode, str, Dict[str
     context = {
         "original_exception_type": type(exception).__name__,
         "original_message": str(exception),
-        "traceback": traceback.format_exc()
+        # "traceback": traceback.format_exc()
     }
     
     # Dodatkowa analiza dla specyficznych błędów

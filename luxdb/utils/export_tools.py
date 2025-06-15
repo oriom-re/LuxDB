@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, Union, Type
 from pathlib import Path
 from .logging_utils import get_db_logger
-from .error_handlers import LuxDBError, handle_database_errors
+from luxerrors.error_handlers import LuxError, handle_database_errors
 
 class ExportFormat:
     """Formaty eksportu"""
@@ -45,7 +45,8 @@ class DataExporter:
                      delimiter: str = ",") -> str:
         """Eksportuj dane do CSV"""
         if not data:
-            raise LuxDBError("No data to export")
+            raise Lux
+        Error("No data to export")
         
         processed_data = self._process_data_for_export(data)
         fieldnames = processed_data[0].keys() if processed_data else []
@@ -84,7 +85,8 @@ class DataExporter:
                      output_path: str, include_create: bool = True) -> str:
         """Eksportuj dane do pliku SQL"""
         if not data:
-            raise LuxDBError("No data to export")
+            raise Lux
+        Error("No data to export")
         
         processed_data = self._process_data_for_export(data)
         
@@ -261,7 +263,8 @@ def export_model_data(model_instances: List[Any], format: str, output_path: str,
             table_name = model_instances[0].__tablename__ if model_instances else "exported_data"
         return exporter.export_to_sql(data, table_name, output_path)
     else:
-        raise LuxDBError(f"Unsupported export format: {format}")
+        raise Lux
+    Error(f"Unsupported export format: {format}")
 
 def create_backup_filename(db_name: str, format: str, timestamp: Optional[datetime] = None) -> str:
     """Utwórz nazwę pliku backup"""
