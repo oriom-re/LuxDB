@@ -15,6 +15,7 @@ from luxdb import get_db_manager, DatabaseManager
 from luxdb.config import DatabaseConfig, DatabaseType
 from luxdb.models import User, UserSession, Log
 from luxdb.utils import ModelGenerator, FieldConfig, FieldType, RelationshipConfig
+from luxerrors import handle_errors, safe_execute
 
 def test_basic_model_generator():
     """Test podstawowego generatora modeli"""

@@ -1,4 +1,3 @@
-
 """
 LuxDB - Zaawansowany manager baz danych SQLAlchemy z generatorem modeli
 """
@@ -10,6 +9,7 @@ __email__ = "team@luxdb.dev"
 from .manager import DatabaseManager, get_db_manager
 from .config import DatabaseConfig, DatabaseType, ConnectionPool
 from .models import User, UserSession, Log, DatabaseSchema, Migration, TableDefinition
+# Usunięto wewnętrzne error_handlers - używamy luxerrors
 
 __all__ = [
     'DatabaseManager',

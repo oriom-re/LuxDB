@@ -80,7 +80,9 @@ class DatabaseManager:
     def get_session(self, db_name: str):
         """Context manager dla bezpiecznego dostępu do sesji SQLAlchemy"""
         if db_name not in self.connection_pools:
-            raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+            raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
         session = self.connection_pools[db_name].get_session()
         try:
@@ -193,7 +195,9 @@ class DatabaseManager:
         """Tworzy tabelę na podstawie modelu SQLAlchemy"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
             pool = self.connection_pools[db_name]
             model_class.__table__.create(bind=pool.engine, checkfirst=True)
@@ -344,7 +348,9 @@ class DatabaseManager:
     def get_query_builder(self, db_name: str, model_class: Type[Base]) -> QueryBuilder:
         """Zwraca QueryBuilder dla danego modelu"""
         if db_name not in self.connection_pools:
-            raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+            raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
         builder = QueryBuilder(model_class)
         session = self.connection_pools[db_name].get_session()
@@ -355,7 +361,9 @@ class DatabaseManager:
         """Wykonuje surowe zapytanie SQL"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
             pool = self.connection_pools[db_name]
             with pool.engine.connect() as conn:
@@ -390,7 +398,9 @@ class DatabaseManager:
 
             # Wykonaj migrację
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje",
+                                     service_name="database", 
+                                     context={"db_name": db_name})
 
             pool = self.connection_pools[db_name]
 
@@ -463,7 +473,9 @@ class DatabaseManager:
         """Pobiera informacje o bazie danych"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
             pool = self.connection_pools[db_name]
             inspector = inspect(pool.engine)
@@ -508,7 +520,9 @@ class DatabaseManager:
         """Optymalizuje bazę danych"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
             pool = self.connection_pools[db_name]
 
@@ -530,7 +544,9 @@ class DatabaseManager:
         """Eksportuje bazę danych do pliku"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             export_path = os.path.join(self.db_directory, f"{db_name}_export_{timestamp}.{format}")
