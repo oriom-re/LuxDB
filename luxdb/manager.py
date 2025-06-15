@@ -111,6 +111,11 @@ class DatabaseManager:
     def create_database(self, db_name: str, config: DatabaseConfig = None) -> bool:
         """Tworzy nową bazę danych"""
         try:
+            # Sprawdź czy baza już istnieje
+            if db_name in self.connection_pools:
+                logger.info(f"Baza danych {db_name} już istnieje")
+                return True
+            
             if not config:
                 config = DatabaseConfig(
                     name=db_name,
