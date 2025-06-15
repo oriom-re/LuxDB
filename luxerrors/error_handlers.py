@@ -87,6 +87,140 @@ class OperationError(LuxError):
         error_context["operation_name"] = operation_name
         super().__init__(message, LuxErrorCode.OPERATION_FAILED, error_context)
 
+class QueryExecutionError(LuxError):
+    """Błąd wykonania zapytania SQL"""
+    def __init__(self, message: str, query: str = None, parameters: Dict[str, Any] = None,
+                 context: Optional[Dict[str, Any]] = None):
+        error_context = context or {}
+        error_context.update({
+            "query": query,
+            "parameters": parameters
+        })
+        super().__init__(message, LuxErrorCode.OPERATION_FAILED, error_context)
+
+class UnifiedErrorHandler:
+    """Ujednolicony handler błędów - routing na podstawie argumentów"""
+    
+    @staticmethod
+    def create_error(message: str, error_type: str = None, **kwargs) -> LuxError:
+        """
+        Tworzy odpowiedni błąd na podstawie typu i argumentów
+        
+        Args:
+            message: Wiadomość błędu
+            error_type: Typ błędu ('validation', 'connection', 'data_not_found', 'duplicate', 'operation', 'query')
+            **kwargs: Dodatkowe argumenty specyficzne dla typu błędu
+        """
+        context = kwargs.get('context', {})
+        
+        if error_type == 'validation':
+            return ValidationError(
+                message, 
+                field_errors=kwargs.get('field_errors'),
+                context=context
+            )
+        elif error_type == 'connection':
+            return ConnectionError(
+                message,
+                service_name=kwargs.get('service_name'),
+                context=context
+            )
+        elif error_type == 'data_not_found':
+            return DataNotFoundError(
+                message,
+                resource_type=kwargs.get('resource_type'),
+                resource_id=kwargs.get('resource_id'),
+                context=context
+            )
+        elif error_type == 'duplicate':
+            return DuplicateDataError(
+                message,
+                duplicate_field=kwargs.get('duplicate_field'),
+                duplicate_value=kwargs.get('duplicate_value'),
+                context=context
+            )
+        elif error_type == 'operation':
+            return OperationError(
+                message,
+                operation_name=kwargs.get('operation_name'),
+                context=context
+            )
+        elif error_type == 'query':
+            return QueryExecutionError(
+                message,
+                query=kwargs.get('query'),
+                parameters=kwargs.get('parameters'),
+                context=context
+            )
+        else:
+            # Domyślny błąd ogólny
+            return LuxError(message, LuxErrorCode.GENERAL_ERROR, context)
+    
+    @staticmethod
+    def validation_error(message: str, field_errors: Dict[str, str] = None, 
+                        context: Optional[Dict[str, Any]] = None) -> ValidationError:
+        """Skrót do tworzenia błędu walidacji"""
+        return UnifiedErrorHandler.create_error(
+            message, 'validation', 
+            field_errors=field_errors, 
+            context=context
+        )
+    
+    @staticmethod
+    def connection_error(message: str, service_name: str = None,
+                        context: Optional[Dict[str, Any]] = None) -> ConnectionError:
+        """Skrót do tworzenia błędu połączenia"""
+        return UnifiedErrorHandler.create_error(
+            message, 'connection',
+            service_name=service_name,
+            context=context
+        )
+    
+    @staticmethod
+    def data_not_found_error(message: str, resource_type: str = None, 
+                           resource_id: str = None, 
+                           context: Optional[Dict[str, Any]] = None) -> DataNotFoundError:
+        """Skrót do tworzenia błędu braku danych"""
+        return UnifiedErrorHandler.create_error(
+            message, 'data_not_found',
+            resource_type=resource_type,
+            resource_id=resource_id,
+            context=context
+        )
+    
+    @staticmethod
+    def duplicate_data_error(message: str, duplicate_field: str = None,
+                           duplicate_value: Any = None, 
+                           context: Optional[Dict[str, Any]] = None) -> DuplicateDataError:
+        """Skrót do tworzenia błędu duplikatu"""
+        return UnifiedErrorHandler.create_error(
+            message, 'duplicate',
+            duplicate_field=duplicate_field,
+            duplicate_value=duplicate_value,
+            context=context
+        )
+    
+    @staticmethod
+    def operation_error(message: str, operation_name: str = None,
+                       context: Optional[Dict[str, Any]] = None) -> OperationError:
+        """Skrót do tworzenia błędu operacji"""
+        return UnifiedErrorHandler.create_error(
+            message, 'operation',
+            operation_name=operation_name,
+            context=context
+        )
+    
+    @staticmethod
+    def query_error(message: str, query: str = None, parameters: Dict[str, Any] = None,
+                   context: Optional[Dict[str, Any]] = None) -> QueryExecutionError:
+        """Skrót do tworzenia błędu zapytania"""
+        return UnifiedErrorHandler.create_error(
+            message, 'query',
+            query=query,
+            parameters=parameters,
+            context=context
+        )
+
 def analyze_exception(exception: Exception) -> Tuple[LuxErrorCode, str, Dict[str, Any]]:
     """Analizuje wyjątek i zwraca kod błędu, wiadomość i kontekst"""
     error_code = detect_error_from_exception(exception)

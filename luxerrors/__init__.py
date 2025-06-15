@@ -1,4 +1,3 @@
-
 """
 LuxErrors - Niezależny system obsługi błędów
 Wyodrębniony z LuxDB dla uniwersalnego użytku
@@ -19,12 +18,13 @@ from .error_handlers import (
     DataNotFoundError,
     DuplicateDataError,
     OperationError,
-    ErrorCollector,
+    QueryExecutionError,
+    UnifiedErrorHandler,
     handle_errors,
     safe_execute,
     create_error_response,
     safe_operation,
-    analyze_exception
+    ErrorCollector
 )
 
 from .logging_integration import (
@@ -40,25 +40,27 @@ __description__ = "Universal error handling system extracted from LuxDB"
 __all__ = [
     # Error codes
     'LuxErrorCode',
-    'ErrorInfo', 
+    'ErrorInfo',
     'get_error_info',
     'detect_error_from_exception',
     'ERROR_DATABASE',
-    
+
     # Error handlers
     'LuxError',
     'ValidationError',
     'ConnectionError',
-    'DataNotFoundError', 
+    'DataNotFoundError',
     'DuplicateDataError',
     'OperationError',
+    'QueryExecutionError',
+    'UnifiedErrorHandler',
     'ErrorCollector',
     'handle_errors',
     'safe_execute',
     'create_error_response',
     'safe_operation',
     'analyze_exception',
-    
+
     # Logging
     'ErrorLogger',
     'get_error_logger',
