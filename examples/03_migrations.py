@@ -11,8 +11,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from manager import get_db_manager
-from models import User, Log
+from luxdb.manager import get_db_manager
+from luxdb.models import User, Log
 from datetime import datetime
 
 def main():
@@ -112,15 +112,11 @@ def main():
             # Aktualizuj last_login dla użytkowników
             users = session.query(User).all()
             for user in users:
-                # Sprawdź czy kolumna last_login istnieje
-                if hasattr(user, 'last_login'):
-                    print("Kolumna last_login nie jest dostępna w modelu (to normalne)")
-                else:
-                    # Użyj surowego SQL do aktualizacji
-                    session.execute(
-                        f"UPDATE users SET last_login = ? WHERE id = ?",
-                        (datetime.now(), user.id)
-                    )
+                # Użyj surowego SQL do aktualizacji
+                session.execute(
+                    f"UPDATE users SET last_login = ? WHERE id = ?",
+                    (datetime.now(), user.id)
+                )
             session.commit()
             print("✅ Zaktualizowano last_login dla użytkowników")
         

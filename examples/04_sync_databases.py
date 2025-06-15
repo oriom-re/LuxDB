@@ -84,9 +84,9 @@ def example_full_sync():
             
             # Sprawdź dane w backup_db
             with db.get_session("backup_db") as backup_session:
-                backup_users = db.query(User).all()
-                backup_sessions = db.query(UserSession).all()
-                backup_logs = db.query(Log).all()
+                backup_users = backup_session.query(User).all()
+                backup_sessions = backup_session.query(UserSession).all()
+                backup_logs = backup_session.query(Log).all()
             
             print(f"📊 Zsynchronizowano:")
             print(f"  - Użytkowników: {len(backup_users)}")
@@ -110,21 +110,20 @@ def example_selective_sync():
         
         # Pobierz aktywnych użytkowników ze źródła
         with db.get_session("source_db") as source_session:
-            active_users = db.query(User).filter(User.is_active == True).all()
-            # active_users = db.select_data("source_db", User, {"is_active": True})
+            active_users = source_session.query(User).filter(User.is_active == True).all()
             
             # Wstaw do analytics_db
-            for user in active_users:
-                user_data = {
-                    "username": user.username,
-                    "email": user.email,
-                    "password_hash": user.password_hash,
-                    "is_active": user.is_active,
-                    "phone": user.phone
-                }
-                instamce = model_class(**data)
-                source_sessiom.add(instamce)
-                # db.insert_data("analytics_db", User, user_data)
+            with db.get_session("analytics_db") as target_session:
+                for user in active_users:
+                    user_data = User(
+                        username=user.username,
+                        email=user.email,
+                        password_hash=user.password_hash,
+                        is_active=user.is_active,
+                        phone=user.phone
+                    )
+                    target_session.add(user_data)
+                target_session.commit()
             
             print(f"✅ Zsynchronizowano {len(active_users)} aktywnych użytkowników")
         
@@ -136,16 +135,18 @@ def example_selective_sync():
                 (Log.level == "ERROR") | (Log.level == "WARNING")
             ).all()
             
-            for log in error_logs:
-                log_data = {
-                    "level": log.level,
-                    "message": log.message,
-                    "module": log.module,
-                    "user_id": log.user_id,
-                    "ip_address": log.ip_address,
-                    "created_at": log.created_at
-                }
-                db.insert_data("analytics_db", Log, log_data)
+            with db.get_session("analytics_db") as target_session:
+                for log in error_logs:
+                    log_data = Log(
+                        level=log.level,
+                        message=log.message,
+                        module=log.module,
+                        user_id=log.user_id,
+                        ip_address=log.ip_address,
+                        created_at=log.created_at
+                    )
+                    target_session.add(log_data)
+                target_session.commit()
         
         print(f"✅ Zsynchronizowano {len(error_logs)} logów błędów/ostrzeżeń")
         
@@ -192,26 +193,29 @@ def example_incremental_sync():
             new_logs_to_sync = source_session.query(Log).filter(Log.id > last_log_id).all()
         
         # Wstaw nowe rekordy
-        for user in new_users_to_sync:
-            user_data = {
-                "username": user.username,
-                "email": user.email,
-                "password_hash": user.password_hash,
-                "is_active": user.is_active,
-                "phone": user.phone
-            }
-            db.insert_data("backup_db", User, user_data)
-        
-        for log in new_logs_to_sync:
-            log_data = {
-                "level": log.level,
-                "message": log.message,
-                "module": log.module,
-                "user_id": log.user_id,
-                "ip_address": log.ip_address,
-                "created_at": log.created_at
-            }
-            db.insert_data("backup_db", Log, log_data)
+        with db.get_session("backup_db") as backup_session:
+            for user in new_users_to_sync:
+                user_data = User(
+                    username=user.username,
+                    email=user.email,
+                    password_hash=user.password_hash,
+                    is_active=user.is_active,
+                    phone=user.phone
+                )
+                backup_session.add(user_data)
+            
+            for log in new_logs_to_sync:
+                log_data = Log(
+                    level=log.level,
+                    message=log.message,
+                    module=log.module,
+                    user_id=log.user_id,
+                    ip_address=log.ip_address,
+                    created_at=log.created_at
+                )
+                backup_session.add(log_data)
+            
+            backup_session.commit()
         
         print(f"✅ Synchronizacja przyrostowa zakończona:")
         print(f"  - Nowych użytkowników: {len(new_users_to_sync)}")
@@ -257,9 +261,10 @@ def compare_databases():
         print("Statystyki baz danych:")
         for db_name in databases:
             try:
-                users = db.select_data(db_name, User)
-                sessions = db.select_data(db_name, UserSession)
-                logs = db.select_data(db_name, Log)
+                with db.get_session(db_name) as session:
+                    users = db.select_data(session, db_name, User)
+                    sessions = db.select_data(session, db_name, UserSession)
+                    logs = db.select_data(session, db_name, Log)
                 
                 print(f"\n📊 {db_name}:")
                 print(f"  - Użytkowników: {len(users)}")

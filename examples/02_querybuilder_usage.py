@@ -11,9 +11,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from manager import get_db_manager
-from models import User, UserSession, Log
-from utils import QueryBuilder
+from luxdb.manager import get_db_manager
+from luxdb.models import User, UserSession, Log
+from luxdb.utils import QueryBuilder
 from datetime import datetime, timedelta
 import json
 

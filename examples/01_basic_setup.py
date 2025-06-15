@@ -102,10 +102,10 @@ def main():
         ]
         
         db.insert_batch("example_basic", UserSession, sessions_data)
-        print(f"✅ Dodano {len(sessions_data)} sesji użytkowników\n dsd{sessions_data[0]['expires_at']}")
+        print(f"✅ Dodano {len(sessions_data)} sesji użytkowników")
         
         # 6. Pobieranie z filtrowaniem
-        print("6. Pobieranie aktywnych sesji...")
+        print("\n6. Pobieranie aktywnych sesji...")
         with db.get_session("example_basic") as session:
             # Używamy bezpośredniego zapytania SQLAlchemy dla operatorów porównania
             current_time = datetime.now()

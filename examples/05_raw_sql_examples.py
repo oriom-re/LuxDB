@@ -332,7 +332,7 @@ def example_advanced_analytics():
     print(f"{'Type':<10} {'Status':<8} {'Users':<6} {'Avg Sessions':<12} {'Avg Logs':<9} {'Total Sessions':<14} {'Total Logs'}")
     print("-" * 85)
     for row in result:
-        print(f"{row.get('user_type',0):<10} {row.get('status', 0):<8} {row.get('user_count', 0):<6} {row.get('avg_sessions', 0):<12.1f} {row.get('avg_logs', 0):<9.1f} {row.get('total_sessions', 0):<14} {row.get('total_logs', 0)}")
+        print(f"{row.get('user_type', 0):<10} {row.get('status', 0):<8} {row.get('user_count', 0):<6} {row.get('avg_sessions', 0):<12.1f} {row.get('avg_logs', 0):<9.1f} {row.get('total_sessions', 0):<14} {row.get('total_logs', 0)}")
     
     # 2. Trending - aktywność w czasie
     print("\n2. Trend aktywności w ostatnich dniach:")
