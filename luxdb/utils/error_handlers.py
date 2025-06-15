@@ -132,7 +132,13 @@ def handle_database_errors(operation_name: str = None, return_result: bool = Fal
                 })
                 
                 luxdb_error = LuxDBError(message, error_code, context)
-                logger.log_error(op_name, luxdb_error, context)
+                
+                # Loguj w human-friendly format
+                if logger:
+                    logger.log_error(op_name, luxdb_error, context)
+                else:
+                    # Fallback do prostego komunikatu
+                    print(f"❌ Błąd w {op_name}: {type(e).__name__}")
                 
                 if return_result:
                     return False, luxdb_error.get_detailed_info()

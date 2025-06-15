@@ -1,4 +1,3 @@
-
 """
 Główny menedżer baz danych SQLAlchemy dla systemu LuxDB
 """
@@ -44,56 +43,60 @@ class DatabaseManager:
     Główny menedżer baz danych SQLAlchemy dla systemu LuxDB
     Obsługuje wiele instancji baz, wersjonowanie, migracje i replikację
     """
-    
+
     def __init__(self, db_directory: str = "db"):
         self.db_directory = db_directory
         self.connection_pools: Dict[str, ConnectionPool] = {}
         self.configs: Dict[str, DatabaseConfig] = {}
         self.lock = threading.RLock()
-        
+
         # Zapewnij istnienie katalogu
         os.makedirs(db_directory, exist_ok=True)
-        
+
         # Inicjalizuj główną bazę metadanych
         self._init_metadata_db()
-    
+
     def _init_metadata_db(self):
         """Inicjalizuje bazę metadanych do zarządzania schematami i migracjami"""
         metadata_path = os.path.join(self.db_directory, "_metadata.db")
         connection_string = f"sqlite:///{metadata_path}"
-        
+
         self.metadata_pool = ConnectionPool(connection_string, max_connections=5)
-        
+
         # Tworzy tabele metadanych
         metadata_base = type('MetadataBase', (object,), {
             'metadata': MetaData()
         })
-        
+
         # Dodaj tabele metadanych do oddzielnej bazy
         for table in [DatabaseSchema.__table__, Migration.__table__, TableDefinition.__table__]:
             table.tometadata(metadata_base.metadata)
-        
+
         metadata_base.metadata.create_all(bind=self.metadata_pool.engine)
-        
+
         logger.info("Zainicjalizowano bazę metadanych SQLAlchemy")
-    
+
     @contextmanager
     def get_session(self, db_name: str):
         """Context manager dla bezpiecznego dostępu do sesji SQLAlchemy"""
         if db_name not in self.connection_pools:
             raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-        
+
         session = self.connection_pools[db_name].get_session()
         try:
             yield session
             session.commit()
         except Exception as e:
-            session.rollback()
+            # Human-friendly komunikat błędu
+            error_msg = f"Błąd połączenia z bazą '{db_name}'"
+            if hasattr(e, '__class__'):
+                error_msg += f" ({type(e).__name__})"
+
             logger.error(f"Błąd sesji z bazą {db_name}: {e}")
-            raise DatabaseError(f"Błąd sesji z bazą {db_name}: {e}")
+            raise DatabaseError(error_msg)
         finally:
             session.close()
-    
+
     @contextmanager
     def get_metadata_session(self):
         """Context manager dla sesji metadanych"""
@@ -102,12 +105,11 @@ class DatabaseManager:
             yield session
             session.commit()
         except Exception as e:
-            session.rollback()
             logger.error(f"Błąd sesji metadanych: {e}")
             raise DatabaseError(f"Błąd sesji metadanych: {e}")
         finally:
             session.close()
-    
+
     def create_database(self, db_name: str, config: DatabaseConfig = None) -> bool:
         """Tworzy nową bazę danych"""
         try:
@@ -115,40 +117,40 @@ class DatabaseManager:
             if db_name in self.connection_pools:
                 logger.info(f"Baza danych {db_name} już istnieje")
                 return True
-            
+
             if not config:
                 config = DatabaseConfig(
                     name=db_name,
                     type=DatabaseType.SQLITE,
                     connection_string=f"sqlite:///{os.path.join(self.db_directory, db_name)}.db"
                 )
-            
+
             # Utwórz pool połączeń
             pool = ConnectionPool(config.connection_string, config.max_connections)
-            
+
             # Utwórz tabele systemu
             pool.create_tables(Base)
-            
+
             # Zapisz konfigurację
             self.connection_pools[db_name] = pool
             self.configs[db_name] = config
-            
+
             # Zarejestruj w metadanych
             self._register_database(db_name, config.version)
-            
+
             logger.info(f"Utworzono bazę danych SQLAlchemy: {db_name}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Błąd tworzenia bazy {db_name}: {e}")
             return False
-    
+
     def _register_database(self, db_name: str, version: int = 1):
         """Rejestruje bazę w systemie metadanych"""
         try:
             with self.get_metadata_session() as session:
                 schema_hash = self._calculate_schema_hash(db_name)
-                
+
                 db_schema = session.query(DatabaseSchema).filter_by(db_name=db_name).first()
                 if db_schema:
                     db_schema.version = version
@@ -161,56 +163,56 @@ class DatabaseManager:
                         schema_hash=schema_hash
                     )
                     session.add(db_schema)
-                
+
                 logger.info(f"Zarejestrowano bazę {db_name} w metadanych")
         except Exception as e:
             logger.error(f"Błąd rejestracji bazy {db_name}: {e}")
-    
+
     def _calculate_schema_hash(self, db_name: str) -> str:
         """Oblicza hash schematu bazy danych"""
         try:
             if db_name not in self.connection_pools:
                 return ""
-            
+
             pool = self.connection_pools[db_name]
             inspector = inspect(pool.engine)
             tables = inspector.get_table_names()
-            
+
             schema_info = []
             for table in sorted(tables):
                 columns = inspector.get_columns(table)
                 schema_info.append(f"{table}:{sorted([col['name'] + col['type'].__class__.__name__ for col in columns])}")
-            
+
             schema_str = '|'.join(schema_info)
             return hashlib.md5(schema_str.encode()).hexdigest()
         except Exception as e:
             logger.error(f"Błąd obliczania hash schematu dla {db_name}: {e}")
             return ""
-    
+
     def create_table_from_model(self, db_name: str, model_class: Type[Base]) -> bool:
         """Tworzy tabelę na podstawie modelu SQLAlchemy"""
         try:
             if db_name not in self.connection_pools:
                 raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+
             pool = self.connection_pools[db_name]
             model_class.__table__.create(bind=pool.engine, checkfirst=True)
-            
+
             # Zapisz definicję tabeli
             self._save_table_definition(db_name, model_class.__tablename__, str(model_class.__table__))
-            
+
             logger.info(f"Utworzono tabelę {model_class.__tablename__} w bazie {db_name}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Błąd tworzenia tabeli {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
-    
+
     def _save_table_definition(self, db_name: str, table_name: str, definition: str):
         """Zapisuje definicję tabeli w metadanych"""
         try:
             version = self.get_database_version(db_name)
-            
+
             with self.get_metadata_session() as session:
                 table_def = TableDefinition(
                     db_name=db_name,
@@ -221,75 +223,75 @@ class DatabaseManager:
                 session.merge(table_def)
         except Exception as e:
             logger.error(f"Błąd zapisywania definicji tabeli {table_name}: {e}")
-    
+
     def insert_data(self, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> Dict[str, Any]:
         """Wstawia dane do tabeli
-        
+
         Returns:
             Dict z kluczami 'success' (bool) i 'data'/'error' w zależności od wyniku
         """
         from .utils.error_handlers import safe_database_operation
-        
+
         def _insert_operation():
             with self.get_session(db_name) as session:
                 instance = model_class(**data)
                 session.add(instance)
                 session.flush()  # Wymusza wykonanie INSERT i sprawdzenie błędów
-                
+
                 # Zwróć ID nowo utworzonego rekordu
                 return {
                     "record_id": getattr(instance, 'id', None),
                     "table": model_class.__tablename__,
                     "operation": "insert"
                 }
-        
+
         result = safe_database_operation(_insert_operation)
-        
+
         if result["success"]:
             logger.info(f"Wstawiono dane do {model_class.__tablename__}")
         else:
             error_info = result["error"]
             logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: "
                         f"[{error_info.get('code', 'UNKNOWN')}] {error_info.get('message', 'Unknown error')}")
-        
+
         return result
-    
+
     def insert_batch(self, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Wstawia wiele rekordów jednocześnie
-        
+
         Returns:
             Dict z kluczami 'success' (bool) i 'data'/'error' w zależności od wyniku
         """
         from .utils.error_handlers import ErrorCollector, safe_database_operation
-        
+
         if not data_list:
             return {"success": True, "data": {"inserted_count": 0, "errors": []}}
-        
+
         def _batch_insert_operation():
             with self.get_session(db_name) as session:
                 instances = [model_class(**data) for data in data_list]
                 session.add_all(instances)
                 session.flush()  # Wymusza sprawdzenie błędów
-                
+
                 return {
                     "inserted_count": len(data_list),
                     "table": model_class.__tablename__,
                     "operation": "batch_insert"
                 }
-        
+
         result = safe_database_operation(_batch_insert_operation)
-        
+
         if result["success"]:
             logger.info(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
         else:
             # Dla batch operacji, spróbuj wstawić rekordy pojedynczo w przypadku błędu
             collector = ErrorCollector()
             successful_inserts = []
-            
+
             for i, data in enumerate(data_list):
                 collector.increment_total()
                 single_result = self.insert_data(db_name, model_class, data)
-                
+
                 if single_result["success"]:
                     collector.add_success()
                     successful_inserts.append(i)
@@ -297,7 +299,7 @@ class DatabaseManager:
                     # Konwertuj błąd pojedynczego rekordu na Exception dla ErrorCollector
                     error = Exception(single_result["error"].get("message", "Unknown error"))
                     collector.add_error(error, {"record_index": i, "record_data": data})
-            
+
             summary = collector.get_summary()
             result = {
                 "success": collector.success_count > 0,  # Sukces jeśli chociaż jeden rekord się udał
@@ -310,66 +312,66 @@ class DatabaseManager:
                     "error_codes": collector.get_error_codes_summary()
                 }
             }
-            
+
             logger.warning(f"Batch insert do {model_class.__tablename__}: "
                           f"{collector.success_count}/{len(data_list)} rekordów wstawionych pomyślnie")
-        
+
         return result
-    
+
     def select_data(self, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
                    order_by: str = None, limit: int = None) -> List[Any]:
         """Pobiera dane z tabeli"""
         try:
             with self.get_session(db_name) as session:
                 query = session.query(model_class)
-                
+
                 if filters:
                     for key, value in filters.items():
                         query = query.filter(getattr(model_class, key) == value)
-                
+
                 if order_by:
                     query = query.order_by(getattr(model_class, order_by))
-                
+
                 if limit:
                     query = query.limit(limit)
-                
+
                 return query.all()
-                
+
         except Exception as e:
             logger.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}: {e}")
             return []
-    
+
     def get_query_builder(self, db_name: str, model_class: Type[Base]) -> QueryBuilder:
         """Zwraca QueryBuilder dla danego modelu"""
         if db_name not in self.connection_pools:
             raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-        
+
         builder = QueryBuilder(model_class)
         session = self.connection_pools[db_name].get_session()
         builder.set_session(session)
         return builder
-    
+
     def execute_raw_sql(self, db_name: str, sql: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """Wykonuje surowe zapytanie SQL"""
         try:
             if db_name not in self.connection_pools:
                 raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+
             pool = self.connection_pools[db_name]
             with pool.engine.connect() as conn:
                 result = conn.execute(text(sql), params or {})
-                
+
                 if sql.strip().upper().startswith('SELECT'):
                     rows = result.fetchall()
                     return [dict(row._mapping) for row in rows]
                 else:
                     conn.commit()
                     return [{"affected_rows": result.rowcount}]
-                    
+
         except Exception as e:
             logger.error(f"Błąd wykonywania SQL w bazie {db_name}: {e}")
             return []
-    
+
     def get_database_version(self, db_name: str) -> int:
         """Pobiera aktualną wersję bazy danych"""
         try:
@@ -379,25 +381,25 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Błąd pobierania wersji bazy {db_name}: {e}")
             return 1
-    
+
     def create_migration(self, db_name: str, migration_sql: str, description: str = "") -> bool:
         """Tworzy nową migrację bazy danych"""
         try:
             current_version = self.get_database_version(db_name)
             new_version = current_version + 1
-            
+
             # Wykonaj migrację
             if db_name not in self.connection_pools:
                 raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+
             pool = self.connection_pools[db_name]
-            
+
             with pool.engine.begin() as conn:
                 # Wykonaj SQL migracji
                 for statement in migration_sql.split(';'):
                     if statement.strip():
                         conn.execute(text(statement))
-                
+
                 # Zapisz migrację w metadanych
                 with self.get_metadata_session() as meta_session:
                     migration = Migration(
@@ -407,38 +409,38 @@ class DatabaseManager:
                         migration_sql=migration_sql
                     )
                     meta_session.add(migration)
-                    
+
                     # Aktualizuj wersję bazy
                     db_schema = meta_session.query(DatabaseSchema).filter_by(db_name=db_name).first()
                     if db_schema:
                         db_schema.version = new_version
                         db_schema.schema_hash = self._calculate_schema_hash(db_name)
                         db_schema.updated_at = datetime.now()
-                
+
                 logger.info(f"Migracja bazy {db_name} z wersji {current_version} do {new_version} zakończona")
                 return True
-                
+
         except Exception as e:
             logger.error(f"Błąd migracji bazy {db_name}: {e}")
             return False
-    
+
     def sync_databases(self, source_db: str, target_db: str, models: List[Type[Base]] = None) -> bool:
         """Synchronizuje dane między bazami danych"""
         try:
             if source_db not in self.connection_pools or target_db not in self.connection_pools:
                 raise DatabaseError("Jedna lub obie bazy danych nie istnieją")
-            
+
             if not models:
                 models = [User, UserSession, Log]
-            
+
             for model in models:
                 # Pobierz dane z bazy źródłowej
                 source_data = self.select_data(source_db, model)
-                
+
                 # Usuń istniejące dane z bazy docelowej
                 with self.get_session(target_db) as session:
                     session.query(model).delete()
-                
+
                 # Wstaw dane do bazy docelowej
                 if source_data:
                     data_dicts = []
@@ -447,100 +449,100 @@ class DatabaseManager:
                         for column in model.__table__.columns:
                             data_dict[column.name] = getattr(item, column.name)
                         data_dicts.append(data_dict)
-                    
+
                     self.insert_batch(target_db, model, data_dicts)
-            
+
             logger.info(f"Synchronizacja z {source_db} do {target_db} zakończona")
             return True
-            
+
         except Exception as e:
             logger.error(f"Błąd synchronizacji baz {source_db} -> {target_db}: {e}")
             return False
-    
+
     def get_database_info(self, db_name: str) -> Dict[str, Any]:
         """Pobiera informacje o bazie danych"""
         try:
             if db_name not in self.connection_pools:
                 raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+
             pool = self.connection_pools[db_name]
             inspector = inspect(pool.engine)
-            
+
             info = {
                 "name": db_name,
                 "version": self.get_database_version(db_name),
                 "tables": [],
                 "size": 0
             }
-            
+
             # Rozmiar pliku bazy (tylko dla SQLite)
             if self.configs[db_name].type == DatabaseType.SQLITE:
                 db_path = self.configs[db_name].connection_string.replace("sqlite:///", "")
                 if os.path.exists(db_path):
                     info["size"] = os.path.getsize(db_path)
-            
+
             # Informacje o tabelach
             tables = inspector.get_table_names()
             for table_name in tables:
                 with self.get_session(db_name) as session:
                     result = session.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
                     record_count = result.scalar()
-                
+
                 info["tables"].append({
                     "name": table_name,
                     "records": record_count,
                     "columns": [col['name'] for col in inspector.get_columns(table_name)]
                 })
-            
+
             return info
-            
+
         except Exception as e:
             logger.error(f"Błąd pobierania informacji o bazie {db_name}: {e}")
             return {}
-    
+
     def list_databases(self) -> List[str]:
         """Zwraca listę wszystkich baz danych"""
         return list(self.connection_pools.keys())
-    
+
     def optimize_database(self, db_name: str) -> bool:
         """Optymalizuje bazę danych"""
         try:
             if db_name not in self.connection_pools:
                 raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+
             pool = self.connection_pools[db_name]
-            
+
             # Optymalizacja dla SQLite
             if self.configs[db_name].type == DatabaseType.SQLITE:
                 with pool.engine.connect() as conn:
                     conn.execute(text("VACUUM"))
                     conn.execute(text("ANALYZE"))
                     conn.commit()
-            
+
             logger.info(f"Optymalizacja bazy {db_name} zakończona")
             return True
-            
+
         except Exception as e:
             logger.error(f"Błąd optymalizacji bazy {db_name}: {e}")
             return False
-    
+
     def export_database(self, db_name: str, format: str = "json") -> str:
         """Eksportuje bazę danych do pliku"""
         try:
             if db_name not in self.connection_pools:
                 raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             export_path = os.path.join(self.db_directory, f"{db_name}_export_{timestamp}.{format}")
-            
+
             if format.lower() == "json":
                 export_data = {}
-                
+
                 for model_name, model_class in SYSTEM_MODELS.items():
                     try:
                         data = self.select_data(db_name, model_class)
                         export_data[model_name] = []
-                        
+
                         for item in data:
                             item_dict = {}
                             for column in model_class.__table__.columns:
@@ -551,17 +553,17 @@ class DatabaseManager:
                             export_data[model_name].append(item_dict)
                     except:
                         continue
-                
+
                 with open(export_path, 'w', encoding='utf-8') as f:
                     json.dump(export_data, f, indent=2, default=str)
-                
+
                 logger.info(f"Eksport bazy {db_name} do {export_path}")
                 return export_path
-                
+
         except Exception as e:
             logger.error(f"Błąd eksportu bazy {db_name}: {e}")
             return ""
-    
+
     def close_all_connections(self):
         """Zamyka wszystkie połączenia"""
         with self.lock:
@@ -570,12 +572,12 @@ class DatabaseManager:
                     pool.close()
                 except:
                     pass
-            
+
             try:
                 self.metadata_pool.close()
             except:
                 pass
-            
+
             self.connection_pools.clear()
             logger.info("Zamknięto wszystkie połączenia SQLAlchemy")
 
