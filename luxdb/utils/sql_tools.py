@@ -9,7 +9,7 @@ from datetime import datetime
 from sqlalchemy import text, inspect
 from sqlalchemy.engine import Engine
 from .logging_utils import get_db_logger
-from .error_handlers import QueryExecutionError, handle_database_errors
+from luxerrors.error_handlers import QueryExecutionError, handle_database_errors
 
 class SQLQueryBuilder:
     """Builder do tworzenia zapytań SQL"""
