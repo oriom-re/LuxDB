@@ -25,7 +25,7 @@ from .models import (
     User, UserSession, Log, DatabaseSchema, Migration, TableDefinition,
     SYSTEM_MODELS
 )
-from .utils import QueryBuilder
+# QueryBuilder usunięty - używamy czystego SQLAlchemy
 
 # Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
@@ -217,30 +217,37 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Błąd zapisywania definicji tabeli {table_name}: {e}")
     
-    def insert_data(self, db_name: str, model_class: Type[Base], data: Dict[str, Any]) -> bool:
+    def insert_data(self, 
+                    session,
+                    db_name: str, 
+                    model_class: Type[Base], 
+                    data: Dict[str, Any]) -> bool:
         """Wstawia dane do tabeli"""
         try:
-            with self.get_session(db_name) as session:
-                instance = model_class(**data)
-                session.add(instance)
-                
+            instance = model_class(**data)
+            session.add(instance)
+            session.commit()
             logger.info(f"Wstawiono dane do {model_class.__tablename__}")
-            return True
+            return instance
             
         except Exception as e:
             logger.error(f"Błąd wstawiania danych do {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
     
-    def insert_batch(self, db_name: str, model_class: Type[Base], data_list: List[Dict[str, Any]]) -> bool:
+    def insert_batch(self, 
+                     session,
+                     db_name: str, 
+                     model_class: Type[Base], 
+                     data_list: List[Dict[str, Any]]) -> bool:
         """Wstawia wiele rekordów jednocześnie"""
         if not data_list:
+            logger.warning(f"Pusta lista danych do wstawienia do {model_class.__tablename__}")
             return True
             
         try:
-            with self.get_session(db_name) as session:
-                instances = [model_class(**data) for data in data_list]
-                session.add_all(instances)
-                
+            instances = [model_class(**data) for data in data_list]
+            session.add_all(instances)
+            session.commit()
             logger.info(f"Wstawiono {len(data_list)} rekordów do {model_class.__tablename__}")
             return True
             
@@ -248,38 +255,29 @@ class DatabaseManager:
             logger.error(f"Błąd wstawiania batch do {model_class.__tablename__} w bazie {db_name}: {e}")
             return False
     
-    def select_data(self, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
+    def select_data(self, session, db_name: str, model_class: Type[Base], filters: Dict[str, Any] = None,
                    order_by: str = None, limit: int = None) -> List[Any]:
         """Pobiera dane z tabeli"""
         try:
-            with self.get_session(db_name) as session:
-                query = session.query(model_class)
-                
-                if filters:
-                    for key, value in filters.items():
-                        query = query.filter(getattr(model_class, key) == value)
-                
-                if order_by:
-                    query = query.order_by(getattr(model_class, order_by))
-                
-                if limit:
-                    query = query.limit(limit)
-                
-                return query.all()
+            query = session.query(model_class)
+            
+            if filters:
+                for key, value in filters.items():
+                    query = query.filter(getattr(model_class, key) == value)
+            
+            if order_by:
+                query = query.order_by(getattr(model_class, order_by))
+            
+            if limit:
+                query = query.limit(limit)
+            
+            return query.all()
                 
         except Exception as e:
             logger.error(f"Błąd pobierania danych z {model_class.__tablename__} w bazie {db_name}: {e}")
             return []
     
-    def get_query_builder(self, db_name: str, model_class: Type[Base]) -> QueryBuilder:
-        """Zwraca QueryBuilder dla danego modelu"""
-        if db_name not in self.connection_pools:
-            raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-        
-        builder = QueryBuilder(model_class)
-        session = self.connection_pools[db_name].get_session()
-        builder.set_session(session)
-        return builder
+    # QueryBuilder usunięty - używamy bezpośrednio session.query() jak w duchowych praktykach
     
     def execute_raw_sql(self, db_name: str, sql: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """Wykonuje surowe zapytanie SQL"""
@@ -365,22 +363,23 @@ class DatabaseManager:
             
             for model in models:
                 # Pobierz dane z bazy źródłowej
-                source_data = self.select_data(source_db, model)
-                
-                # Usuń istniejące dane z bazy docelowej
-                with self.get_session(target_db) as session:
-                    session.query(model).delete()
-                
-                # Wstaw dane do bazy docelowej
-                if source_data:
-                    data_dicts = []
-                    for item in source_data:
-                        data_dict = {}
-                        for column in model.__table__.columns:
-                            data_dict[column.name] = getattr(item, column.name)
-                        data_dicts.append(data_dict)
+                with self.get_session(source_db) as source_session:
+                    source_data = self.select_data(source_session, source_db, model)
                     
-                    self.insert_batch(target_db, model, data_dicts)
+                    # Usuń istniejące dane z bazy docelowej i wstaw nowe
+                    with self.get_session(target_db) as target_session:
+                        target_session.query(model).delete()
+                        
+                        # Wstaw dane do bazy docelowej
+                        if source_data:
+                            data_dicts = []
+                            for item in source_data:
+                                data_dict = {}
+                                for column in model.__table__.columns:
+                                    data_dict[column.name] = getattr(item, column.name)
+                                data_dicts.append(data_dict)
+                            
+                            self.insert_batch(target_session, target_db, model, data_dicts)
             
             logger.info(f"Synchronizacja z {source_db} do {target_db} zakończona")
             return True
@@ -393,39 +392,41 @@ class DatabaseManager:
         """Pobiera informacje o bazie danych"""
         try:
             if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
+                raise ConnectionError(f"Baza danych {db_name} nie istnieje", 
+                                     service_name="database",
+                                     context={"db_name": db_name})
+
             pool = self.connection_pools[db_name]
             inspector = inspect(pool.engine)
-            
+
             info = {
                 "name": db_name,
                 "version": self.get_database_version(db_name),
                 "tables": [],
                 "size": 0
             }
-            
+
             # Rozmiar pliku bazy (tylko dla SQLite)
             if self.configs[db_name].type == DatabaseType.SQLITE:
                 db_path = self.configs[db_name].connection_string.replace("sqlite:///", "")
                 if os.path.exists(db_path):
                     info["size"] = os.path.getsize(db_path)
-            
+
             # Informacje o tabelach
             tables = inspector.get_table_names()
             for table_name in tables:
                 with self.get_session(db_name) as session:
                     result = session.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
                     record_count = result.scalar()
-                
+
                 info["tables"].append({
                     "name": table_name,
                     "records": record_count,
                     "columns": [col['name'] for col in inspector.get_columns(table_name)]
                 })
-            
+    
             return info
-            
+
         except Exception as e:
             logger.error(f"Błąd pobierania informacji o bazie {db_name}: {e}")
             return {}
@@ -470,8 +471,9 @@ class DatabaseManager:
                 
                 for model_name, model_class in SYSTEM_MODELS.items():
                     try:
-                        data = self.select_data(db_name, model_class)
-                        export_data[model_name] = []
+                        with self.get_session(db_name) as session:
+                            data = self.select_data(session, db_name, model_class)
+                            export_data[model_name] = []
                         
                         for item in data:
                             item_dict = {}
@@ -494,7 +496,7 @@ class DatabaseManager:
             logger.error(f"Błąd eksportu bazy {db_name}: {e}")
             return ""
     
-    def close_all_connections(self):
+    def close_all(self):
         """Zamyka wszystkie połączenia"""
         with self.lock:
             for pool in self.connection_pools.values():

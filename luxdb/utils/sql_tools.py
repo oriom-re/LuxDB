@@ -1,271 +1,266 @@
-
 """
-Narzędzia do pracy z surowym SQL w LuxDB
+Narzędzia SQL dla LuxDB
 """
 
-import re
 from typing import Dict, List, Any, Optional, Union
-from datetime import datetime
-from sqlalchemy import text, inspect
-from sqlalchemy.engine import Engine
-from .logging_utils import get_db_logger
-from .error_handlers import QueryExecutionError, handle_database_errors
+from sqlalchemy import text
+from ..config import Base
+from .error_handlers import handle_database_errors
+
+class QueryBuilder:
+    """Konstruktor zapytań SQL z intuicyjnym API"""
+
+    def __init__(self, model_class=None):
+        self.model_class = model_class
+        self.session = None
+        self._select_columns = []
+        self._joins = []
+        self._filters = []
+        self._order_by = []
+        self._group_by = []
+        self._having = []
+        self._limit_value = None
+        self._offset_value = None
+
+    def set_session(self, session):
+        """Ustaw sesję SQLAlchemy"""
+        self.session = session
+        return self
+
+    def select(self, *columns):
+        """Wybierz kolumny do zapytania"""
+        if columns:
+            self._select_columns = list(columns)
+        else:
+            self._select_columns = [self.model_class] if self.model_class else []
+        return self
+
+    def filter(self, *conditions):
+        """Dodaj warunki WHERE"""
+        self._filters.extend(conditions)
+        return self
+
+    def join(self, *args, **kwargs):
+        """Dodaj JOIN do zapytania"""
+        self._joins.extend(args)
+        return self
+
+    def order_by(self, *columns):
+        """Dodaj sortowanie"""
+        self._order_by.extend(columns)
+        return self
+
+    def group_by(self, *columns):
+        """Dodaj grupowanie"""
+        self._group_by.extend(columns)
+        return self
+
+    def having(self, *conditions):
+        """Dodaj warunki HAVING"""
+        self._having.extend(conditions)
+        return self
+
+    def limit(self, count):
+        """Ogranicz liczbę wyników"""
+        self._limit_value = count
+        return self
+
+    def offset(self, count):
+        """Pomiń określoną liczbę wyników"""
+        self._offset_value = count
+        return self
+
+    def all(self):
+        """Wykonaj zapytanie i zwróć wszystkie wyniki"""
+        query = self._build_query()
+        return query.all()
+
+    def first(self):
+        """Wykonaj zapytanie i zwróć pierwszy wynik"""
+        query = self._build_query()
+        return query.first()
+
+    def count(self):
+        """Policz wyniki"""
+        from sqlalchemy import func
+        if self.model_class:
+            query = self.session.query(func.count(self.model_class.id))
+        else:
+            query = self.session.query(func.count())
+
+        # Dodaj filtry
+        for condition in self._filters:
+            query = query.filter(condition)
+
+        # Dodaj joins
+        for join_target in self._joins:
+            query = query.join(join_target)
+
+        return query.scalar()
+
+    def _build_query(self):
+        """Zbuduj zapytanie SQLAlchemy"""
+        if not self.session:
+            raise ValueError("Sesja nie została ustawiona")
+
+        # Wybierz kolumny
+        if self._select_columns:
+            query = self.session.query(*self._select_columns)
+        elif self.model_class:
+            query = self.session.query(self.model_class)
+        else:
+            raise ValueError("Nie określono modelu ani kolumn")
+
+        # Dodaj joins
+        for join_target in self._joins:
+            query = query.join(join_target)
+
+        # Dodaj filtry
+        for condition in self._filters:
+            query = query.filter(condition)
+
+        # Dodaj grupowanie
+        if self._group_by:
+            query = query.group_by(*self._group_by)
+
+        # Dodaj warunki HAVING
+        for condition in self._having:
+            query = query.having(condition)
+
+        # Dodaj sortowanie
+        if self._order_by:
+            query = query.order_by(*self._order_by)
+
+        # Dodaj limit i offset
+        if self._limit_value is not None:
+            query = query.limit(self._limit_value)
+
+        if self._offset_value is not None:
+            query = query.offset(self._offset_value)
+
+        return query
+
+    def reset(self):
+        """Zresetuj konstruktor zapytań"""
+        self._select_columns = []
+        self._joins = []
+        self._filters = []
+        self._order_by = []
+        self._group_by = []
+        self._having = []
+        self._limit_value = None
+        self._offset_value = None
+        return self
 
 class SQLQueryBuilder:
-    """Builder do tworzenia zapytań SQL"""
-    
+    """Konstruktor zapytań SQL"""
+
     def __init__(self):
-        self.reset()
-    
-    def reset(self):
-        """Resetuj builder"""
-        self._select_fields = []
-        self._from_table = ""
-        self._joins = []
-        self._where_conditions = []
-        self._group_by = []
-        self._having_conditions = []
-        self._order_by = []
-        self._limit_count = None
-        self._offset_count = None
+        self.query_parts = {
+            'select': [],
+            'from': '',
+            'joins': [],
+            'where': [],
+            'group_by': [],
+            'having': [],
+            'order_by': [],
+            'limit': None
+        }
+
+    def select(self, *columns):
+        self.query_parts['select'] = list(columns)
         return self
-    
-    def select(self, *fields):
-        """Dodaj pola SELECT"""
-        self._select_fields.extend(fields)
+
+    def from_table(self, table):
+        self.query_parts['from'] = table
         return self
-    
-    def from_table(self, table_name: str):
-        """Ustaw tabelę FROM"""
-        self._from_table = table_name
+
+    def where(self, condition):
+        self.query_parts['where'].append(condition)
         return self
-    
-    def join(self, table: str, condition: str, join_type: str = "INNER"):
-        """Dodaj JOIN"""
-        self._joins.append(f"{join_type} JOIN {table} ON {condition}")
-        return self
-    
-    def where(self, condition: str):
-        """Dodaj warunek WHERE"""
-        self._where_conditions.append(condition)
-        return self
-    
-    def group_by(self, *fields):
-        """Dodaj GROUP BY"""
-        self._group_by.extend(fields)
-        return self
-    
-    def having(self, condition: str):
-        """Dodaj warunek HAVING"""
-        self._having_conditions.append(condition)
-        return self
-    
-    def order_by(self, field: str, direction: str = "ASC"):
-        """Dodaj ORDER BY"""
-        self._order_by.append(f"{field} {direction}")
-        return self
-    
-    def limit(self, count: int):
-        """Dodaj LIMIT"""
-        self._limit_count = count
-        return self
-    
-    def offset(self, count: int):
-        """Dodaj OFFSET"""
-        self._offset_count = count
-        return self
-    
-    def build(self) -> str:
+
+    def build(self):
         """Zbuduj zapytanie SQL"""
-        if not self._from_table:
-            raise QueryExecutionError("FROM table is required")
-        
+        sql_parts = []
+
         # SELECT
-        select_clause = "SELECT " + (", ".join(self._select_fields) if self._select_fields else "*")
-        
+        if self.query_parts['select']:
+            sql_parts.append(f"SELECT {', '.join(self.query_parts['select'])}")
+
         # FROM
-        from_clause = f"FROM {self._from_table}"
-        
-        # JOIN
-        join_clause = " " + " ".join(self._joins) if self._joins else ""
-        
+        if self.query_parts['from']:
+            sql_parts.append(f"FROM {self.query_parts['from']}")
+
         # WHERE
-        where_clause = " WHERE " + " AND ".join(self._where_conditions) if self._where_conditions else ""
-        
-        # GROUP BY
-        group_clause = " GROUP BY " + ", ".join(self._group_by) if self._group_by else ""
-        
-        # HAVING
-        having_clause = " HAVING " + " AND ".join(self._having_conditions) if self._having_conditions else ""
-        
-        # ORDER BY
-        order_clause = " ORDER BY " + ", ".join(self._order_by) if self._order_by else ""
-        
-        # LIMIT
-        limit_clause = f" LIMIT {self._limit_count}" if self._limit_count else ""
-        
-        # OFFSET
-        offset_clause = f" OFFSET {self._offset_count}" if self._offset_count else ""
-        
-        return select_clause + " " + from_clause + join_clause + where_clause + group_clause + having_clause + order_clause + limit_clause + offset_clause
+        if self.query_parts['where']:
+            sql_parts.append(f"WHERE {' AND '.join(self.query_parts['where'])}")
+
+        return ' '.join(sql_parts)
 
 class SQLTemplateEngine:
     """Silnik szablonów SQL"""
-    
-    @staticmethod
-    def render_template(template: str, params: Dict[str, Any]) -> str:
-        """Renderuj szablon SQL z parametrami"""
-        for key, value in params.items():
-            placeholder = f"{{{key}}}"
-            if isinstance(value, str):
-                template = template.replace(placeholder, f"'{value}'")
-            elif isinstance(value, (int, float)):
-                template = template.replace(placeholder, str(value))
-            elif isinstance(value, datetime):
-                template = template.replace(placeholder, f"'{value.isoformat()}'")
-            elif value is None:
-                template = template.replace(placeholder, "NULL")
-            else:
-                template = template.replace(placeholder, str(value))
-        
-        return template
-    
-    @staticmethod
-    def get_common_queries() -> Dict[str, str]:
-        """Zwróć popularne szablony zapytań"""
-        return {
-            "count_records": "SELECT COUNT(*) as count FROM {table}",
-            "table_info": "SELECT COUNT(*) as record_count, MAX({id_field}) as max_id FROM {table}",
-            "recent_records": "SELECT * FROM {table} WHERE {date_field} >= '{start_date}' ORDER BY {date_field} DESC",
-            "duplicate_check": "SELECT {field}, COUNT(*) as count FROM {table} GROUP BY {field} HAVING COUNT(*) > 1",
-            "table_size": "SELECT COUNT(*) as rows, SUM(length({text_field})) as total_size FROM {table}",
-            "active_records": "SELECT * FROM {table} WHERE {status_field} = 1 OR {status_field} = 'active'",
-        }
+
+    def __init__(self):
+        self.templates = {}
+
+    def add_template(self, name: str, template: str):
+        """Dodaj szablon SQL"""
+        self.templates[name] = template
+
+    def render(self, template_name: str, **kwargs) -> str:
+        """Renderuj szablon z parametrami"""
+        if template_name not in self.templates:
+            raise ValueError(f"Template {template_name} not found")
+
+        template = self.templates[template_name]
+        return template.format(**kwargs)
 
 class SQLAnalyzer:
     """Analizator zapytań SQL"""
-    
-    @staticmethod
-    def analyze_query(sql: str) -> Dict[str, Any]:
+
+    def analyze_query(self, query: str) -> Dict[str, Any]:
         """Analizuj zapytanie SQL"""
-        sql_upper = sql.upper().strip()
-        
-        analysis = {
-            "type": SQLAnalyzer._get_query_type(sql_upper),
-            "tables": SQLAnalyzer._extract_tables(sql),
-            "is_read_only": SQLAnalyzer._is_read_only(sql_upper),
-            "has_joins": "JOIN" in sql_upper,
-            "has_subqueries": "(" in sql and "SELECT" in sql_upper,
-            "complexity": SQLAnalyzer._assess_complexity(sql_upper)
+        return {
+            'query': query,
+            'type': self._get_query_type(query),
+            'tables': self._extract_tables(query),
+            'complexity': 'medium'
         }
-        
-        return analysis
-    
-    @staticmethod
-    def _get_query_type(sql_upper: str) -> str:
-        """Określ typ zapytania"""
-        if sql_upper.startswith("SELECT"):
-            return "SELECT"
-        elif sql_upper.startswith("INSERT"):
-            return "INSERT"
-        elif sql_upper.startswith("UPDATE"):
-            return "UPDATE"
-        elif sql_upper.startswith("DELETE"):
-            return "DELETE"
-        elif sql_upper.startswith("CREATE"):
-            return "CREATE"
-        elif sql_upper.startswith("DROP"):
-            return "DROP"
-        elif sql_upper.startswith("ALTER"):
-            return "ALTER"
-        else:
-            return "OTHER"
-    
-    @staticmethod
-    def _extract_tables(sql: str) -> List[str]:
-        """Wyodrębnij nazwy tabel"""
-        # Podstawowa ekstrakcja - można rozbudować
-        pattern = r'\b(?:FROM|JOIN|INTO|UPDATE)\s+([a-zA-Z_]\w*)'
-        matches = re.findall(pattern, sql, re.IGNORECASE)
-        return list(set(matches))
-    
-    @staticmethod
-    def _is_read_only(sql_upper: str) -> bool:
-        """Sprawdź czy zapytanie jest tylko do odczytu"""
-        write_operations = ["INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "TRUNCATE"]
-        return not any(sql_upper.startswith(op) for op in write_operations)
-    
-    @staticmethod
-    def _assess_complexity(sql_upper: str) -> str:
-        """Oceń złożoność zapytania"""
-        complexity_score = 0
-        
-        if "JOIN" in sql_upper:
-            complexity_score += 1
-        if "SUBQUERY" in sql_upper or sql_upper.count("SELECT") > 1:
-            complexity_score += 2
-        if "GROUP BY" in sql_upper:
-            complexity_score += 1
-        if "HAVING" in sql_upper:
-            complexity_score += 1
-        if "WINDOW" in sql_upper or "OVER" in sql_upper:
-            complexity_score += 2
-        
-        if complexity_score == 0:
-            return "SIMPLE"
-        elif complexity_score <= 2:
-            return "MEDIUM"
-        else:
-            return "COMPLEX"
 
-@handle_database_errors("sql_execution")
-def execute_sql_safely(engine: Engine, sql: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-    """Bezpieczne wykonanie SQL z logowaniem"""
-    logger = get_db_logger()
-    
-    # Analizuj zapytanie
-    analysis = SQLAnalyzer.analyze_query(sql)
-    logger.logger.debug(f"Executing {analysis['type']} query on tables: {analysis['tables']}")
-    
-    start_time = datetime.now()
-    
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text(sql), params or {})
-            
-            if analysis['is_read_only']:
-                rows = result.fetchall()
-                data = [dict(row._mapping) for row in rows]
-                
-                execution_time = (datetime.now() - start_time).total_seconds()
-                logger.log_query_execution(analysis['type'], ', '.join(analysis['tables']), len(data), execution_time)
-                
-                return data
-            else:
-                conn.commit()
-                execution_time = (datetime.now() - start_time).total_seconds()
-                logger.log_query_execution(analysis['type'], ', '.join(analysis['tables']), result.rowcount, execution_time)
-                
-                return [{"affected_rows": result.rowcount}]
-                
-    except Exception as e:
-        execution_time = (datetime.now() - start_time).total_seconds()
-        context = {
-            'sql': sql,
-            'params': params,
-            'execution_time': execution_time,
-            'analysis': analysis
-        }
-        raise QueryExecutionError(f"Failed to execute SQL: {str(e)}", context)
+    def _get_query_type(self, query: str) -> str:
+        query_upper = query.strip().upper()
+        if query_upper.startswith('SELECT'):
+            return 'SELECT'
+        elif query_upper.startswith('INSERT'):
+            return 'INSERT'
+        elif query_upper.startswith('UPDATE'):
+            return 'UPDATE'
+        elif query_upper.startswith('DELETE'):
+            return 'DELETE'
+        return 'UNKNOWN'
 
-def optimize_sql_query(sql: str) -> str:
-    """Podstawowa optymalizacja zapytania SQL"""
-    # Usuń zbędne spacje
-    sql = re.sub(r'\s+', ' ', sql.strip())
-    
-    # Dodaj wskazówki optymalizacyjne dla SQLite
-    if sql.upper().startswith('SELECT') and 'ORDER BY' in sql.upper():
-        # Sugestia dodania indeksu w komentarzu
-        sql += " -- Consider adding index on ORDER BY columns"
-    
-    return sql
+    def _extract_tables(self, query: str) -> List[str]:
+        # Prosta ekstrakcja tabel - można rozszerzyć
+        return []
+
+class SQLFormatter:
+    """Formatowanie zapytań SQL"""
+
+    def format(self, query: str, indent: str = "  ") -> str:
+        """Formatuj zapytanie SQL"""
+        lines = query.split('\n')
+        formatted_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+            if stripped:
+                if any(stripped.upper().startswith(keyword) for keyword in ['SELECT', 'FROM', 'WHERE', 'ORDER BY', 'GROUP BY']):
+                    formatted_lines.append(stripped)
+                else:
+                    formatted_lines.append(indent + stripped)
+
+        return '\n'.join(formatted_lines)
+
+    def minify(self, query: str) -> str:
+        """Zminifikuj zapytanie SQL"""
+        return ' '.join(query.split())
