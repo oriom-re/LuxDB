@@ -69,6 +69,11 @@ class DatabaseLogger:
             message += f" | Context: {context_str}"
         
         self.logger.error(message, exc_info=True)
+        
+    #log_info
+    def log_info(self, message: str):
+        """Loguje informacje"""
+        self.logger.info(message)
     
     def log_migration(self, db_name: str, from_version: int, to_version: int, 
                      success: bool, execution_time: Optional[float] = None):
