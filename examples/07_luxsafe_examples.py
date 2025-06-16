@@ -18,10 +18,7 @@ def demonstrate_luxsafe():
     
     # Inicjalizacja
     db = DatabaseManager()
-    db.create_database("luxsafe_demo", {
-        "type": "sqlite",
-        "connection_string": "sqlite:///db/luxsafe_demo.db"
-    })
+    db.create_database("luxsafe_demo")
     
     with db.get_session("luxsafe_demo") as session:
         luxsafe = LuxSafeManager(session)

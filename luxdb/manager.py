@@ -496,7 +496,7 @@ class DatabaseManager:
             logger.error(f"Błąd eksportu bazy {db_name}: {e}")
             return ""
     
-    def close_all_connections(self):
+    def close_all(self):
         """Zamyka wszystkie połączenia"""
         with self.lock:
             for pool in self.connection_pools.values():
