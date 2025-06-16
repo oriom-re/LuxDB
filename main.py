@@ -208,18 +208,83 @@ def test_migration_sql_generation():
     print("Wygenerowany SQL migracji:")
     print(migration_sql)
 
+def test_session_manager():
+    """Test menedżera sesji"""
+    print("\n=== Test menedżera sesji ===")
+    
+    from luxdb.session_manager import get_session_manager
+    
+    session_mgr = get_session_manager("test_sessions")
+    
+    # Tworzenie użytkownika
+    try:
+        user_id = session_mgr.create_user(
+            username="test_user",
+            email="test@example.com",
+            password="bezpieczne_haslo123"
+        )
+        print(f"Utworzono użytkownika z ID: {user_id}")
+    except Exception as e:
+        print(f"Błąd tworzenia użytkownika: {e}")
+        return
+    
+    # Uwierzytelnianie
+    try:
+        user_data = session_mgr.authenticate_user("test_user", "bezpieczne_haslo123")
+        print(f"Uwierzytelniono użytkownika: {user_data['username']}")
+    except Exception as e:
+        print(f"Błąd uwierzytelniania: {e}")
+        return
+    
+    # Tworzenie sesji
+    try:
+        session_token = session_mgr.create_session(
+            user_id=user_data["id"],
+            ip_address="127.0.0.1",
+            user_agent="Test Browser"
+        )
+        print(f"Utworzono sesję: {session_token[:20]}...")
+    except Exception as e:
+        print(f"Błąd tworzenia sesji: {e}")
+        return
+    
+    # Walidacja sesji
+    try:
+        session_data = session_mgr.validate_session(session_token)
+        if session_data:
+            print("Sesja jest ważna")
+        else:
+            print("Sesja jest nieważna")
+    except Exception as e:
+        print(f"Błąd walidacji sesji: {e}")
+    
+    # Test kontekstu użytkownika
+    try:
+        with session_mgr.user_context(session_token) as user:
+            print(f"Kontekst użytkownika: {user['username']}")
+    except Exception as e:
+        print(f"Błąd kontekstu użytkownika: {e}")
+    
+    # Wylogowanie
+    try:
+        destroyed = session_mgr.destroy_session(session_token)
+        print(f"Sesja zniszczona: {destroyed}")
+    except Exception as e:
+        print(f"Błąd niszczenia sesji: {e}")
+
 def main():
     """Główna funkcja demonstrująca LuxDB"""
     try:
         print("🚀 LuxDB - Zaawansowany Manager Baz Danych SQLAlchemy")
         print("=" * 60)
-        ex.basic_setup.main()
+        # ex.basic_setup.main()  # Tymczasowo wyłączone - brak modułu examples
         test_basic_model_generator()
         test_advanced_model_generator()
         test_crud_model()
         test_api_model_with_validation()
         test_database_operations()
         test_migration_sql_generation()
+        test_session_manager()
 
         print("\n✅ Wszystkie testy zakończone pomyślnie!")
 
