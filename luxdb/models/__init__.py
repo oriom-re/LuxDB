@@ -1,55 +1,65 @@
-
 """
-Modele SQLAlchemy dla LuxDB
+Modele LuxDB - Astralny archetyp bytów
 """
 
-from ..config import Base, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, relationship, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Float
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from ..config import Base
 
-# Modele SQLAlchemy
 class User(Base):
-    """Model użytkownika"""
+    """Model użytkownika Astralnej Biblioteki"""
     __tablename__ = 'users'
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(255), unique=True, nullable=False, index=True)
-    email = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
     phone = Column(String(20), nullable=True)
-    created_at = Column(DateTime, default=func.current_timestamp(), nullable=False)
-    updated_at = Column(DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
-    
+    created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
+    updated_at = Column(DateTime, nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp())
+
     # Relacje
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     logs = relationship("Log", back_populates="user")
 
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
 class UserSession(Base):
     """Model sesji użytkownika"""
-    __tablename__ = 'sessions'
-    
+    __tablename__ = 'user_sessions'
+
     id = Column(String(255), primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
-    created_at = Column(DateTime, default=func.current_timestamp(), nullable=False)
-    expires_at = Column(DateTime, nullable=False, index=True)
-    data = Column(Text, nullable=True)  # JSON data
-    
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    data = Column(Text, nullable=True, default='{}')
+    created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
+
     # Relacje
     user = relationship("User", back_populates="sessions")
 
+    def __repr__(self):
+        return f"<UserSession(id='{self.id}', user_id={self.user_id}, expires_at='{self.expires_at}')>"
+
 class Log(Base):
-    """Model logów systemu"""
+    """Model logów systemowych"""
     __tablename__ = 'logs'
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    level = Column(String(20), nullable=False, index=True)
+    level = Column(String(20), nullable=False, index=True)  # INFO, WARNING, ERROR
     message = Column(Text, nullable=False)
     module = Column(String(100), nullable=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
-    ip_address = Column(String(45), nullable=True)
-    created_at = Column(DateTime, default=func.current_timestamp(), nullable=False, index=True)
-    
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    ip_address = Column(String(45), nullable=True)  # IPv6 support
+    created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
+
     # Relacje
     user = relationship("User", back_populates="logs")
+
+    def __repr__(self):
+        return f"<Log(id={self.id}, level='{self.level}', message='{self.message[:50]}...')>"
 
 class DatabaseSchema(Base):
     """Model schematu bazy danych"""
@@ -93,13 +103,4 @@ SYSTEM_MODELS = {
     'TableDefinition': TableDefinition
 }
 
-__all__ = [
-    'User',
-    'UserSession',
-    'Log',
-    'DatabaseSchema',
-    'Migration',
-    'TableDefinition',
-    'SYSTEM_MODELS',
-    'Base'
-]
+__all__ = ['User', 'UserSession', 'Log', 'DatabaseSchema', 'Migration', 'TableDefinition', 'SYSTEM_MODELS']
