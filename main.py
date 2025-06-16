@@ -145,7 +145,7 @@ def test_api_model_with_validation():
     errors = valid_user.validate()
     print(f"Błędy walidacji (poprawny): {errors}")
 
-def # test_database_operations()  # Disabled for deployment:
+# def test_database_operations():  # Disabled for deployment
     """Test operacji bazodanowych z nowymi modelami"""
     print("\n=== Test operacji bazodanowych ===")
 
@@ -305,7 +305,7 @@ def main():
             # Suppress default HTTP server logs
             pass
     
-    port = int(os.environ.get('PORT', 8080))
+    port = int(os.environ.get('PORT', 5001))
     server = HTTPServer(('0.0.0.0', port), Handler)
     print(f"🚀 LuxDB Server running on port {port}")
     
@@ -320,12 +320,10 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except KeyboardInterrupt:
+        print("\n🔒 Server shutting down")
     except Exception as e:
         print(f"Application error: {e}")
         import traceback
         traceback.print_exc()
-        # Keep the process running for deployment
-        import time
-        print("Keeping process alive...")
-        while True:
-            time.sleep(60)
+        sys.exit(1)
