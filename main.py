@@ -162,11 +162,12 @@ def test_database_operations():
         "is_active": True
     }
 
-    success = db.insert_data("test_luxdb", User, user_data)
-    print(f"Wstawiono użytkownika: {success}")
+    with db.get_session("test_luxdb") as session:
+        user = db.insert_data(session, "test_luxdb", User, user_data)
+        print(f"Wstawiono użytkownika: {user.id if user else 'Błąd'}")
 
-    # Pobierz użytkowników
-    users = db.select_data("test_luxdb", User, {"is_active": True})
+        # Pobierz użytkowników
+        users = db.select_data(session, "test_luxdb", User, {"is_active": True})
     print(f"Znaleziono {len(users)} aktywnych użytkowników")
 
     # Test z wygenerowanym modelem
@@ -187,8 +188,9 @@ def test_database_operations():
         "in_stock": True
     }
 
-    success = db.insert_data("test_luxdb", ProductModel, product_data)
-    print(f"Wstawiono produkt: {success}")
+    with db.get_session("test_luxdb") as session:
+        product = db.insert_data(session, "test_luxdb", ProductModel, product_data)
+        print(f"Wstawiono produkt: {product.id if product else 'Błąd'}")
 
 def test_migration_sql_generation():
     """Test generowania SQL dla migracji"""
