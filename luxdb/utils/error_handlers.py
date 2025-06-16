@@ -1,4 +1,3 @@
-
 """
 Obsługa błędów i wyjątków w LuxDB
 """
@@ -42,6 +41,10 @@ class MigrationError(LuxDBError):
     """Błąd migracji bazy danych"""
     pass
 
+class ModelGenerationError(DatabaseError):
+    """Błąd generowania modelu"""
+    pass
+
 def handle_database_errors(operation_name: str = None):
     """Dekorator do obsługi błędów bazodanowych"""
     def decorator(func: Callable) -> Callable:
@@ -49,7 +52,7 @@ def handle_database_errors(operation_name: str = None):
         def wrapper(*args, **kwargs):
             logger = get_db_logger()
             op_name = operation_name or func.__name__
-            
+
             try:
                 return func(*args, **kwargs)
             except LuxDBError as e:
@@ -72,7 +75,7 @@ def safe_execute(func: Callable, default_return: Any = None,
                 log_errors: bool = True) -> Any:
     """Bezpieczne wykonanie funkcji z obsługą błędów"""
     logger = get_db_logger()
-    
+
     try:
         return func()
     except Exception as e:
@@ -84,7 +87,7 @@ def validate_db_name(db_name: str) -> None:
     """Walidacja nazwy bazy danych"""
     if not db_name or not isinstance(db_name, str):
         raise DatabaseConnectionError("Database name must be a non-empty string")
-    
+
     if not db_name.replace('_', '').replace('-', '').isalnum():
         raise DatabaseConnectionError("Database name can only contain letters, numbers, underscores and hyphens")
 
@@ -92,7 +95,7 @@ def validate_model_data(data: Dict[str, Any], required_fields: list = None) -> N
     """Walidacja danych modelu"""
     if not isinstance(data, dict):
         raise ModelValidationError("Model data must be a dictionary")
-    
+
     if required_fields:
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
@@ -100,12 +103,12 @@ def validate_model_data(data: Dict[str, Any], required_fields: list = None) -> N
 
 class ErrorCollector:
     """Kolektor błędów dla operacji batch"""
-    
+
     def __init__(self):
         self.errors = []
         self.success_count = 0
         self.total_count = 0
-    
+
     def add_error(self, error: Exception, context: Dict[str, Any] = None):
         """Dodaj błąd do kolekcji"""
         self.errors.append({
@@ -113,19 +116,19 @@ class ErrorCollector:
             'context': context or {},
             'timestamp': traceback.format_exc()
         })
-    
+
     def add_success(self):
         """Zwiększ licznik sukcesów"""
         self.success_count += 1
-    
+
     def increment_total(self):
         """Zwiększ licznik całkowity"""
         self.total_count += 1
-    
+
     def has_errors(self) -> bool:
         """Sprawdź czy wystąpiły błędy"""
         return len(self.errors) > 0
-    
+
     def get_summary(self) -> Dict[str, Any]:
         """Pobierz podsumowanie błędów"""
         return {

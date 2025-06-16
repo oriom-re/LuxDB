@@ -258,6 +258,37 @@ def execute_sql_safely(engine: Engine, sql: str, params: Dict[str, Any] = None) 
         }
         raise QueryExecutionError(f"Failed to execute SQL: {str(e)}", context)
 
+class SQLFormatter:
+    """Formatter dla zapytań SQL"""
+    
+    @staticmethod
+    def format_sql(sql: str, indent: str = "  ") -> str:
+        """Sformatuj SQL z wcięciami"""
+        keywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 
+                   'INNER JOIN', 'OUTER JOIN', 'GROUP BY', 'ORDER BY', 'HAVING', 
+                   'LIMIT', 'OFFSET', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER']
+        
+        formatted = sql
+        for keyword in keywords:
+            formatted = re.sub(f'\\b{keyword}\\b', f'\n{keyword}', formatted, flags=re.IGNORECASE)
+        
+        lines = formatted.split('\n')
+        formatted_lines = []
+        for line in lines:
+            line = line.strip()
+            if line:
+                if any(line.upper().startswith(kw) for kw in keywords):
+                    formatted_lines.append(line)
+                else:
+                    formatted_lines.append(indent + line)
+        
+        return '\n'.join(formatted_lines)
+    
+    @staticmethod
+    def minify_sql(sql: str) -> str:
+        """Zminifikuj SQL usuwając zbędne spacje"""
+        return re.sub(r'\s+', ' ', sql.strip())
+
 def optimize_sql_query(sql: str) -> str:
     """Podstawowa optymalizacja zapytania SQL"""
     # Usuń zbędne spacje
