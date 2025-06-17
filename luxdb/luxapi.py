@@ -92,7 +92,7 @@ class LuxAPI:
                 }), 200
                 
             except Exception as e:
-                logger.log_error(f"Błąd logowania: {e}")
+                logger.log_error("Błąd logowania", e)
                 return jsonify({'error': str(e)}), 400
         
         @self.app.route('/api/auth/logout', methods=['POST'])
@@ -126,7 +126,7 @@ class LuxAPI:
                 }), 201
                 
             except Exception as e:
-                logger.log_error(f"Błąd rejestracji: {e}")
+                logger.log_error("Błąd rejestracji", e)
                 return jsonify({'error': str(e)}), 400
         
         @self.app.route('/api/auth/me', methods=['GET'])

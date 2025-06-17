@@ -53,7 +53,7 @@ class LuxCore:
             return True
             
         except Exception as e:
-            logger.log_error(f"Błąd inicjalizacji LuxCore: {e}")
+            logger.log_error("Błąd inicjalizacji LuxCore", e)
             return False
     
     def start_api_server(self, debug: bool = False):
@@ -66,7 +66,7 @@ class LuxCore:
                 logger.log_info(f"Uruchamianie LuxAPI na porcie {self.api_port}")
                 self.luxapi.run(debug=debug)
             except Exception as e:
-                logger.log_error(f"Błąd uruchamiania LuxAPI: {e}")
+                logger.log_error("Błąd uruchamiania LuxAPI", e)
         
         self.api_thread = threading.Thread(target=run_api, daemon=True)
         self.api_thread.start()
@@ -82,7 +82,7 @@ class LuxCore:
                 logger.log_info(f"Uruchamianie LuxWS na porcie {self.ws_port}")
                 self.luxws.run(debug=debug)
             except Exception as e:
-                logger.log_error(f"Błąd uruchamiania LuxWS: {e}")
+                logger.log_error("Błąd uruchamiania LuxWS", e)
         
         self.ws_thread = threading.Thread(target=run_ws, daemon=True)
         self.ws_thread.start()

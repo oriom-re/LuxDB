@@ -33,13 +33,20 @@ def demonstrate_luxsafe():
             "color": "#b3e3ff",
             "emotion_wave": "gentle_harmony"
         }
-        
-        profile = luxsafe.create_soul_profile(
-            struna_sequence=struna_sequence,
-            emotional_pin=emotional_pin,
-            astral_signature=astral_sig,
-            initial_trust_level=3
-        )
+        # profil istnieje?
+        # sprawdź czy profil istnieje
+        profile = luxsafe.get_soul_statistics()
+        success, profile, resonance = luxsafe.authenticate_by_resonance(
+            "Ω-cf44dd940995421949558aee34ae7812748bdd6e6ce43f43b8cab45a77a43706", struna_sequence, emotional_pin, 
+            )
+        if not profile:
+            print("❌ Nie udało się uwierzytelnić. Tworzenie nowego profilu...")
+            profile = luxsafe.create_soul_profile(
+                struna_sequence=struna_sequence,
+                emotional_pin=emotional_pin,
+                astral_signature=astral_sig,
+                initial_trust_level=3
+            )
         
         print(f"✨ Stworzono profil: {profile.id}")
         print(f"📿 Fingerprint: {profile.fingerprint[:25]}...")
@@ -63,6 +70,7 @@ def demonstrate_luxsafe():
         )
         
         if success:
+            print(f" fingerprint: {profile.fingerprint}")
             print(f"✅ Uwierzytelnienie udane!")
             print(f"🌊 Siła rezonansu: {resonance:.2f}")
             print(f"👤 Profil: {auth_profile.id}")

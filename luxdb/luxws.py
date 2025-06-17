@@ -112,7 +112,7 @@ class LuxWS:
                 else:
                     emit('auth_error', {'message': 'Nieprawidłowy token sesji'})
             except Exception as e:
-                logger.log_error(f"Błąd uwierzytelniania WebSocket: {e}")
+                logger.log_error("Błąd uwierzytelniania WebSocket", e)
                 emit('auth_error', {'message': 'Błąd serwera podczas uwierzytelniania'})
         
         @self.socketio.on('join_database')

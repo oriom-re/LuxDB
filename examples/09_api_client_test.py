@@ -13,7 +13,7 @@ from datetime import datetime
 class LuxAPIClient:
     """Przykładowy klient REST API dla LuxDB"""
     
-    def __init__(self, base_url="data.luxunda.org"):
+    def __init__(self, base_url="http://localhost:5000"):
         self.base_url = base_url
         self.session_token = None
         self.user_info = None
@@ -74,7 +74,30 @@ class LuxAPIClient:
         except Exception as e:
             print(f"❌ Błąd połączenia podczas logowania: {e}")
             return False
-    
+    # tworzy testowego użytkownika
+    def create_test_user(self, username="testuser", password="testpass123", email="test@example.com"):
+        """Tworzy testowego użytkownika"""
+        print(f"🔐 Tworzenie testowego użytkownika: {username}")
+        try:
+            response = requests.post(f"{self.base_url}/api/auth/register", json={
+                "username": username,
+                "password": password,
+                "email": email
+            })
+            if response.status_code == 201:
+                print("✅ Użytkownik utworzony pomyślnie")
+                return True
+            else:
+                print(f"❌ Błąd tworzenia użytkownika: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {error_data}")
+                except:
+                    print(f"   Response: {response.text}")
+                return False
+        except Exception as e:
+            print(f"❌ Błąd połączenia podczas tworzenia użytkownika: {e}")
+                    
     def get_session_info(self):
         """Pobiera informacje o sesji"""
         if not self.session_token:
@@ -230,7 +253,11 @@ def run_automated_test():
     # Test 2: Root endpoint
     print("\n2. Test root endpoint:")
     client.test_root_endpoint()
-    
+    # Test 3: Tworzenie testowego użytkownika
+    print("\n3. Test tworzenia testowego użytkownika:")
+    client.create_test_user()
+
+        
     # Test 3: Próba logowania
     print("\n3. Test logowania:")
     if client.login_test_user():

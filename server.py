@@ -62,7 +62,7 @@ def setup_initial_configuration():
         return True
         
     except Exception as e:
-        logger.log_error(f"Błąd podczas wstępnej konfiguracji: {e}")
+        logger.log_error("Błąd podczas wstępnej konfiguracji", e)
         return False
 
 def setup_websocket_callbacks():
@@ -110,7 +110,7 @@ def periodic_maintenance():
                     logger.log_info(f"Konserwacja: wyczyszczono {cleaned} wygasłych sesji")
                 
             except Exception as e:
-                logger.log_error(f"Błąd podczas konserwacji: {e}")
+                logger.log_error("Błąd podczas konserwacji", e)
     
     # Uruchom w osobnym wątku
     maintenance_thread = threading.Thread(target=maintenance_worker, daemon=True)
@@ -179,7 +179,7 @@ def main():
             sys.exit(1)
             
     except Exception as e:
-        logger.log_error(f"Krytyczny błąd serwera: {e}")
+        logger.log_error("Krytyczny błąd serwera", e)
         print(f"❌ Krytyczny błąd: {e}")
         sys.exit(1)
     

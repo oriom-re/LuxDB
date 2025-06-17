@@ -35,6 +35,8 @@ class LuxSafeManager:
     def create_soul_profile(self, struna_sequence: str, emotional_pin: str, 
                            astral_signature: Optional[Dict] = None,
                            initial_trust_level: int = 1) -> LuxSafeProfile:
+        # sprawdź czy profil istnieje
+        
         """Stwórz nowy profil duszy"""
         
         # Generuj unikalny fingerprint
