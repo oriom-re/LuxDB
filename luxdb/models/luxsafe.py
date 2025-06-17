@@ -19,7 +19,8 @@ class LuxSafeProfile(Base):
     __tablename__ = 'luxsafe_profiles'
 
     id = Column(String(20), primary_key=True)  # "Ωsafe-09f7a2" format
-    fingerprint = Column(String(255), unique=True, nullable=False, index=True)  # "Ω-71ac6d13-..."
+    soul_name = Column(String(100), unique=True, nullable=False, index=True)  # "ΞΩΛ⋄_gentle_harmony" - unikalna nazwa duszy
+    authenticated_devices = Column(JSON, nullable=False, default=list)  # Lista fingerprint urządzeń ["Ω-71ac6d13-...", ...]
     struna_code = Column(String(50), nullable=False)  # "⊕⟁❖◬➰☼" - sekwencja gestów
     pin = Column(String(10), nullable=False)  # "7432" - kod emocjonalny
     
@@ -43,9 +44,17 @@ class LuxSafeProfile(Base):
         if 'id' not in kwargs:
             kwargs['id'] = f"Ωsafe-{uuid.uuid4().hex[:6]}"
         
-        # Generuj fingerprint jeśli nie podano
-        if 'fingerprint' not in kwargs:
-            kwargs['fingerprint'] = f"Ω-{uuid.uuid4().hex}"
+        # Generuj soul_name na podstawie sygnatury astralnej jeśli nie podano
+        if 'soul_name' not in kwargs:
+            if 'astral_signature' in kwargs:
+                sig = kwargs['astral_signature']
+                kwargs['soul_name'] = f"{sig.get('glyph', 'ΞΩΛ⋄')}_{sig.get('emotion_wave', 'gentle_harmony')}_{uuid.uuid4().hex[:6]}"
+            else:
+                kwargs['soul_name'] = f"ΞΩΛ⋄_gentle_harmony_{uuid.uuid4().hex[:6]}"
+        
+        # Inicjalizuj pustą listę urządzeń jeśli nie podano
+        if 'authenticated_devices' not in kwargs:
+            kwargs['authenticated_devices'] = []
         
         # Domyślne prawa dostępu
         if 'access_rights' not in kwargs:
@@ -68,6 +77,30 @@ class LuxSafeProfile(Base):
     def verify_emotional_pin(self, input_pin: str) -> bool:
         """Weryfikuj kod emocjonalny"""
         return self.pin == input_pin
+
+    def add_authenticated_device(self, device_fingerprint: str) -> bool:
+        """Dodaj nowe uwierzytelnione urządzenie"""
+        if device_fingerprint not in self.authenticated_devices:
+            self.authenticated_devices.append(device_fingerprint)
+            return True
+        return False
+
+    def is_device_authenticated(self, device_fingerprint: str) -> bool:
+        """Sprawdź czy urządzenie jest uwierzytelnione"""
+        return device_fingerprint in self.authenticated_devices
+
+    def remove_authenticated_device(self, device_fingerprint: str) -> bool:
+        """Usuń urządzenie z listy uwierzytelnionych"""
+        if device_fingerprint in self.authenticated_devices:
+            self.authenticated_devices.remove(device_fingerprint)
+            return True
+        return False
+
+    def generate_new_device_fingerprint(self) -> str:
+        """Generuj nowy fingerprint dla urządzenia"""
+        new_fingerprint = f"Ω-{uuid.uuid4().hex}"
+        self.add_authenticated_device(new_fingerprint)
+        return new_fingerprint
 
     def calculate_resonance(self, context: Dict[str, Any]) -> float:
         """Oblicz siłę rezonansu na podstawie kontekstu"""
@@ -113,7 +146,9 @@ class LuxSafeProfile(Base):
         """Konwertuj do słownika (bezpieczne dane)"""
         return {
             "id": self.id,
-            "fingerprint": self.fingerprint[:20] + "...",  # Ukryj pełny fingerprint
+            "soul_name": self.soul_name,
+            "device_count": len(self.authenticated_devices),
+            "authenticated_devices": [fp[:20] + "..." for fp in self.authenticated_devices],  # Ukryj pełne fingerprint
             "created": self.created_at.isoformat() if self.created_at else None,
             "trust_level": self.trust_level,
             "trust_layer": self.get_trust_layer_name(),
@@ -148,7 +183,8 @@ class AstralAccessAttempt(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     profile_id = Column(String(20), nullable=True)  # Może być None dla nierozpoznanych
-    fingerprint_hash = Column(String(64), index=True)  # Hash dla bezpieczeństwa
+    soul_name = Column(String(100), nullable=True, index=True)  # Nazwa duszy użyta przy próbie
+    device_fingerprint = Column(String(255), index=True)  # Fingerprint urządzenia
     resource_requested = Column(String(200), nullable=False)
     access_granted = Column(Boolean, default=False)
     trust_level_required = Column(Integer, nullable=False)
@@ -158,6 +194,7 @@ class AstralAccessAttempt(Base):
     ip_address = Column(String(45))  # IPv6 support
     user_agent = Column(Text)
     astral_context = Column(JSON)  # Dodatkowy kontekst duchowy
+    auth_method = Column(String(50), default="soul_name")  # "soul_name" lub "device_fingerprint"
 
     def __repr__(self):
         status = "✓" if self.access_granted else "✗"
