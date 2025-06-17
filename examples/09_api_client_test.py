@@ -13,7 +13,7 @@ from datetime import datetime
 class LuxAPIClient:
     """Przykładowy klient REST API dla LuxDB"""
     
-    def __init__(self, base_url="http://0.0.0.0:5000"):
+    def __init__(self, base_url="data.luxunda.org"):
         self.base_url = base_url
         self.session_token = None
         self.user_info = None
