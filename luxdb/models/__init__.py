@@ -33,7 +33,13 @@ class UserSession(Base):
 
     id = Column(String(255), primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    session_token = Column(String(255), unique=True, nullable=False, index=True)
+    ip_address = Column(String(45), nullable=True)  # IPv6 support
+    user_agent = Column(Text, nullable=True)
     expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    last_activity_at = Column(DateTime, nullable=True)
+    destroyed_at = Column(DateTime, nullable=True)
     data = Column(Text, nullable=True, default='{}')
     created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
 
