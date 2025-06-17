@@ -9,7 +9,7 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Set, Any, Optional
-from flask import Flask
+from flask import Flask, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from threading import Thread
 
