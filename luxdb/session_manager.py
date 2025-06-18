@@ -14,6 +14,9 @@ from contextlib import contextmanager
 from .manager import get_db_manager
 from .models import User, UserSession
 from .utils.error_handlers import LuxDBError, handle_database_errors
+from .utils.logging_utils import get_db_logger
+
+logger = get_db_logger()
 
 class SessionError(LuxDBError):
     """Błąd sesji użytkownika"""

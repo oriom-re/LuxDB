@@ -54,8 +54,8 @@ def setup_initial_configuration():
             if test_user_id:
                 logger.log_info(f"Utworzono użytkownika testowego (ID: {test_user_id})")
         except Exception as e:
-            logger.log_info(f"Użytkownik testowy już istnieje: {str(e)}")
-            # Continue without raising exception
+            logger.log_info(f"Użytkownik testowy już istnieje lub błąd: {str(e)}")
+            # Continue without raising exception - this is not critical for server startup
         
         logger.log_info("Wstępna konfiguracja zakończona pomyślnie")
         return True

@@ -28,8 +28,9 @@ from .models import (
 # QueryBuilder usunięty - używamy czystego SQLAlchemy
 
 # Konfiguracja logowania
+from .utils.logging_utils import get_db_logger
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_db_logger()
 
 class DatabaseError(Exception):
     """Wyjątek dla błędów bazy danych"""
