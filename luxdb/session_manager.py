@@ -86,7 +86,6 @@ class SessionManager:
             "username": username,
             "email": email,
             "password_hash": password_hash,
-            "salt": salt,
             "is_active": True,
             "created_at": datetime.now()
         }

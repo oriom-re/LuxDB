@@ -49,14 +49,14 @@ def setup_initial_configuration():
             test_user_id = session_manager.create_user(
                 username="testuser",
                 email="test@luxdb.dev",
-                password="testpass123",
-                extra_data={"role": "admin", "test_user": True}
+                password="testpass123"
             )
             if test_user_id:
                 logger.log_info(f"Utworzono użytkownika testowego (ID: {test_user_id})")
         except Exception as e:
             # Użytkownik już istnieje - to OK
-            logger.log_info("Użytkownik testowy już istnieje")
+            logger.log_info(f"Użytkownik testowy już istnieje lub błąd: {str(e)}")
+            pass  # Continue execution
         
         logger.log_info("Wstępna konfiguracja zakończona pomyślnie")
         return True
