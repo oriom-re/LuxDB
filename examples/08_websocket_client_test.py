@@ -14,7 +14,7 @@ from datetime import datetime
 class LuxWSClient:
     """Przykładowy klient WebSocket dla LuxDB"""
     
-    def __init__(self, server_url="data.luxunda.org:5001"):
+    def __init__(self, server_url="http//0.0.0.0:5001"):
         self.server_url = server_url
         self.sio = socketio.Client()
         self.connected = False
