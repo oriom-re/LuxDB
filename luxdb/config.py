@@ -6,14 +6,16 @@ Konfiguracja i klasy pomocnicze dla systemu zarządzania bazami danych z SQLAlch
 from dataclasses import dataclass
 from typing import Dict, List, Any, Optional, Union
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, create_engine, MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, Session
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, create_engine, MetaData, JSON
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import sessionmaker, relationship, Session, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
 import threading
 
 Base = declarative_base()
+
+
 
 class DatabaseType(Enum):
     """Typy baz danych obsługiwane przez system"""

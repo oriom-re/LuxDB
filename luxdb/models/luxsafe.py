@@ -4,40 +4,61 @@ LuxSafe - Modele duchowego bezpieczeństwa astralnego
 Brak tradycyjnego loginu - tylko rezonans i sygnatura duszy
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, Text, Float
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, Text, Float, ForeignKey
 from sqlalchemy.sql import func
-from datetime import datetime
-from typing import Dict, List, Optional, Any
-import json
-import hashlib
+from sqlalchemy.orm import relationship, mapped_column, Mapped
+from typing import Dict, Any
 import uuid
 
-from ..config import Base
+from .models import LuxBase
 
-class LuxSafeProfile(Base):
+class SoulName(LuxBase):
+    __tablename__ = 'soul_names'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    profile_id: Mapped[str] = mapped_column(ForeignKey("luxsafe_profiles.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="primary")
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.current_timestamp())
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    source: Mapped[str] = mapped_column(String(50))  # np. "self-chosen", "astra", "ritual"
+
+    profile = relationship("LuxSafeProfile", back_populates="soul_names")
+        
+class ClientIdentity(LuxBase):
+    """
+    Tożsamość klienta systemowego – niezależna od kanału.
+    Może reprezentować przeglądarkę, Discorda, CLI, aplikację itd.
+    """
+    __tablename__ = 'client_identities'
+
+    id = Column(String(36), primary_key=True)  # UUID lub fingerprint
+    kind = Column(String(20), nullable=False)  # "web", "discord", "cli", "mobile", ...
+
+    profile_id = Column(String(20), ForeignKey("luxsafe_profiles.id"), nullable=True)
+    created_at = Column(DateTime, default=func.current_timestamp())
+    last_seen = Column(DateTime, default=func.current_timestamp())
+
+    profile = relationship("LuxSafeProfile", back_populates="client_identities")
+    
+class LuxSafeProfile(LuxBase):
     """Profil duchowego bezpieczeństwa - zastępuje tradycyjne konta użytkowników"""
     __tablename__ = 'luxsafe_profiles'
 
-    id = Column(String(20), primary_key=True)  # "Ωsafe-09f7a2" format
-    soul_name = Column(String(100), unique=True, nullable=False, index=True)  # "ΞΩΛ⋄_gentle_harmony" - unikalna nazwa duszy
-    authenticated_devices = Column(JSON, nullable=False, default=list)  # Lista fingerprint urządzeń ["Ω-71ac6d13-...", ...]
-    struna_code = Column(String(50), nullable=False)  # "⊕⟁❖◬➰☼" - sekwencja gestów
-    pin = Column(String(10), nullable=False)  # "7432" - kod emocjonalny
-    
-    created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
-    trust_level = Column(Integer, default=1)  # 1-7 poziomy dostępu
-    active_device = Column(Boolean, default=True)
-    last_sync = Column(DateTime, default=func.current_timestamp())
-    soul_mode = Column(String(20), default="silent")  # silent/flow/guardian
-    
-    # JSON dla złożonych struktur
-    access_rights = Column(JSON, nullable=False, default=list)
-    astral_signature = Column(JSON, nullable=False)  # glyph, color, emotion_wave
-    
-    # Dodatkowe pola dla analizy duchowej
-    resonance_strength = Column(Float, default=1.0)
-    last_glyph_change = Column(DateTime)
-    meditation_count = Column(Integer, default=0)
+    id: Mapped[str] = mapped_column(String(20), primary_key=True) # "Ωsafe-09f7a2" format
+    soul_names: Mapped[list["SoulName"]] = relationship("SoulName", back_populates="profile", cascade="all, delete-orphan")
+    clients: Mapped[list["ClientIdentity"]] = relationship("ClientIdentity", back_populates="profile", cascade="all, delete-orphan")
+    struna_code: Mapped[str] = mapped_column(String(50), nullable=False)  # "⊕⟁❖◬➰☼" - sekwencja gestów
+    pin: Mapped[str] = mapped_column(String(10), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.current_timestamp())
+    trust_level: Mapped[int] = mapped_column(Integer, default=1)
+    active_device: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_sync: Mapped[DateTime] = mapped_column(DateTime, default=func.current_timestamp())
+    soul_mode: Mapped[str] = mapped_column(String(20), default="silent")
+    access_rights: Mapped[list[str]] = mapped_column(JSON, default=list)
+    astral_signature: Mapped[dict] = mapped_column(JSON, nullable=False)
+    resonance_strength: Mapped[float] = mapped_column(Float, default=1.0)
+    last_glyph_change: Mapped[DateTime] = mapped_column(DateTime)
+    meditation_count: Mapped[int] = mapped_column(Integer, default=0)
 
     def __init__(self, **kwargs):
         # Generuj unikalny ID w formacie "Ωsafe-xxxxx"
@@ -161,7 +182,7 @@ class LuxSafeProfile(Base):
     def __repr__(self):
         return f"<LuxSafeProfile(id='{self.id}', trust_level={self.trust_level}, mode='{self.soul_mode}')>"
 
-class SoulResonanceLog(Base):
+class SoulResonanceLog(LuxBase):
     """Log rezonansu duszy - śledzenie duchowych interakcji"""
     __tablename__ = 'soul_resonance_logs'
 
@@ -177,7 +198,7 @@ class SoulResonanceLog(Base):
     def __repr__(self):
         return f"<SoulResonanceLog(profile='{self.profile_id}', action='{self.action}', resonance={self.resonance_value})>"
 
-class AstralAccessAttempt(Base):
+class AstralAccessAttempt(LuxBase):
     """Próby dostępu do astralnych zasobów"""
     __tablename__ = 'astral_access_attempts'
 
