@@ -100,7 +100,8 @@ class SessionManager:
             ).first()
             
             if existing:
-                raise SessionError(f"Użytkownik {username} lub email {email} już istnieje")
+                logger.log_info(f"User {username} already exists, skipping creation")
+                return existing.id
             
             user = self.db_manager.insert_data(session, self.db_name, User, user_data)
             if user:
