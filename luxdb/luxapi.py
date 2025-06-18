@@ -334,7 +334,7 @@ class LuxAPI:
     def run(self, debug: bool = False):
         """Uruchamia serwer API"""
         logger.log_info(f"Uruchamianie LuxAPI na {self.host}:{self.port}")
-        self.app.run(host=self.host, port=self.port, debug=debug)
+        self.app.run(host="0.0.0.0", port=self.port, debug=debug)
 
 # Singleton instance
 _luxapi_instance = None

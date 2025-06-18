@@ -245,7 +245,7 @@ class LuxWS:
     def run(self, debug: bool = False):
         """Uruchamia serwer WebSocket"""
         logger.log_info(f"Uruchamianie LuxWS na {self.host}:{self.port}")
-        self.socketio.run(self.app, host=self.host, port=self.port, debug=debug)
+        self.socketio.run(self.app, host="0.0.0.0", port=self.port, debug=debug)
 
 # Singleton instance
 _luxws_instance = None

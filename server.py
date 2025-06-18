@@ -150,8 +150,10 @@ def main():
             print("❌ Błąd wstępnej konfiguracji")
             sys.exit(1)
         
-        # Inicjalizuj LuxCore
+        # Inicjalizuj LuxCore z poprawną konfiguracją portów
         luxcore = get_luxcore()
+        luxcore.api_port = 5000
+        luxcore.ws_port = 5001
         
         # Uruchom wszystkie serwisy
         if luxcore.start_all(debug=False):
