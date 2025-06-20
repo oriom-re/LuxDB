@@ -54,7 +54,10 @@ Repository = "https://github.com/luxdb/luxdb.git"
 Issues = "https://github.com/luxdb/luxdb/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["luxdb","luxnet"]
+packages = [packages = [
+  { include = "luxnet" },
+  { include = "luxdb" }
+]]
 
 [tool.black]
 line-length = 100
