@@ -1,4 +1,0 @@
-
-"""
-LuxDB Examples Package
-"""

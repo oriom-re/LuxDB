@@ -1,7 +1,4 @@
 
 """
-LuxDB Examples - Astralny przewodnik przez bibliotekę
+LuxDB Examples Package
 """
-
-# Import przykładów będzie dodany później
-__all__ = []

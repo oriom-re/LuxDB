@@ -13,7 +13,7 @@ from luxdb.luxws_client import create_client, LuxWSClient
 class BidirectionalWSTest:
     """Test dwukierunkowej komunikacji WebSocket"""
     
-    def __init__(self, server_url: str = "http://0.0.0.0:5001"):
+    def __init__(self, server_url: str = "http://data.luxunda.org"):
         self.server_url = server_url
         self.client = None
         self.test_results = []
