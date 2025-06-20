@@ -36,6 +36,22 @@ class DatabaseLogger:
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
     
+    def info(self, message: str):
+        """Standard info logging method"""
+        self.logger.info(message)
+    
+    def error(self, message: str):
+        """Standard error logging method"""
+        self.logger.error(message)
+    
+    def warning(self, message: str):
+        """Standard warning logging method"""
+        self.logger.warning(message)
+    
+    def debug(self, message: str):
+        """Standard debug logging method"""
+        self.logger.debug(message)
+    
     def log_database_operation(self, operation: str, db_name: str, 
                              success: bool, details: Optional[str] = None,
                              execution_time: Optional[float] = None):
@@ -69,6 +85,11 @@ class DatabaseLogger:
             message += f" | Context: {context_str}"
         
         self.logger.error(message, exc_info=True)
+        
+    #log_info
+    def log_info(self, message: str):
+        """Loguje informacje"""
+        self.logger.info(message)
     
     def log_migration(self, db_name: str, from_version: int, to_version: int, 
                      success: bool, execution_time: Optional[float] = None):

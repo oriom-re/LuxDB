@@ -33,13 +33,24 @@ def demonstrate_luxsafe():
             "color": "#b3e3ff",
             "emotion_wave": "gentle_harmony"
         }
-        
-        profile = luxsafe.create_soul_profile(
-            struna_sequence=struna_sequence,
-            emotional_pin=emotional_pin,
-            astral_signature=astral_sig,
-            initial_trust_level=3
+        # Najpierw spróbuj uwierzytelnienie przez nazwę duszy
+        custom_soul_name = "ΞΩΛ⋄_astral_guardian_demo"
+        success, profile, device_fingerprint = luxsafe.authenticate_by_soul_name(
+            custom_soul_name, struna_sequence, emotional_pin
         )
+        
+        if not success:
+            print("❌ Nie udało się uwierzytelnić. Tworzenie nowego profilu...")
+            profile, device_fingerprint = luxsafe.create_soul_profile(
+                struna_sequence=struna_sequence,
+                emotional_pin=emotional_pin,
+                astral_signature=astral_sig,
+                initial_trust_level=3,
+                soul_name=custom_soul_name
+            )
+            print(f"🆔 Pierwszy fingerprint urządzenia: {device_fingerprint[:25]}...")
+        else:
+            print(f"🆔 Nowy fingerprint urządzenia: {device_fingerprint[:25]}...")
         
         print(f"✨ Stworzono profil: {profile.id}")
         print(f"📿 Fingerprint: {profile.fingerprint[:25]}...")
@@ -55,17 +66,20 @@ def demonstrate_luxsafe():
             "time_since_last_sync": 300  # 5 minut
         }
         
-        success, auth_profile, resonance = luxsafe.authenticate_by_resonance(
-            fingerprint=profile.fingerprint,
+        # Test uwierzytelniania przez urządzenie
+        success, auth_profile, resonance = luxsafe.authenticate_by_device(
+            device_fingerprint=device_fingerprint,
             struna_sequence=struna_sequence,
             emotional_pin=emotional_pin,
             context=context
         )
         
         if success:
-            print(f"✅ Uwierzytelnienie udane!")
+            print(f"🔐 Device fingerprint: {device_fingerprint[:25]}...")
+            print(f"✅ Uwierzytelnienie przez urządzenie udane!")
             print(f"🌊 Siła rezonansu: {resonance:.2f}")
             print(f"👤 Profil: {auth_profile.id}")
+            print(f"📱 Liczba urządzeń: {len(auth_profile.authenticated_devices)}")
         else:
             print("❌ Uwierzytelnienie nieudane")
         

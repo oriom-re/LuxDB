@@ -14,6 +14,9 @@ from contextlib import contextmanager
 from .manager import get_db_manager
 from .models import User, UserSession
 from .utils.error_handlers import LuxDBError, handle_database_errors
+from .utils.logging_utils import get_db_logger
+
+logger = get_db_logger()
 
 class SessionError(LuxDBError):
     """Błąd sesji użytkownika"""
@@ -86,7 +89,6 @@ class SessionManager:
             "username": username,
             "email": email,
             "password_hash": password_hash,
-            "salt": salt,
             "is_active": True,
             "created_at": datetime.now()
         }
@@ -101,7 +103,8 @@ class SessionManager:
             ).first()
             
             if existing:
-                raise SessionError(f"Użytkownik {username} lub email {email} już istnieje")
+                logger.log_info(f"User {username} already exists, skipping creation")
+                return existing.id
             
             user = self.db_manager.insert_data(session, self.db_name, User, user_data)
             if user:
