@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "luxdb"
-version = "1.0.0"
+version = "1.0.1"
 description = "Zaawansowany manager baz danych SQLAlchemy z generatorem modeli"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -54,7 +54,7 @@ Repository = "https://github.com/luxdb/luxdb.git"
 Issues = "https://github.com/luxdb/luxdb/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["luxdb"]
+packages = ["luxdb","luxnet"]
 
 [tool.black]
 line-length = 100
