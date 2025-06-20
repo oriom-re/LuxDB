@@ -10,6 +10,7 @@ import sys
 import time
 import threading
 from luxdb.luxcore import get_luxcore
+from luxdb.luxws_server import get_luxws_server
 from luxdb.session_manager import get_session_manager
 from luxdb.manager import get_db_manager
 from luxdb.utils.logging_utils import get_db_logger

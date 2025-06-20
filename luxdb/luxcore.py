@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 import time
 
-from .luxws import get_luxws, LuxWS
+from .luxws_server import get_luxws_server, LuxWSServer
 from .luxapi import get_luxapi, LuxAPI
 from .manager import get_db_manager
 from .utils.logging_utils import get_db_logger
@@ -28,7 +28,7 @@ class LuxCore:
         self.ws_port = ws_port
 
         self.luxapi: Optional[LuxAPI] = None
-        self.luxws: Optional[LuxWS] = None
+        self.luxws_server: Optional[LuxWSServer] = None
 
         self.api_thread: Optional[threading.Thread] = None
         self.ws_thread: Optional[threading.Thread] = None
@@ -43,11 +43,11 @@ class LuxCore:
         try:
             # Inicjalizuj API i WebSocket serwery
             self.luxapi = get_luxapi()
-            self.luxws = get_luxws()
+            self.luxws_server = get_luxws_server()
 
             # Skonfiguruj porty
             self.luxapi.port = self.api_port
-            self.luxws.port = self.ws_port
+            self.luxws_server.port = self.ws_port
 
             logger.log_info("LuxCore zainicjalizowany pomyślnie")
             return True
