@@ -3,6 +3,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["nedit"]
 
 [unitTest]
 language = "python3"
@@ -15,7 +16,6 @@ run = ["sh", "-c", "python server.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run LuxDB Server"
 
 [[workflows.workflow]]
 name = "Run LuxDB"

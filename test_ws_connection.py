@@ -13,7 +13,7 @@ from datetime import datetime
 class SimpleWSTest:
     """Prosty test klient WebSocket"""
     
-    def __init__(self, server_url="http://0.0.0.0:5001"):
+    def __init__(self, server_url="wss://data.luxunda.org"):
         self.server_url = server_url
         self.sio = socketio.Client()
         self.connected = False
