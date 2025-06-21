@@ -76,15 +76,88 @@ class DatabaseLogger:
         message = f"Query: {query_type} on '{table_name}' | Records: {records_affected} | Time: {execution_time:.3f}s"
         self.logger.info(message)
     
-    def log_error(self, operation: str, error: Exception, context: Optional[Dict[str, Any]] = None):
-        """Loguje błędy z kontekstem"""
-        message = f"Error in {operation}: {str(error)}"
+    def log_error(self, operation: str, error: Exception, context: Optional[Dict[str, Any]] = None,
+                 include_traceback: bool = True, severity_level: str = "ERROR", 
+                 error_code: Optional[str] = None, user_id: Optional[str] = None,
+                 session_id: Optional[str] = None, request_id: Optional[str] = None,
+                 additional_tags: Optional[Dict[str, Any]] = None,
+                 sanitize_sensitive_data: bool = True, max_context_length: int = 1000):
+        """
+        Loguje błędy z rozszerzonym kontekstem i konfiguracją
         
+        Args:
+            operation: Nazwa operacji podczas której wystąpił błąd
+            error: Wyjątek do zalogowania
+            context: Dodatkowy kontekst błędu
+            include_traceback: Czy dołączyć pełny stack trace
+            severity_level: Poziom ważności (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            error_code: Unikalny kod błędu dla kategoryzacji
+            user_id: ID użytkownika związanego z błędem
+            session_id: ID sesji podczas której wystąpił błąd
+            request_id: ID żądania związanego z błędem
+            additional_tags: Dodatkowe tagi dla filtrowania i kategoryzacji
+            sanitize_sensitive_data: Czy usunąć potencjalnie wrażliwe dane
+            max_context_length: Maksymalna długość kontekstu do logowania
+        """
+        # Podstawowa struktura wiadomości
+        message_parts = [f"Error in {operation}: {str(error)}"]
+        
+        # Dodaj kod błędu jeśli podany
+        if error_code:
+            message_parts.append(f"Code: {error_code}")
+        
+        # Przetwarzanie kontekstu
         if context:
-            context_str = ", ".join([f"{k}={v}" for k, v in context.items()])
-            message += f" | Context: {context_str}"
+            # Sanityzacja wrażliwych danych
+            processed_context = self._sanitize_context(context) if sanitize_sensitive_data else context
+            
+            # Skracanie zbyt długiego kontekstu
+            context_str = ", ".join([f"{k}={v}" for k, v in processed_context.items()])
+            if len(context_str) > max_context_length:
+                context_str = context_str[:max_context_length] + "... (truncated)"
+            
+            message_parts.append(f"Context: {context_str}")
         
-        self.logger.error(message, exc_info=True)
+        # Dodaj identyfikatory jeśli podane
+        identifiers = []
+        if user_id:
+            identifiers.append(f"user_id={user_id}")
+        if session_id:
+            identifiers.append(f"session_id={session_id}")
+        if request_id:
+            identifiers.append(f"request_id={request_id}")
+        
+        if identifiers:
+            message_parts.append(f"IDs: {', '.join(identifiers)}")
+        
+        # Dodaj dodatkowe tagi
+        if additional_tags:
+            tags_str = ", ".join([f"{k}={v}" for k, v in additional_tags.items()])
+            message_parts.append(f"Tags: {tags_str}")
+        
+        # Złóż finalną wiadomość
+        final_message = " | ".join(message_parts)
+        
+        # Loguj zgodnie z poziomem ważności
+        log_method = getattr(self.logger, severity_level.lower(), self.logger.error)
+        log_method(final_message, exc_info=include_traceback)
+    
+    def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Usuwa potencjalnie wrażliwe dane z kontekstu"""
+        sensitive_keys = {'password', 'token', 'secret', 'key', 'auth', 'credential', 'api_key'}
+        sanitized = {}
+        
+        for key, value in context.items():
+            key_lower = str(key).lower()
+            if any(sensitive in key_lower for sensitive in sensitive_keys):
+                sanitized[key] = "***REDACTED***"
+            elif isinstance(value, str) and len(value) > 100:
+                # Skróć bardzo długie stringi
+                sanitized[key] = value[:97] + "..."
+            else:
+                sanitized[key] = value
+        
+        return sanitized
         
     #log_info
     def log_info(self, message: str):
@@ -104,6 +177,30 @@ class DatabaseLogger:
             self.logger.info(message)
         else:
             self.logger.error(message)
+    
+    def log_critical_error(self, operation: str, error: Exception, **kwargs):
+        """Loguje krytyczne błędy"""
+        kwargs['severity_level'] = 'CRITICAL'
+        self.log_error(operation, error, **kwargs)
+    
+    def log_warning_error(self, operation: str, error: Exception, **kwargs):
+        """Loguje błędy na poziomie ostrzeżenia"""
+        kwargs['severity_level'] = 'WARNING'
+        kwargs['include_traceback'] = kwargs.get('include_traceback', False)
+        self.log_error(operation, error, **kwargs)
+    
+    def log_user_error(self, operation: str, error: Exception, user_id: str, **kwargs):
+        """Loguje błędy związane z konkretnym użytkownikiem"""
+        kwargs['user_id'] = user_id
+        kwargs['error_code'] = kwargs.get('error_code', 'USER_ERROR')
+        self.log_error(operation, error, **kwargs)
+    
+    def log_database_error(self, operation: str, error: Exception, db_name: str, **kwargs):
+        """Loguje błędy bazodanowe z kontekstem bazy"""
+        kwargs['additional_tags'] = kwargs.get('additional_tags', {})
+        kwargs['additional_tags']['database'] = db_name
+        kwargs['error_code'] = kwargs.get('error_code', 'DB_ERROR')
+        self.log_error(operation, error, **kwargs)
     
     def log_sync(self, source_db: str, target_db: str, models: list, 
                 success: bool, records_synced: int = 0):
