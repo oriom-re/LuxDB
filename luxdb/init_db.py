@@ -126,7 +126,7 @@ class DatabaseInitService:
                     self.logger.log_info(f"✅ Baza danych '{db_name}' została zainicjalizowana")
                     
                 except Exception as e:
-                    self.logger.log_error(f"initialize_database_{db_name}", e)
+                    self.logger.log_error(f"initialize_database_{db_name}", e, context={"database": db_name}, error_code="DB_INIT_ERROR")
                     return False
             
             # Wypełnij wstępnymi danymi
@@ -136,7 +136,7 @@ class DatabaseInitService:
             return True
             
         except Exception as e:
-            self.logger.log_error("initialize_databases", e)
+            self.logger.log_error("initialize_databases", e, context={"operation": "full_initialization"}, error_code="INIT_GENERAL_ERROR")
             return False
     
     def populate_initial_data(self):
@@ -154,7 +154,7 @@ class DatabaseInitService:
             self._init_analytics_data()
             
         except Exception as e:
-            self.logger.log_error("populate_initial_data", e)
+            self.logger.log_error("populate_initial_data", e, context={"operation": "initial_data_population"}, error_code="DATA_POPULATION_ERROR")
     
     def _init_auth_data(self):
         """Inicjalizuje dane uwierzytelniania"""
@@ -231,7 +231,7 @@ class DatabaseInitService:
                     self.logger.log_info("✨ Utworzono wstępne profile uwierzytelniania")
                 
         except Exception as e:
-            self.logger.log_error("init_auth_data", e)
+            self.logger.log_error("init_auth_data", e, context={"operation": "auth_data_initialization"}, error_code="AUTH_INIT_ERROR")
     
     def _init_system_data(self):
         """Inicjalizuje dane systemowe"""
@@ -241,7 +241,7 @@ class DatabaseInitService:
             self.logger.log_info("⚙️ Zainicjalizowano dane systemowe")
             
         except Exception as e:
-            self.logger.log_error("init_system_data", e)
+            self.logger.log_error("init_system_data", e, context={"operation": "system_data_initialization"}, error_code="SYSTEM_INIT_ERROR")
     
     def _init_analytics_data(self):
         """Inicjalizuje struktury analityczne"""
@@ -251,7 +251,7 @@ class DatabaseInitService:
             self.logger.log_info("📈 Zainicjalizowano struktury analityczne")
             
         except Exception as e:
-            self.logger.log_error("init_analytics_data", e)
+            self.logger.log_error("init_analytics_data", e, context={"operation": "analytics_data_initialization"}, error_code="ANALYTICS_INIT_ERROR")
     
     def verify_initialization(self) -> bool:
         """Weryfikuje poprawność inicjalizacji"""
@@ -264,21 +264,21 @@ class DatabaseInitService:
             
             for db_name in expected_databases:
                 if db_name not in databases:
-                    self.logger.log_error("verification", f"Baza {db_name} nie została znaleziona")
+                    self.logger.log_error("verification", f"Baza {db_name} nie została znaleziona", context={"missing_database": db_name}, error_code="DB_MISSING_ERROR")
                     return False
             
             # Sprawdź czy tabele zostały utworzone
             with self.db_manager.get_session("auth") as session:
                 profile_count = session.query(LuxSafeProfile).count()
                 if profile_count < 2:  # Admin + Guest
-                    self.logger.log_error("verification", "Niepoprawna liczba profili początkowych")
+                    self.logger.log_error("verification", "Niepoprawna liczba profili początkowych", context={"profile_count": profile_count}, error_code="PROFILE_COUNT_ERROR")
                     return False
             
             self.logger.log_info("✅ Weryfikacja zakończona pomyślnie")
             return True
             
         except Exception as e:
-            self.logger.log_error("verify_initialization", e)
+            self.logger.log_error("verify_initialization", e, context={"operation": "verification"}, error_code="VERIFICATION_ERROR")
             return False
     
     def get_status_report(self) -> Dict:
@@ -305,7 +305,7 @@ class DatabaseInitService:
             return status
             
         except Exception as e:
-            self.logger.log_error("get_status_report", e)
+            self.logger.log_error("get_status_report", e, context={"operation": "status_report"}, error_code="STATUS_REPORT_ERROR")
             return {"error": str(e)}
     
     def cleanup_and_reinitialize(self):
@@ -335,7 +335,7 @@ class DatabaseInitService:
             return self.initialize_databases()
             
         except Exception as e:
-            self.logger.log_error("cleanup_and_reinitialize", e)
+            self.logger.log_error("cleanup_and_reinitialize", e, context={"operation": "cleanup_and_reinit"}, error_code="CLEANUP_ERROR")
             return False
 
 def main():
