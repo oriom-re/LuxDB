@@ -53,7 +53,9 @@ class LuxCore:
             return True
 
         except Exception as e:
-            logger.log_error("Błąd inicjalizacji LuxCore", e)
+            logger.log_error("Błąd inicjalizacji LuxCore", e,
+                           context={'api_port': self.api_port, 'ws_port': self.ws_port},
+                           error_code='LUXCORE_INIT_ERROR')
             return False
 
     def start_api_server(self, debug: bool = False):
@@ -66,7 +68,9 @@ class LuxCore:
                 logger.log_info(f"Uruchamianie LuxAPI na porcie {self.api_port}")
                 self.luxapi.run(debug=debug)
             except Exception as e:
-                logger.log_error("Błąd uruchamiania LuxAPI", e)
+                logger.log_error("Błąd uruchamiania LuxAPI", e,
+                               context={'port': self.api_port},
+                               error_code='LUXAPI_START_ERROR')
 
         self.api_thread = threading.Thread(target=run_api, daemon=True)
         self.api_thread.start()
@@ -82,7 +86,9 @@ class LuxCore:
                 logger.log_info(f"Uruchamianie LuxWS na porcie {self.ws_port}")
                 self.luxws.run(debug=debug)
             except Exception as e:
-                logger.log_error("Błąd uruchamiania LuxWS", e)
+                logger.log_error("Błąd uruchamiania LuxWS", e,
+                               context={'port': self.ws_port},
+                               error_code='LUXWS_START_ERROR')
 
         self.ws_thread = threading.Thread(target=run_ws, daemon=True)
         self.ws_thread.start()
@@ -120,7 +126,9 @@ class LuxCore:
             return True
 
         except Exception as e:
-            logger.log_error("Błąd uruchamiania zintegrowanego serwera", e)
+            logger.log_error("Błąd uruchamiania zintegrowanego serwera", e,
+                           context={'port': 5000, 'debug': debug},
+                           error_code='INTEGRATED_SERVER_ERROR')
             return False
 
     def start_all(self, debug: bool = False) -> bool:
@@ -144,7 +152,9 @@ class LuxCore:
                         return True
                 return False
         except Exception as e:
-            logger.log_error("Błąd uruchamiania serwisów LuxCore", e)
+            logger.log_error("Błąd uruchamiania serwisów LuxCore", e,
+                           context={'is_deployment': is_deployment, 'debug': debug},
+                           error_code='LUXCORE_START_ALL_ERROR')
             return False
 
     def stop_all(self):

@@ -92,7 +92,9 @@ class LuxAPI:
                 }), 200
                 
             except Exception as e:
-                logger.log_error("Błąd logowania", e)
+                logger.log_error("Błąd logowania", e,
+                               context={'username': username, 'ip_address': request.remote_addr},
+                               error_code='API_LOGIN_ERROR')
                 return jsonify({'error': str(e)}), 400
         
         @self.app.route('/api/auth/logout', methods=['POST'])
@@ -126,7 +128,9 @@ class LuxAPI:
                 }), 201
                 
             except Exception as e:
-                logger.log_error("Błąd rejestracji", e)
+                logger.log_error("Błąd rejestracji", e,
+                               context={'username': username, 'email': email},
+                               error_code='API_REGISTRATION_ERROR')
                 return jsonify({'error': str(e)}), 400
         
         @self.app.route('/api/auth/me', methods=['GET'])

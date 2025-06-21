@@ -195,7 +195,9 @@ class LuxWSClient:
                 return False
                 
         except Exception as e:
-            logger.log_error(f"Błąd połączenia: {e}")
+            logger.log_error("Błąd połączenia WebSocket", e,
+                           context={'server_url': self.server_url, 'client_type': self.client_type},
+                           error_code='WS_CONNECTION_ERROR')
             return False
     
     def authenticate(self, session_token: str) -> bool:
@@ -296,7 +298,9 @@ class LuxWSClient:
                     self.send_heartbeat()
                     time.sleep(self.heartbeat_interval)
                 except Exception as e:
-                    logger.log_error(f"Błąd heartbeat: {e}")
+                    logger.log_error("Błąd heartbeat WebSocket", e,
+                                   context={'client_type': self.client_type},
+                                   error_code='WS_HEARTBEAT_ERROR')
                     break
         
         self.heartbeat_thread = threading.Thread(target=heartbeat_worker, daemon=True)

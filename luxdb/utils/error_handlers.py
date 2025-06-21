@@ -56,7 +56,7 @@ def handle_database_errors(operation_name: str = None):
             try:
                 return func(*args, **kwargs)
             except LuxDBError as e:
-                logger.log_error(op_name, e, e.context)
+                logger.log_error(op_name, e, context=e.context, error_code='LUXDB_ERROR')
                 raise
             except Exception as e:
                 # Konwertuj inne błędy na LuxDBError
@@ -66,7 +66,7 @@ def handle_database_errors(operation_name: str = None):
                     'kwargs': str(kwargs)
                 }
                 luxdb_error = LuxDBError(f"Unexpected error in {op_name}: {str(e)}", context)
-                logger.log_error(op_name, luxdb_error, context)
+                logger.log_error(op_name, luxdb_error, context=context, error_code='UNEXPECTED_ERROR')
                 raise luxdb_error
         return wrapper
     return decorator
