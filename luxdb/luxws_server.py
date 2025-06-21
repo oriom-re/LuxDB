@@ -30,7 +30,7 @@ class LuxWSServer:
     - Dwukierunkowa komunikacja z klientami
     """
     
-    def __init__(self, host: str = "0.0.0.0", port: int = 5001):
+    def __init__(self, host: str = "0.0.0.0", port: int = 5002):
         self.app = Flask(__name__)
         self.app.config['SECRET_KEY'] = 'luxws_server_secret_key_change_in_production'
         self.socketio = SocketIO(
