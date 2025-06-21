@@ -12,7 +12,7 @@ Ten folder zawiera dedykowane serwisy dla różnych trybów uruchamiania LuxDB.
 - Idealny dla: integracji z aplikacjami, API-only deployment
 
 ```bash
-python service/luxapi_service.py
+python services/luxapi_service.py
 ```
 
 **Endpoints:**
@@ -30,7 +30,7 @@ python service/luxapi_service.py
 - Idealny dla: real-time aplikacji, live sync
 
 ```bash
-python service/luxws_service.py
+python services/luxws_service.py
 ```
 
 **Funkcjonalności:**
@@ -47,7 +47,7 @@ python service/luxws_service.py
 - Idealny dla: pełne aplikacje, production deployment
 
 ```bash
-python service/luxcore_service.py
+python services/luxcore_service.py
 ```
 
 **Tryby:**
@@ -68,11 +68,11 @@ python service/luxcore_service.py
 ### Development
 ```bash
 # Uruchom pełny stos
-python service/luxcore_service.py
+python services/luxcore_service.py
 
 # Lub osobno:
-python service/luxapi_service.py &
-python service/luxws_service.py &
+python services/luxapi_service.py &
+python services/luxws_service.py &
 ```
 
 ### Production/Deployment
@@ -81,7 +81,7 @@ python service/luxws_service.py &
 export REPL_DEPLOYMENT=1
 
 # Uruchom zintegrowany serwis
-python service/luxcore_service.py
+python services/luxcore_service.py
 ```
 
 ## Funkcjonalności wszystkich serwisów
