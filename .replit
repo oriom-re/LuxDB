@@ -35,6 +35,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python server.py"
 
+[[workflows.workflow]]
+name = "Initialize Database"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python luxdb/init_db.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
