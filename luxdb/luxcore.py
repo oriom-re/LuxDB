@@ -64,10 +64,13 @@ class LuxCore:
             self.initialize()
 
         def run_api():
+            print("run api")
             try:
                 logger.log_info(f"Uruchamianie LuxAPI na porcie {self.api_port}")
+                print('uruchomiony')
                 self.luxapi.run(debug=debug)
             except Exception as e:
+                print(e)
                 logger.log_error("Błąd uruchamiania LuxAPI", e,
                                context={'port': self.api_port},
                                error_code='LUXAPI_START_ERROR')
