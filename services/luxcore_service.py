@@ -87,6 +87,8 @@ def setup_websocket_callbacks():
                 "timestamp": data.get("timestamp")
             })
 
+    luxcore.luxws_server.register_callback("database_change", on_database_change)
+    luxcore.luxws_server.register_callback("user_activity", on_user_activity)
     logger.log_info("Callbacki WebSocket skonfigurowane")
 
 def periodic_maintenance():
