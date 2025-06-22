@@ -81,13 +81,13 @@ class LuxCore:
 
     def start_ws_server(self, debug: bool = False):
         """Uruchamia serwer WebSocket w osobnym wątku"""
-        if self.luxws is None:
+        if self.luxws_server is None:
             self.initialize()
 
         def run_ws():
             try:
                 logger.log_info(f"Uruchamianie LuxWS na porcie {self.ws_port}")
-                self.luxws.run(debug=debug)
+                self.luxws_server.run(debug=debug)
             except Exception as e:
                 logger.log_error("Błąd uruchamiania LuxWS", e,
                                context={'port': self.ws_port},
@@ -113,7 +113,7 @@ class LuxCore:
             app.register_blueprint(luxapi.app.blueprints['api'])
 
             # Skopiuj handlery WebSocket z LuxWS
-            luxws = get_luxws()
+            luxws = get_luxws_server()
             for handler_name, handler_func in luxws.socketio.handlers['/'].items():
                 socketio.on_event(handler_name, handler_func)
 
@@ -204,8 +204,8 @@ class LuxCore:
         }
 
         # Dodaj statystyki WebSocket jeśli dostępne
-        if self.luxws:
-            status['services']['luxws']['connections'] = self.luxws.get_connection_stats()
+        if self.luxws_server:
+            status['services']['luxws']['connections'] = self.luxws_server.get_connection_stats()
 
         # Dodaj informacje o bazach danych
         status['databases'] = {
@@ -217,8 +217,8 @@ class LuxCore:
 
     def broadcast_database_event(self, db_name: str, event_type: str, data: Dict[str, Any]):
         """Rozgłasza wydarzenie bazy danych przez WebSocket"""
-        if self.luxws and self.running:
-            self.luxws.broadcast_database_change(db_name, event_type, data)
+        if self.luxws_server and self.running:
+            self.luxws_server.broadcast_database_change(db_name, event_type, data)
 
     def wait_for_shutdown(self):
         """Oczekuje na zakończenie wszystkich wątków"""
