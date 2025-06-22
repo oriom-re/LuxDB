@@ -147,13 +147,23 @@ class LuxCore:
                 return self.start_integrated_server(debug=debug)
             else:
                 logger.log_info("Uruchamianie LuxAPI na porcie 5000")
-                if self.start_api_server(debug=debug):
-                    logger.log_info("Uruchamianie LuxWS na porcie 5001")
-                    if self.start_ws_server(debug=debug):
-                        logger.log_info("Wszystkie serwisy LuxCore uruchomione")
-                        self.running = True
-                        return True
-                return False
+                # Uruchom serwisy w wątkach
+                self.start_api_server(debug=debug)
+                time.sleep(1)  # Krótka pauza na uruchomienie API
+                
+                logger.log_info("Uruchamianie LuxWS na porcie 5001")
+                self.start_ws_server(debug=debug)
+                time.sleep(1)  # Krótka pauza na uruchomienie WS
+                
+                # Sprawdź czy wątki są aktywne
+                if (self.api_thread and self.api_thread.is_alive() and 
+                    self.ws_thread and self.ws_thread.is_alive()):
+                    logger.log_info("Wszystkie serwisy LuxCore uruchomione")
+                    self.running = True
+                    return True
+                else:
+                    logger.log_error("Błąd uruchamiania jednego lub więcej serwisów")
+                    return False
         except Exception as e:
             logger.log_error("Błąd uruchamiania serwisów LuxCore", e,
                            context={'is_deployment': is_deployment, 'debug': debug},
