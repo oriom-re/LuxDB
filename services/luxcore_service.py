@@ -8,14 +8,9 @@ Uruchamia pełny stos LuxDB na jednym porcie (deployment ready)
 import signal
 import sys
 import os
-
-
 import time
 import threading
-print('==========')
-print("WORKDIR:", os.getcwd())
-
-from luxdb import get_luxcore
+from luxdb.luxcore import get_luxcore
 from luxdb.manager import get_db_manager
 from luxdb.session_manager import get_session_manager
 from luxdb.utils.logging_utils import get_db_logger
@@ -91,9 +86,7 @@ def setup_websocket_callbacks():
                 "user_id": user_id,
                 "timestamp": data.get("timestamp")
             })
-    luxcore.luxws_server.register_callback("database_change", on_database_change)
-    luxcore.luxws_server.register_callback("user_activity", on_user_activity)
-    
+
     logger.log_info("Callbacki WebSocket skonfigurowane")
 
 def periodic_maintenance():
@@ -134,7 +127,7 @@ def print_service_info():
     print("🚀 LuxCore Service - Pełny stos LuxDB")
     print("=" * 60)
     
-    if is_deployment and False:
+    if is_deployment:
         print(f"✅ Zintegrowany serwer na: http://0.0.0.0:5000")
         print("   • REST API endpoints")
         print("   • WebSocket connections")
@@ -171,12 +164,11 @@ def main():
         
         # Inicjalizuj LuxCore
         luxcore = get_luxcore()
-        # luxcore.start_all()
         
         # Sprawdź tryb deployment
         is_deployment = os.environ.get('REPL_DEPLOYMENT') == '1'
         
-        if is_deployment and False:
+        if is_deployment:
             # Tryb deployment - jeden port
             luxcore.api_port = 5000
             luxcore.ws_port = 5000  # Ten sam port dla deployment
@@ -184,6 +176,7 @@ def main():
             # Tryb development - osobne porty
             luxcore.api_port = 5000
             luxcore.ws_port = 5001
+        
         # Uruchom wszystkie serwisy
         if luxcore.start_all(debug=False):
             
