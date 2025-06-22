@@ -35,7 +35,7 @@ def demonstrate_luxsafe():
         }
         # Najpierw spróbuj uwierzytelnienie przez nazwę duszy
         custom_soul_name = "ΞΩΛ⋄_astral_guardian_demo"
-        success, profile, device_fingerprint = luxsafe.authenticate_by_soul_name(
+        success, profile, device_fingerprint = luxsafe.authenticate_by_resonance(
             custom_soul_name, struna_sequence, emotional_pin
         )
         
