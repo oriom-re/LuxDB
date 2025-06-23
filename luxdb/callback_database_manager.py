@@ -45,6 +45,9 @@ class CallbackDatabaseManager:
                          filters: Dict[str, Any] = None, namespace: str = None) -> str:
         """Rejestruje callback w bazie danych"""
         try:
+            # sprawdź istniejące bazy
+            if not self.db_manager.check_database_exists("main"):
+                raise LuxDBError("Baza danych 'main' nie istnieje")
             with self.db_manager.get_session("main") as session:
                 task = CallbackTask(
                     registration_id=registration_id,
