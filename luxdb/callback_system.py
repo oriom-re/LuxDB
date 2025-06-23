@@ -460,11 +460,15 @@ class AstralCallbackManager:
         
         # Następnie zwracaj asynchroniczne w miarę ukończenia
         if async_tasks:
-
-
             # Utwórz tasks dla asynchronicznych callbacków
-            async_tasks = [(index, task) for index, task in async_tasks if asyncio.iscoroutine(task) or hasattr(task, '__await__')]
-            pending = {asyncio.create_task(task): index for index, task in async_tasks}
+            pending = {}
+            for index, task in async_tasks:
+                if asyncio.iscoroutine(task):
+                    # Jeśli to coroutine, utwórz task
+                    pending[asyncio.create_task(task)] = index
+                elif hasattr(task, '__await__'):
+                    # Jeśli to już task/future, użyj bezpośrednio
+                    pending[task] = index
             
             while pending:
                 done, pending_set = await asyncio.wait(pending.keys(), return_when=asyncio.FIRST_COMPLETED)
