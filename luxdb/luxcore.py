@@ -42,7 +42,7 @@ class LuxCore:
         self.core_namespace = self.callback_manager.create_namespace("luxcore")
 
         logger.log_info("Inicjalizacja LuxCore")
-        # Callbacki zostaną skonfigurowane po utworzeniu baz danych
+        self._setup_core_callbacks()
 
     def initialize(self):
         """Inicjalizuje wszystkie komponenty"""
@@ -54,9 +54,6 @@ class LuxCore:
             # Skonfiguruj porty
             self.luxapi.port = self.api_port
             self.luxws_server.port = self.ws_port
-
-            # Teraz gdy bazy istnieją, skonfiguruj callbacki
-            self._setup_core_callbacks()
 
             logger.log_info("LuxCore zainicjalizowany pomyślnie")
             return True

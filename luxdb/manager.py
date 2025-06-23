@@ -164,43 +164,7 @@ class DatabaseManager:
             return True
         except Exception as e:
             logger.error(f"Błąd tworzenia tabel w bazie {db_name}: {e}")
-            return False
 
-    def drop_database(self, db_name: str) -> bool:
-        """Usuwa bazę danych"""
-        try:
-            if db_name not in self.connection_pools:
-                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
-            
-            pool = self.connection_pools[db_name]
-            pool.close()
-            
-            # Usuń plik bazy danych
-            if self.configs[db_name].type == DatabaseType.SQLITE:
-                db_path = self.configs[db_name].connection_string.replace("sqlite:///", "")
-                if os.path.exists(db_path):
-                    os.remove(db_path)
-            
-            # Usuń z listy połączeń
-            del self.connection_pools[db_name]
-            del self.configs[db_name]
-            
-            # Usuń z metadanych
-            with self.get_metadata_session() as session:
-                session.query(DatabaseSchema).filter_by(db_name=db_name).delete()
-                session.query(Migration).filter_by(db_name=db_name).delete()
-                session.query(TableDefinition).filter_by(db_name=db_name).delete()
-            
-            logger.info(f"Usunięto bazę danych {db_name}")
-            return True
-        except Exception as e:
-            logger.error(f"Błąd usuwania bazy {db_name}: {e}")
-            return False
-
-    def check_database_exists(self, db_name: str) -> bool:
-        """Sprawdza czy baza danych istnieje"""
-        return db_name in self.connection_pools
-        
     def create_all_tables(self) -> bool:
         """Tworzy wszystkie tabele w wszystkich bazach danych"""
         try:
