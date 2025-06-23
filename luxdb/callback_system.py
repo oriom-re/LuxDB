@@ -13,7 +13,7 @@ from collections import defaultdict
 from functools import wraps
 import json
 import uuid
-
+from luxdb import get_db_manager
 from .utils.logging_utils import get_db_logger
 from .utils.error_handlers import LuxDBError
 from .callback_database_manager import CallbackDatabaseManager
@@ -164,7 +164,7 @@ class AstralCallbackManager:
         """Inicjalizuje manager bazy danych dla callbacków"""
         try:
             from .manager import DatabaseManager
-            db_manager = DatabaseManager()
+            db_manager = get_db_manager()
             self.db_manager = CallbackDatabaseManager(db_manager)
             logger.log_info("Inicjalizacja bazy danych callbacków zakończona")
         except Exception as e:

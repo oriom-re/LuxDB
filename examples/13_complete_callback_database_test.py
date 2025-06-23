@@ -8,6 +8,7 @@ Demonstruje pełną integrację persystencji, śledzenia i analityki
 import time
 import asyncio
 from datetime import datetime
+from luxdb import get_db_manager
 from luxdb.callback_system import get_astral_callback_manager, CallbackPriority
 
 def test_database_persistence():
@@ -17,6 +18,7 @@ def test_database_persistence():
     print("="*60)
     
     manager = get_astral_callback_manager()
+
     print(f"📊 Status bazy danych: {'Włączona' if manager.database_enabled else 'Wyłączona'}")
     
     if not manager.database_enabled:
