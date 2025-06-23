@@ -89,6 +89,16 @@ class DatabaseInitService:
                 backup_enabled=True,
                 auto_optimize=True,
                 connection_string="sqlite:///db/luxdb_logs.db"
+            ),
+            
+            # Baza callbacków
+            "callbacks": DatabaseConfig(
+                name="callbacks",
+                type=DatabaseType.SQLITE,
+                max_connections=12,
+                backup_enabled=True,
+                auto_optimize=True,
+                connection_string="sqlite:///db/luxdb_callbacks.db"
             )
         }
         
@@ -260,7 +270,7 @@ class DatabaseInitService:
             
             # Sprawdź czy wszystkie bazy są dostępne
             databases = self.db_manager.list_databases()
-            expected_databases = ["auth", "system", "main", "analytics", "cache", "logs"]
+            expected_databases = ["auth", "system", "main", "analytics", "cache", "logs", "callbacks"]
             
             for db_name in expected_databases:
                 if db_name not in databases:
@@ -290,7 +300,7 @@ class DatabaseInitService:
                 "timestamp": datetime.now().isoformat(),
                 "databases_count": len(databases),
                 "databases": databases,
-                "initialization_complete": len(databases) >= 6,
+                "initialization_complete": len(databases) >= 7,
                 "auth_profiles": 0,
                 "system_status": "operational"
             }
@@ -323,7 +333,8 @@ class DatabaseInitService:
                 "db/luxdb_main.db",
                 "db/luxdb_analytics.db",
                 "db/luxdb_cache.db",
-                "db/luxdb_logs.db"
+                "db/luxdb_logs.db",
+                "db/luxdb_callbacks.db"
             ]
             
             for db_file in db_files:

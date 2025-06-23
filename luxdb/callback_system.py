@@ -17,6 +17,7 @@ import uuid
 
 from .utils.logging_utils import get_db_logger
 from .utils.error_handlers import LuxDBError
+from .callback_database_manager import CallbackDatabaseManager
 
 logger = get_db_logger()
 
@@ -127,7 +128,7 @@ class AstralCallbackManager:
     callbackami dla Socket.IO i komunikacji wewnętrznej
     """
     
-    def __init__(self):
+    def __init__(self, enable_database: bool = True):
         self.callbacks: Dict[str, List[CallbackRegistration]] = defaultdict(list)
         self.global_callbacks: List[CallbackRegistration] = []
         self.namespace_callbacks: Dict[str, Dict[str, List[CallbackRegistration]]] = defaultdict(
@@ -152,7 +153,24 @@ class AstralCallbackManager:
         self.loop = None
         self.loop_thread = None
         
+        # Database manager dla persystencji
+        self.database_enabled = enable_database
+        self.db_manager = None
+        if enable_database:
+            self._init_database()
+        
         logger.log_info("Inicjalizacja AstralCallbackManager")
+    
+    def _init_database(self):
+        """Inicjalizuje manager bazy danych dla callbacków"""
+        try:
+            from .manager import DatabaseManager
+            db_manager = DatabaseManager()
+            self.db_manager = CallbackDatabaseManager(db_manager)
+            logger.log_info("Inicjalizacja bazy danych callbacków zakończona")
+        except Exception as e:
+            logger.log_error("init_callback_database", e)
+            self.database_enabled = False
     
     def _ensure_event_loop(self):
         """Zapewnia istnienie event loop dla async callbacks"""
@@ -205,6 +223,22 @@ class AstralCallbackManager:
             callback_list.sort(key=lambda x: x.priority)
             
             self.stats['total_callbacks'] += 1
+            
+            # Zapisz do bazy danych jeśli włączona
+            if self.database_enabled and self.db_manager:
+                try:
+                    self.db_manager.register_callback(
+                        registration_id=registration.registration_id,
+                        event_name=event_name,
+                        callback_function=getattr(callback, '__name__', str(callback)),
+                        priority=priority,
+                        is_async=registration.is_async,
+                        once=once,
+                        filters=filters,
+                        namespace=namespace
+                    )
+                except Exception as e:
+                    logger.log_error("register_callback_to_db", e)
             
             logger.log_info(f"Zarejestrowano callback dla '{event_name}' "
                           f"(priorytet: {priority}, namespace: {namespace})")
@@ -295,6 +329,22 @@ class AstralCallbackManager:
         )
         context.metadata.update(metadata)
         
+        # Utwórz event w bazie danych jeśli włączona
+        event_id = None
+        if self.database_enabled and self.db_manager:
+            try:
+                event_id = self.db_manager.create_event(
+                    event_name=event_name,
+                    source=source,
+                    data=data,
+                    session_id=session_id,
+                    user_id=user_id,
+                    namespace=namespace,
+                    **metadata
+                )
+            except Exception as e:
+                logger.log_error("create_event_in_db", e)
+        
         results = []
         callbacks_to_remove = []
         
@@ -321,6 +371,23 @@ class AstralCallbackManager:
                 if not registration.should_execute(context):
                     continue
                 
+                # Rozpocznij śledzenie wykonania w bazie danych
+                execution_id = None
+                if self.database_enabled and self.db_manager and event_id:
+                    try:
+                        # Znajdź odpowiedni task_id w bazie
+                        pending_tasks = self.db_manager.get_pending_tasks(event_name, namespace)
+                        matching_task = next((t for t in pending_tasks if t['registration_id'] == registration.registration_id), None)
+                        
+                        if matching_task:
+                            execution_id = self.db_manager.start_execution(
+                                task_id=matching_task['id'],
+                                event_id=event_id,
+                                context_data=context.to_dict()
+                            )
+                    except Exception as e:
+                        logger.log_error("start_execution_tracking", e)
+                
                 try:
                     result = registration.execute(context)
                     
@@ -341,6 +408,13 @@ class AstralCallbackManager:
                     else:
                         results.append(result)
                     
+                    # Zakończ śledzenie wykonania w bazie danych
+                    if execution_id and self.database_enabled and self.db_manager:
+                        try:
+                            self.db_manager.complete_execution(execution_id, result)
+                        except Exception as e:
+                            logger.log_error("complete_execution_tracking", e)
+                    
                     if registration.is_async:
                         self.stats['async_executions'] += 1
                     
@@ -349,6 +423,13 @@ class AstralCallbackManager:
                         callbacks_to_remove.append(registration)
                     
                 except Exception as e:
+                    # Zakończ śledzenie z błędem
+                    if execution_id and self.database_enabled and self.db_manager:
+                        try:
+                            self.db_manager.complete_execution(execution_id, error=str(e))
+                        except Exception as db_e:
+                            logger.log_error("complete_execution_tracking_error", db_e)
+                    
                     self.stats['failed_executions'] += 1
                     logger.log_error(f"Błąd wykonania callback dla '{event_name}'", e)
                     results.append(AstralCallbackError(str(e)))
@@ -408,13 +489,25 @@ class AstralCallbackManager:
                 for ns_callbacks in self.namespace_callbacks.values()
             )
             
-            return {
+            stats = {
                 **self.stats,
                 'registered_callbacks': total_registered,
                 'namespace_callbacks': total_namespace,
                 'global_callbacks': len(self.global_callbacks),
-                'namespaces': list(self.namespace_callbacks.keys())
+                'namespaces': list(self.namespace_callbacks.keys()),
+                'database_enabled': self.database_enabled
             }
+            
+            # Dodaj statystyki z bazy danych jeśli dostępne
+            if self.database_enabled and self.db_manager:
+                try:
+                    db_stats = self.db_manager.generate_stats()
+                    stats['database_stats'] = db_stats
+                except Exception as e:
+                    logger.log_error("get_database_stats", e)
+                    stats['database_stats'] = {"error": str(e)}
+            
+            return stats
     
     def cleanup_weak_refs(self):
         """Czyści martwe weak references"""
@@ -604,6 +697,41 @@ class SocketIOCallbackIntegration:
             # Emituj przez system callbacków
             return self.callback_manager.emit(
                 event_name=event_name,
+
+    
+    def get_execution_history(self, event_name: str = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Pobiera historię wykonań callbacków z bazy danych"""
+        if not self.database_enabled or not self.db_manager:
+            return []
+        
+        try:
+            # Implementacja zostanie dodana w CallbackDatabaseManager
+            return []
+        except Exception as e:
+            logger.log_error("get_execution_history", e)
+            return []
+    
+    def cleanup_old_callbacks(self, days_old: int = 30):
+        """Czyści stare dane callbacków z bazy danych"""
+        if not self.database_enabled or not self.db_manager:
+            return
+        
+        try:
+            self.db_manager.cleanup_old_data(days_old)
+        except Exception as e:
+            logger.log_error("cleanup_old_callbacks", e)
+    
+    def get_pending_executions(self) -> List[Dict[str, Any]]:
+        """Pobiera oczekujące wykonania callbacków"""
+        if not self.database_enabled or not self.db_manager:
+            return []
+        
+        try:
+            return self.db_manager.get_pending_tasks()
+        except Exception as e:
+            logger.log_error("get_pending_executions", e)
+            return []
+
                 data=data,
                 source="socketio",
                 session_id=session_id,
