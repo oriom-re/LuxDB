@@ -23,7 +23,7 @@ def test_database_persistence():
         print("❌ Baza danych nie jest dostępna - pomijam test")
         return
 
-
+    if "main" not in manager.db_manager.list_databases():
     
     def test_callback(context):
         print(f"🎯 Test callback wykonany: {context.data}")
