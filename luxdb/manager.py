@@ -564,22 +564,22 @@ def create_all_tables(self):
         for db_name in self.databases.keys():
             self.create_tables(db_name)
 
-    def create_tables(self, db_name: str):
-        """Tworzy tabele dla konkretnej bazy danych"""
-        if db_name not in self.databases:
-            raise DatabaseError(f"Baza danych '{db_name}' nie istnieje")
+def create_tables(self, db_name: str):
+    """Tworzy tabele dla konkretnej bazy danych"""
+    if db_name not in self.databases:
+        raise DatabaseError(f"Baza danych '{db_name}' nie istnieje")
 
-        engine = self.databases[db_name].engine
+    engine = self.databases[db_name].engine
 
-        try:
-            # Import wszystkich modeli żeby SQLAlchemy je znało
-            from .models.luxsafe import LuxSafeProfile, SoulName, ClientIdentity
-            from .models.luxbase import LuxBase
-            from .models.callback_models import CallbackTask, CallbackExecution, CallbackEvent, CallbackQueue, CallbackStats
+    try:
+        # Import wszystkich modeli żeby SQLAlchemy je znało
+        from .models.luxsafe import LuxSafeProfile, SoulName, ClientIdentity
+        from .models.luxbase import LuxBase
+        from .models.callback_models import CallbackTask, CallbackExecution, CallbackEvent, CallbackQueue, CallbackStats
 
-            # Utwórz tabele
-            LuxBase.metadata.create_all(engine)
-            logger.log_info(f"Tabele utworzone dla bazy '{db_name}' (w tym tabele callbacków)")
-        except Exception as e:
-            logger.log_error("create_tables", e)
-            raise DatabaseError(f"Błąd tworzenia tabel w bazie '{db_name}': {e}")
+        # Utwórz tabele
+        LuxBase.metadata.create_all(engine)
+        logger.log_info(f"Tabele utworzone dla bazy '{db_name}' (w tym tabele callbacków)")
+    except Exception as e:
+        logger.log_error("create_tables", e)
+        raise DatabaseError(f"Błąd tworzenia tabel w bazie '{db_name}': {e}")
