@@ -7,6 +7,7 @@ Demonstruje komunikację między bytami astralnymi i komponentami systemu
 
 import time
 import asyncio
+from typing import Any
 from datetime import datetime
 from luxdb.callback_system import (
     get_astral_callback_manager, 
@@ -289,7 +290,9 @@ def demonstrate_async_callbacks():
         async def async_heavy_processing(context):
             """Symuluje ciężkie przetwarzanie asynchroniczne"""
             print(f"🔄 Rozpoczynam asynchroniczne przetwarzanie: {context.data}")
-            await asyncio.sleep(3)  # Symuluj długie przetwarzanie
+            for x in range(10):
+                print(f"   🕒 Przetwarzanie... {x+1}/10")
+                await asyncio.sleep(1)  # Symuluj długie przetwarzanie
             print(f"✅ Zakończono asynchroniczne przetwarzanie: {context.data}")
             return f"processed_{context.data}"
         
