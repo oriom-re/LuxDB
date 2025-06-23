@@ -16,7 +16,7 @@ run = ["sh", "-c", "python server.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run LuxCore Service"
+runButton = "Run LuxDB v2 Service"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
@@ -71,6 +71,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python services/luxcore_service.py"
+
+[[workflows.workflow]]
+name = "Run LuxDB v2 Service"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python luxdb_v2_service.py"
 
 [[ports]]
 localPort = 5000
