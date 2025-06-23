@@ -70,7 +70,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python service/luxcore_service.py"
+args = "python services/luxcore_service.py"
 
 [[ports]]
 localPort = 5000

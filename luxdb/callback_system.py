@@ -704,8 +704,7 @@ class SocketIOCallbackIntegration:
             return []
         
         try:
-            # Implementacja zostanie dodana w CallbackDatabaseManager
-            return []
+            return self.db_manager.get_execution_history(event_name, limit)
         except Exception as e:
             logger.log_error("get_execution_history", e)
             return []
@@ -716,7 +715,7 @@ class SocketIOCallbackIntegration:
             return
         
         try:
-            self.db_manager.cleanup_old_data(days_old)
+            return self.db_manager.cleanup_old_data(days_old)
         except Exception as e:
             logger.log_error("cleanup_old_callbacks", e)
     
@@ -729,6 +728,27 @@ class SocketIOCallbackIntegration:
             return self.db_manager.get_pending_tasks()
         except Exception as e:
             logger.log_error("get_pending_executions", e)
+            return []
+    
+    def create_stats_snapshot(self, period_type: str = "hour"):
+        """Tworzy snapshot statystyk callbacków"""
+        if not self.database_enabled or not self.db_manager:
+            return
+        
+        try:
+            self.db_manager.create_stats_snapshot(period_type)
+        except Exception as e:
+            logger.log_error("create_stats_snapshot", e)
+    
+    def get_period_stats(self, period_type: str = "day", periods_back: int = 7) -> List[Dict[str, Any]]:
+        """Pobiera statystyki dla ostatnich okresów"""
+        if not self.database_enabled or not self.db_manager:
+            return []
+        
+        try:
+            return self.db_manager.get_stats_for_period(period_type, periods_back)
+        except Exception as e:
+            logger.log_error("get_period_stats", e)
             return []
         
         # Zarejestruj w Socket.IO
