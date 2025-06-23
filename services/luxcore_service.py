@@ -166,8 +166,11 @@ def main():
         print("🔧 Konfiguracja początkowa...")
         setup_initial_configuration()
 
-        # POTEM inicjalizuj LuxCore - będzie mógł zarejestrować callbacki
+        # POTEM pobierz LuxCore (już wcześniej zainicjalizowany ale bez callbacków w DB)
         luxcore = get_luxcore()
+        
+        # Teraz możemy bezpiecznie zainicjalizować pozostałe komponenty
+        luxcore.initialize()
 
         print("run api")
 
