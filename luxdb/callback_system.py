@@ -105,7 +105,9 @@ class CallbackRegistration:
         
         try:
             if self.is_async:
-                return asyncio.create_task(self.callback(context))
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(self.callback(context))
+                # return asyncio.create_task()
             else:
                 return self.callback(context)
         except Exception as e:

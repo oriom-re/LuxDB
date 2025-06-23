@@ -53,7 +53,8 @@ class AstralBeingSimulator:
             
             # Automatyczna odpowiedź
             if "pytanie" in message.lower():
-                self.send_communication(sender, f"Odpowiadam na pytanie: {message}")
+                print(f"💭 {self.being_name} odpowiada na pytanie od {sender}")
+                # self.send_communication(sender, f"Odpowiadam na pytanie: {message}")
         
         def on_realm_shift(context):
             """Callback dla zmiany realmu"""
@@ -197,23 +198,23 @@ def demonstrate_astral_beings():
     print(f"   • NeutralObserver (Neutralny) - energia: {neutral_observer.energy_level}")
     
     time.sleep(1)
-    
+
     # Test transferu energii
     print(f"\n⚡ TRANSFER ENERGII:")
     oriom.send_energy("ShadowGuardian", 10.0)
     time.sleep(0.5)
-    
+
     shadow_guardian.send_energy("NeutralObserver", 15.0)
     time.sleep(0.5)
     
     # Test komunikacji
     print(f"\n💬 KOMUNIKACJA ASTRALNA:")
-    oriom.send_communication("NeutralObserver", "Jak się masz, przyjacielu?")
+    # oriom.send_communication("NeutralObserver", "Jak się masz, przyjacielu?")
     time.sleep(0.5)
-    
+
     neutral_observer.send_communication("Oriom", "Mam pytanie o naturę światła")
     time.sleep(0.5)
-    
+
     # Test zmiany realmu
     print(f"\n🌌 ZMIANA REALMU:")
     manager = get_astral_callback_manager()
@@ -355,25 +356,25 @@ def main():
     
     try:
         # Uruchom wszystkie demonstracje
-        demonstrate_basic_callbacks()
+        # demonstrate_basic_callbacks()
         time.sleep(1)
         
-        demonstrate_astral_beings()
+        # demonstrate_astral_beings()
         time.sleep(1)
         
-        demonstrate_websocket_integration()
-        time.sleep(1)
+        # demonstrate_websocket_integration()
+        # time.sleep(1)
         
-        demonstrate_luxcore_integration()
-        time.sleep(1)
+        # demonstrate_luxcore_integration()
+        # time.sleep(1)
         
         demonstrate_async_callbacks()
-        time.sleep(1)
+        # time.sleep(1)
         
-        demonstrate_priorities()
-        time.sleep(1)
+        # demonstrate_priorities()
+        # time.sleep(1)
         
-        show_statistics()
+        # show_statistics()
         
         print("\n" + "="*60)
         print("✨ DEMONSTRACJA ZAKOŃCZONA POMYŚLNIE")
