@@ -164,7 +164,18 @@ class DatabaseManager:
             return True
         except Exception as e:
             logger.error(f"Błąd tworzenia tabel w bazie {db_name}: {e}")
-        
+
+    def create_all_tables(self) -> bool:
+        """Tworzy wszystkie tabele w wszystkich bazach danych"""
+        try:
+            for db_name in self.connection_pools.keys():
+                self.create_tables(db_name)
+            
+            logger.info("Utworzono wszystkie tabele w bazach danych")
+            return True
+        except Exception as e:
+            logger.error(f"Błąd tworzenia wszystkich tabel: {e}")
+    
     def _register_database(self, db_name: str, version: int = 1):
         """Rejestruje bazę w systemie metadanych"""
         try:

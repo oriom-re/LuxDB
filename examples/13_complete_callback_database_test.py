@@ -54,7 +54,7 @@ def test_complete_callback_database():
     cb3_id = manager.on('test_db_event', callback_async, priority=CallbackPriority.NORMAL)
     cb4_id = manager.on('test_db_event', callback_error, priority=CallbackPriority.LOW)
     
-    print(f"   Zarejestrowano callbacki: {[cb1_id[:8], cb2_id[:8], cb3_id[:8], cb4_id[:8]}...")
+    print(f"   Zarejestrowano callbacki: {[cb1_id[:8], cb2_id[:8], cb3_id[:8], cb4_id[:8]]}...")
     
     # Test 2: Emitowanie eventów
     print(f"\n🚀 TEST 2: EMITOWANIE EVENTÓW")
