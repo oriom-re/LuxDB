@@ -285,22 +285,26 @@ def demonstrate_async_callbacks():
     
     async def run_async_demo():
         manager = get_astral_callback_manager()
-        
         async def async_heavy_processing(context):
             """Symuluje ciężkie przetwarzanie asynchroniczne"""
             print(f"🔄 Rozpoczynam asynchroniczne przetwarzanie: {context.data}")
-            await asyncio.sleep(1)  # Symuluj długie przetwarzanie
+            # powtórz 60 razy
+            for i in range(60):
+                print(f"🔄 Przetwarzanie: {i+1}/60")
+                await asyncio.sleep(1)  # Symuluj długie przetwarzanie
             print(f"✅ Zakończono asynchroniczne przetwarzanie: {context.data}")
             return f"processed_{context.data}"
         
-        def sync_callback(context):
+        async def sync_callback(context):
             """Synchroniczny callback"""
+            for i in range(10):
+                print(f"🔄 Przetwarzanie innej operacji: {i+1}/10")
+                await asyncio.sleep(1)  # Symuluj długie przetwarzanie
             print(f"⚡ Synchroniczny callback: {context.data}")
             return f"sync_processed_{context.data}"
         
         # Rejestruj oba typy callbacków
         manager.on('heavy_task', async_heavy_processing, priority=CallbackPriority.HIGH)
-        manager.on('heavy_task', sync_callback, priority=CallbackPriority.NORMAL)
         
         # Emituj zdarzenie
         results = manager.emit('heavy_task', {'task': 'process_astral_data'})
@@ -377,25 +381,25 @@ def main():
     
     try:
         # Uruchom wszystkie demonstracje
-        # demonstrate_basic_callbacks()
+        demonstrate_basic_callbacks()
         time.sleep(1)
         
-        # demonstrate_astral_beings()
+        demonstrate_astral_beings()
         time.sleep(1)
         
-        # demonstrate_websocket_integration()
-        # time.sleep(1)
+        demonstrate_websocket_integration()
+        time.sleep(1)
         
-        # demonstrate_luxcore_integration()
-        # time.sleep(1)
+        demonstrate_luxcore_integration()
+        time.sleep(1)
         
         demonstrate_async_callbacks()
-        # time.sleep(1)
+        time.sleep(1)
         
-        # demonstrate_priorities()
-        # time.sleep(1)
+        demonstrate_priorities()
+        time.sleep(1)
         
-        # show_statistics()
+        show_statistics()
         
         print("\n" + "="*60)
         print("✨ DEMONSTRACJA ZAKOŃCZONA POMYŚLNIE")
