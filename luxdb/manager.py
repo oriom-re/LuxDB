@@ -164,12 +164,7 @@ class DatabaseManager:
             return True
         except Exception as e:
             logger.error(f"Błąd tworzenia tabel w bazie {db_name}: {e}")
-            return False
 
-    def check_database_exists(self, db_name: str) -> bool:
-        """Sprawdza czy baza danych istnieje"""
-        return db_name in self.connection_pools
-        
     def create_all_tables(self) -> bool:
         """Tworzy wszystkie tabele w wszystkich bazach danych"""
         try:

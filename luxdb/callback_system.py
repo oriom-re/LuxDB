@@ -236,11 +236,8 @@ class AstralCallbackManager:
                         filters=filters,
                         namespace=namespace
                     )
-                    logger.log_info(f"Callback '{registration.registration_id}' zarejestrowany w bazie danych")
                 except Exception as e:
                     logger.log_error("register_callback_to_db", e)
-                    # Kontynuuj mimo błędu bazy danych - callback nadal działa w pamięci
-                    logger.log_info(f"Callback '{registration.registration_id}' działa tylko w pamięci (brak persystencji)")
 
             logger.log_info(f"Zarejestrowano callback dla '{event_name}' "
                           f"(priorytet: {priority}, namespace: {namespace})")
