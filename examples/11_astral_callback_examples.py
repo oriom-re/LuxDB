@@ -470,26 +470,26 @@ def main():
     
     try:
         # Uruchom wszystkie demonstracje
-        demonstrate_basic_callbacks()
-        time.sleep(1)
+        # demonstrate_basic_callbacks()
+        # time.sleep(1)
         
-        demonstrate_astral_beings()
-        time.sleep(1)
+        # demonstrate_astral_beings()
+        # time.sleep(1)
         
-        demonstrate_websocket_integration()
-        time.sleep(1)
+        # demonstrate_websocket_integration()
+        # time.sleep(1)
         
-        demonstrate_luxcore_integration()
-        time.sleep(1)
+        # demonstrate_luxcore_integration()
+        # time.sleep(1)
         
         demonstrate_async_callbacks()
         time.sleep(1)
         
-        demonstrate_independent_async_processing()
-        time.sleep(1)
+        # demonstrate_independent_async_processing()
+        # time.sleep(1)
         
-        demonstrate_priorities()
-        time.sleep(1)
+        # demonstrate_priorities()
+        # time.sleep(1)
         
         show_statistics()
         
