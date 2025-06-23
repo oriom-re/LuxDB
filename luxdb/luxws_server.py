@@ -16,6 +16,7 @@ from .manager import get_db_manager
 from .session_manager import get_session_manager
 from .utils.error_handlers import LuxDBError, handle_database_errors
 from .utils.logging_utils import get_db_logger
+from .callback_system import get_astral_callback_manager, SocketIOCallbackIntegration, CallbackPriority
 
 logger = get_db_logger()
 
@@ -54,9 +55,17 @@ class LuxWSServer:
 
         # Thread safety
         self.connections_lock = Lock()
+        
+        # System callbacków astralnych
+        self.callback_manager = get_astral_callback_manager()
+        self.socketio_integration = SocketIOCallbackIntegration(self.callback_manager)
+        
+        # Namespace dla WebSocket
+        self.ws_namespace = self.callback_manager.create_namespace("luxws")
 
         self._setup_event_handlers()
         self._setup_server_events()
+        self._setup_astral_callbacks()
 
     def _setup_event_handlers(self):
         """Konfiguruje handlery eventów WebSocket"""
@@ -373,6 +382,114 @@ class LuxWSServer:
         # Tu można dodać logikę sprawdzania uprawnień
         # Na razie zwracamy False - wymaga implementacji systemu uprawnień
         return False
+    
+    def _setup_astral_callbacks(self):
+        """Konfiguruje callbacki astralne dla WebSocket"""
+        
+        # Callback dla nowych połączeń astralnych
+        def on_astral_connection(context):
+            """Obsługuje nowe połączenia astralnych bytów"""
+            logger.log_info(f"Nowe połączenie astralne: {context.data}")
+            
+            # Rozgłoś do wszystkich klientów o nowym bycie astralnym
+            self.socketio.emit('astral_being_connected', {
+                'being_data': context.data,
+                'timestamp': context.timestamp.isoformat(),
+                'astral_realm': context.metadata.get('realm', 'unknown')
+            })
+        
+        # Callback dla zmian w energii astralnej
+        def on_astral_energy_change(context):
+            """Obsługuje zmiany energii astralnej"""
+            energy_data = context.data
+            logger.log_info(f"Zmiana energii astralnej: {energy_data}")
+            
+            # Rozgłoś zmiany energii do zainteresowanych pokojów
+            if 'database' in energy_data:
+                room = f"db_{energy_data['database']}"
+                self.socketio.emit('astral_energy_shift', {
+                    'energy_level': energy_data.get('level'),
+                    'vibration': energy_data.get('vibration'),
+                    'source_being': energy_data.get('source'),
+                    'timestamp': context.timestamp.isoformat()
+                }, room=room)
+        
+        # Callback dla komunikacji między bytami
+        def on_astral_communication(context):
+            """Obsługuje komunikację między bytami astralnymi"""
+            comm_data = context.data
+            logger.log_info(f"Komunikacja astralna: {comm_data}")
+            
+            sender = comm_data.get('sender')
+            receiver = comm_data.get('receiver')
+            message = comm_data.get('message')
+            
+            # Jeśli odbiorca jest połączony, przekaż wiadomość
+            for client_id, conn_data in self.active_connections.items():
+                if conn_data.get('user_id') == receiver:
+                    self.socketio.emit('astral_message', {
+                        'sender': sender,
+                        'message': message,
+                        'astral_frequency': comm_data.get('frequency'),
+                        'timestamp': context.timestamp.isoformat()
+                    }, room=client_id)
+        
+        # Callback dla synchronizacji wymiarów
+        def on_dimensional_sync(context):
+            """Obsługuje synchronizację między wymiarami"""
+            sync_data = context.data
+            logger.log_info(f"Synchronizacja wymiarów: {sync_data}")
+            
+            # Rozgłoś informacje o synchronizacji
+            self.socketio.emit('dimensional_sync', {
+                'source_dimension': sync_data.get('source'),
+                'target_dimension': sync_data.get('target'),
+                'sync_status': sync_data.get('status'),
+                'affected_beings': sync_data.get('beings', []),
+                'timestamp': context.timestamp.isoformat()
+            })
+        
+        # Rejestruj callbacki w namespace WebSocket
+        self.ws_namespace.on('astral_connection', on_astral_connection, 
+                           priority=CallbackPriority.HIGH)
+        self.ws_namespace.on('astral_energy_change', on_astral_energy_change,
+                           priority=CallbackPriority.NORMAL)
+        self.ws_namespace.on('astral_communication', on_astral_communication,
+                           priority=CallbackPriority.HIGH)
+        self.ws_namespace.on('dimensional_sync', on_dimensional_sync,
+                           priority=CallbackPriority.CRITICAL)
+        
+        # Integruj zdarzenia Socket.IO z systemem callbacków
+        self._integrate_socketio_events()
+        
+        logger.log_info("Skonfigurowano callbacki astralne dla LuxWS")
+    
+    def _integrate_socketio_events(self):
+        """Integruje zdarzenia Socket.IO z systemem callbacków"""
+        
+        # Mapuj zdarzenia Socket.IO na callbacki astralne
+        socketio_events = [
+            'connect', 'disconnect', 'client_authenticate',
+            'join_database_room', 'leave_database_room',
+            'execute_database_query', 'subscribe_to_events'
+        ]
+        
+        for event in socketio_events:
+            self.socketio_integration.register_socketio_event(
+                self.socketio, event, namespace="/luxws"
+            )
+    
+    def emit_astral_event(self, event_name: str, data: Any, 
+                         session_id: str = None, user_id: str = None, **metadata):
+        """Emituje zdarzenie astralne przez system callbacków"""
+        return self.ws_namespace.emit(
+            event_name=event_name,
+            data=data,
+            source="luxws_server",
+            session_id=session_id,
+            user_id=user_id,
+            **metadata
+        )
 
     def broadcast_database_change(self, db_name: str, event_type: str, data: Dict[str, Any]):
         """Rozgłasza zmiany w bazie danych do wszystkich klientów w pokoju"""

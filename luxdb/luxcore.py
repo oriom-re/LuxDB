@@ -12,6 +12,7 @@ from .luxws_server import get_luxws_server, LuxWSServer
 from .luxapi import get_luxapi, LuxAPI
 from .manager import get_db_manager
 from .utils.logging_utils import get_db_logger
+from .callback_system import get_astral_callback_manager, CallbackPriority
 
 logger = get_db_logger()
 
@@ -35,8 +36,13 @@ class LuxCore:
 
         self.running = False
         self.db_manager = get_db_manager()
+        
+        # System callbacków astralnych
+        self.callback_manager = get_astral_callback_manager()
+        self.core_namespace = self.callback_manager.create_namespace("luxcore")
 
         logger.log_info("Inicjalizacja LuxCore")
+        self._setup_core_callbacks()
 
     def initialize(self):
         """Inicjalizuje wszystkie komponenty"""
@@ -219,6 +225,76 @@ class LuxCore:
         """Rozgłasza wydarzenie bazy danych przez WebSocket"""
         if self.luxws_server and self.running:
             self.luxws_server.broadcast_database_change(db_name, event_type, data)
+        
+        # Emituj również przez system callbacków astralnych
+        self.emit_astral_event('database_change', {
+            'database': db_name,
+            'event_type': event_type,
+            'data': data
+        })
+    
+    def _setup_core_callbacks(self):
+        """Konfiguruje callbacki astralne dla LuxCore"""
+        
+        def on_service_startup(context):
+            """Callback dla startu serwisów"""
+            service_data = context.data
+            logger.log_info(f"Uruchomiono serwis: {service_data}")
+            
+            # Rozgłoś przez WebSocket jeśli dostępny
+            if self.luxws_server:
+                self.luxws_server.emit_astral_event('service_started', service_data)
+        
+        def on_service_shutdown(context):
+            """Callback dla zatrzymania serwisów"""
+            service_data = context.data
+            logger.log_info(f"Zatrzymano serwis: {service_data}")
+            
+            if self.luxws_server:
+                self.luxws_server.emit_astral_event('service_stopped', service_data)
+        
+        def on_database_operation(context):
+            """Callback dla operacji na bazach danych"""
+            operation_data = context.data
+            logger.log_info(f"Operacja na bazie: {operation_data}")
+            
+            # Automatycznie rozgłoś przez WebSocket
+            if self.luxws_server and operation_data.get('broadcast', True):
+                self.broadcast_database_event(
+                    operation_data.get('database'),
+                    operation_data.get('operation'),
+                    operation_data.get('result', {})
+                )
+        
+        def on_astral_realm_sync(context):
+            """Callback dla synchronizacji między realami astralnymi"""
+            sync_data = context.data
+            logger.log_info(f"Synchronizacja realm: {sync_data}")
+            
+            # Koordynuj synchronizację między serwisami
+            if self.luxws_server:
+                self.luxws_server.emit_astral_event('realm_sync', sync_data)
+        
+        # Rejestruj callbacki w namespace core
+        self.core_namespace.on('service_startup', on_service_startup,
+                              priority=CallbackPriority.HIGH)
+        self.core_namespace.on('service_shutdown', on_service_shutdown,
+                              priority=CallbackPriority.HIGH)
+        self.core_namespace.on('database_operation', on_database_operation,
+                              priority=CallbackPriority.NORMAL)
+        self.core_namespace.on('astral_realm_sync', on_astral_realm_sync,
+                              priority=CallbackPriority.CRITICAL)
+        
+        logger.log_info("Skonfigurowano callbacki astralne dla LuxCore")
+    
+    def emit_astral_event(self, event_name: str, data: Any, **metadata):
+        """Emituje zdarzenie astralne przez system callbacków"""
+        return self.core_namespace.emit(
+            event_name=event_name,
+            data=data,
+            source="luxcore",
+            **metadata
+        )
 
     def wait_for_shutdown(self):
         """Oczekuje na zakończenie wszystkich wątków"""
