@@ -105,9 +105,15 @@ class CallbackRegistration:
         
         try:
             if self.is_async:
-                loop = asyncio.get_event_loop()
-                loop.run_until_complete(self.callback(context))
-                # return asyncio.create_task()
+                # Sprawdź czy jest aktywny event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # Jeśli jest aktywny loop, utwórz task
+                    task = loop.create_task(self.callback(context))
+                    return task
+                except RuntimeError:
+                    # Brak aktywnego loop - uruchom nowy
+                    return asyncio.run(self.callback(context))
             else:
                 return self.callback(context)
         except Exception as e:
@@ -317,7 +323,23 @@ class AstralCallbackManager:
                 
                 try:
                     result = registration.execute(context)
-                    results.append(result)
+                    
+                    # Obsłuż wyniki asynchroniczne
+                    if registration.is_async and asyncio.iscoroutine(result):
+                        # Jeśli to coroutine, uruchom ją
+                        try:
+                            loop = asyncio.get_running_loop()
+                            task = loop.create_task(result)
+                            results.append(task)
+                        except RuntimeError:
+                            # Brak event loop - uruchom synchronicznie
+                            result = asyncio.run(result)
+                            results.append(result)
+                    elif hasattr(result, '__await__'):
+                        # Jeśli to task lub future
+                        results.append(result)
+                    else:
+                        results.append(result)
                     
                     if registration.is_async:
                         self.stats['async_executions'] += 1
@@ -403,6 +425,22 @@ class AstralCallbackManager:
         
         self.weak_refs -= dead_refs
         logger.log_info(f"Wyczyszczono {len(dead_refs)} martwych referencji")
+    
+    async def wait_for_async_results(self, results: List[Any]) -> List[Any]:
+        """Oczekuje na wyniki asynchronicznych callbacków"""
+        final_results = []
+        
+        for result in results:
+            if asyncio.iscoroutine(result) or hasattr(result, '__await__'):
+                try:
+                    awaited_result = await result
+                    final_results.append(awaited_result)
+                except Exception as e:
+                    final_results.append(AstralCallbackError(str(e)))
+            else:
+                final_results.append(result)
+        
+        return final_results
 
 class NamespaceManager:
     """Manager callbacków dla konkretnego namespace"""

@@ -283,26 +283,47 @@ def demonstrate_async_callbacks():
     print("🔄 DEMONSTRACJA ASYNCHRONICZNYCH CALLBACKÓW")
     print("="*60)
     
-    manager = get_astral_callback_manager()
+    async def run_async_demo():
+        manager = get_astral_callback_manager()
+        
+        async def async_heavy_processing(context):
+            """Symuluje ciężkie przetwarzanie asynchroniczne"""
+            print(f"🔄 Rozpoczynam asynchroniczne przetwarzanie: {context.data}")
+            await asyncio.sleep(1)  # Symuluj długie przetwarzanie
+            print(f"✅ Zakończono asynchroniczne przetwarzanie: {context.data}")
+            return f"processed_{context.data}"
+        
+        def sync_callback(context):
+            """Synchroniczny callback"""
+            print(f"⚡ Synchroniczny callback: {context.data}")
+            return f"sync_processed_{context.data}"
+        
+        # Rejestruj oba typy callbacków
+        manager.on('heavy_task', async_heavy_processing, priority=CallbackPriority.HIGH)
+        manager.on('heavy_task', sync_callback, priority=CallbackPriority.NORMAL)
+        
+        # Emituj zdarzenie
+        results = manager.emit('heavy_task', {'task': 'process_astral_data'})
+        print(f"📊 Pierwotne wyniki: {len(results)} callbacków wykonano")
+        
+        # Oczekuj na wyniki asynchroniczne
+        final_results = await manager.wait_for_async_results(results)
+        print(f"✨ Finalne wyniki po oczekiwaniu na async:")
+        for i, result in enumerate(final_results):
+            print(f"   {i+1}. {result}")
     
-    async def async_heavy_processing(context):
-        """Symuluje ciężkie przetwarzanie asynchroniczne"""
-        print(f"🔄 Rozpoczynam asynchroniczne przetwarzanie: {context.data}")
-        await asyncio.sleep(1)  # Symuluj długie przetwarzanie
-        print(f"✅ Zakończono asynchroniczne przetwarzanie: {context.data}")
-        return f"processed_{context.data}"
-    
-    def sync_callback(context):
-        """Synchroniczny callback"""
-        print(f"⚡ Synchroniczny callback: {context.data}")
-    
-    # Rejestruj oba typy callbacków
-    manager.on('heavy_task', async_heavy_processing, priority=CallbackPriority.HIGH)
-    manager.on('heavy_task', sync_callback, priority=CallbackPriority.NORMAL)
-    
-    # Emituj zdarzenie
-    results = manager.emit('heavy_task', {'task': 'process_astral_data'})
-    print(f"📊 Wyniki callbacków: {len(results)} wykonano")
+    # Uruchom w event loop
+    try:
+        asyncio.run(run_async_demo())
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called from a running event loop" in str(e):
+            # Jeśli już jest aktywny loop, utwórz task
+            loop = asyncio.get_event_loop()
+            task = loop.create_task(run_async_demo())
+            # Dla demonstracji - nie czekamy na wynik
+            print("🔄 Zadanie asynchroniczne zostało uruchomione w tle")
+        else:
+            print(f"❌ Błąd uruchamiania async demo: {e}")
 
 def demonstrate_priorities():
     """Demonstracja priorytetów callbacków"""
