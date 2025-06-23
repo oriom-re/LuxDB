@@ -45,7 +45,7 @@ class CallbackDatabaseManager:
                          filters: Dict[str, Any] = None, namespace: str = None) -> str:
         """Rejestruje callback w bazie danych"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 task = CallbackTask(
                     registration_id=registration_id,
                     event_name=event_name,
@@ -72,7 +72,7 @@ class CallbackDatabaseManager:
                     namespace: str = None, **metadata) -> str:
         """Tworzy event w bazie danych"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 event = CallbackEvent(
                     event_name=event_name,
                     source=source,
@@ -96,7 +96,7 @@ class CallbackDatabaseManager:
                        context_data: Dict[str, Any] = None) -> str:
         """Rozpoczyna śledzenie wykonania callback"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 execution = CallbackExecution(
                     task_id=task_id,
                     event_id=event_id,
@@ -117,7 +117,7 @@ class CallbackDatabaseManager:
     def complete_execution(self, execution_id: str, result: Any = None, error: str = None):
         """Kończy śledzenie wykonania callback"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 execution = session.query(CallbackExecution).filter_by(id=execution_id).first()
                 
                 if execution:
@@ -155,7 +155,7 @@ class CallbackDatabaseManager:
     def get_pending_tasks(self, event_name: str = None, namespace: str = None) -> List[Dict[str, Any]]:
         """Pobiera oczekujące zadania callback"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 query = session.query(CallbackTask).filter_by(active=True)
                 
                 if event_name:
@@ -188,7 +188,7 @@ class CallbackDatabaseManager:
     def get_execution_history(self, event_name: str = None, limit: int = 100) -> List[Dict[str, Any]]:
         """Pobiera historię wykonań callbacków"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 query = session.query(CallbackExecution)\
                     .join(CallbackTask)\
                     .join(CallbackEvent)
@@ -222,7 +222,7 @@ class CallbackDatabaseManager:
     def generate_stats(self) -> Dict[str, Any]:
         """Generuje statystyki callbacków z bazy danych"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 # Podstawowe statystyki
                 total_events = session.query(func.count(CallbackEvent.id)).scalar()
                 total_executions = session.query(func.count(CallbackExecution.id)).scalar()
@@ -300,7 +300,7 @@ class CallbackDatabaseManager:
         try:
             cutoff_date = datetime.now() - timedelta(days=days_old)
             
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 # Usuń stare wykonania
                 old_executions = session.query(CallbackExecution)\
                     .filter(CallbackExecution.started_at < cutoff_date)
@@ -399,7 +399,7 @@ class CallbackDatabaseManager:
     def _calculate_period_stats(self, period_start: datetime, period_end: datetime) -> Dict[str, Any]:
         """Oblicza statystyki dla konkretnego okresu"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 # Filtruj po okresie
                 events_in_period = session.query(CallbackEvent)\
                     .filter(and_(
@@ -482,7 +482,7 @@ class CallbackDatabaseManager:
                            periods_back: int = 7) -> List[Dict[str, Any]]:
         """Pobiera statystyki dla ostatnich okresów"""
         try:
-            with self.db_manager.get_session() as session:
+            with self.db_manager.get_session("main") as session:
                 stats = session.query(CallbackStats)\
                     .filter_by(period_type=period_type)\
                     .order_by(desc(CallbackStats.period_start))\
