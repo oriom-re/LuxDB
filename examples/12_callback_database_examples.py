@@ -17,6 +17,11 @@ def demonstrate_callback_persistence():
     print("="*60)
     
     manager = get_astral_callback_manager()
+    # debug manager
+    print(f"manager: {manager}")
+    # Upewnij się, że baza danych jest włączona
+    if not manager.database_enabled:
+        print("❌ Baza danych nie jest włączona - nie można demonstruować persystencji")
     
     def persistent_callback(context):
         print(f"📝 Callback persystentny: {context.data}")
@@ -215,14 +220,14 @@ def main():
         demonstrate_callback_persistence()
         time.sleep(1)
         
-        demonstrate_execution_tracking()
-        time.sleep(1)
+        # demonstrate_execution_tracking()
+        # time.sleep(1)
         
-        demonstrate_async_tracking()
-        time.sleep(1)
+        # demonstrate_async_tracking()
+        # time.sleep(1)
         
-        demonstrate_callback_analytics()
-        time.sleep(1)
+        # demonstrate_callback_analytics()
+        # time.sleep(1)
         
         demonstrate_cleanup()
         

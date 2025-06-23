@@ -85,7 +85,7 @@ class CallbackEvent(LuxBase):
     
     # Dane zdarzenia
     event_data: Mapped[dict] = mapped_column(JSON, nullable=True)
-    metadata: Mapped[dict] = mapped_column(JSON, nullable=True)
+    meta_data: Mapped[dict] = mapped_column(JSON, nullable=True)
     
     # Kontekst
     session_id: Mapped[str] = mapped_column(String(100), nullable=True)

@@ -22,7 +22,7 @@ from .config import (
     DEFAULT_CONFIGS
 )
 from .models import (
-    User, UserSession, Log, DatabaseSchema, Migration, TableDefinition,
+    User, UserSession, Log, DatabaseSchema, Migration, TableDefinition, LuxBase,
     SYSTEM_MODELS
 )
 # QueryBuilder usunięty - używamy czystego SQLAlchemy
@@ -138,7 +138,33 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Błąd tworzenia bazy {db_name}: {e}")
             return False
-    
+            
+    def add_database(self, config: DatabaseConfig) -> bool:
+        """Dodaje nową bazę danych na podstawie konfiguracji"""
+        return self.create_database(config.name, config)
+
+    def create_tables(self, db_name: str, models: List[Type[LuxBase]] = None) -> bool:
+        """Tworzy tabele w bazie danych na podstawie modeli"""
+        try:
+            if db_name not in self.connection_pools:
+                raise DatabaseError(f"Baza danych {db_name} nie istnieje")
+            
+            pool = self.connection_pools[db_name]
+            
+            if not models:
+                models = [User, UserSession, Log]
+            
+            for model in models:
+                model.__table__.create(bind=pool.engine, checkfirst=True)
+                
+                # Zapisz definicję tabeli
+                self._save_table_definition(db_name, model.__tablename__, str(model.__table__))
+            
+            logger.info(f"Utworzono tabele w bazie {db_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Błąd tworzenia tabel w bazie {db_name}: {e}")
+        
     def _register_database(self, db_name: str, version: int = 1):
         """Rejestruje bazę w systemie metadanych"""
         try:

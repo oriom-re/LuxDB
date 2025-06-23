@@ -34,7 +34,7 @@ class CallbackDatabaseManager:
             # Sprawdź czy baza istnieje w managerze
             if self.db_name not in self.db_manager.list_databases():
                 logger.log_info(f"Tworzę bazę danych callbacków: {self.db_name}")
-                
+                print(self.db_manager)
                 # Dodaj konfigurację bazy
                 from .config import DatabaseConfig, DatabaseType
                 config = DatabaseConfig(

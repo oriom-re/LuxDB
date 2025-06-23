@@ -695,8 +695,7 @@ class SocketIOCallbackIntegration:
             session_id = getattr(socketio_instance, 'sid', None)
             
             # Emituj przez system callbacków
-            return self.callback_manager.emit(
-                event_name=event_name,
+            return self.callback_manager.emit(event_name, data)
 
     
     def get_execution_history(self, event_name: str = None, limit: int = 100) -> List[Dict[str, Any]]:
@@ -731,12 +730,6 @@ class SocketIOCallbackIntegration:
         except Exception as e:
             logger.log_error("get_pending_executions", e)
             return []
-
-                data=data,
-                source="socketio",
-                session_id=session_id,
-                namespace=namespace
-            )
         
         # Zarejestruj w Socket.IO
         socketio_instance.on_event(event_name, socketio_handler, namespace=namespace)

@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Foreign
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..config import Base
+from .luxbase import LuxBase
 
 class User(Base):
     """Model użytkownika Astralnej Biblioteki"""
@@ -109,4 +110,4 @@ SYSTEM_MODELS = {
     'TableDefinition': TableDefinition
 }
 
-__all__ = ['User', 'UserSession', 'Log', 'DatabaseSchema', 'Migration', 'TableDefinition', 'SYSTEM_MODELS']
+__all__ = ['User', 'UserSession', 'Log', 'DatabaseSchema', 'Migration', 'TableDefinition', 'SYSTEM_MODELS', 'LuxBase']
