@@ -441,6 +441,98 @@ class AstralCallbackManager:
                 final_results.append(result)
         
         return final_results
+    
+    async def stream_async_results(self, results: List[Any]):
+        """Generator zwracający wyniki asynchronicznych callbacków w miarę ukończenia"""
+        async_tasks = []
+        sync_results = []
+        
+        # Rozdziel synchroniczne i asynchroniczne wyniki
+        for i, result in enumerate(results):
+            if asyncio.iscoroutine(result) or hasattr(result, '__await__'):
+                async_tasks.append((i, result))
+            else:
+                sync_results.append((i, result))
+                
+        # Najpierw zwróć synchroniczne wyniki
+        for index, result in sync_results:
+            yield {'index': index, 'result': result, 'completed_at': datetime.now()}
+        
+        # Następnie zwracaj asynchroniczne w miarę ukończenia
+        if async_tasks:
+            pending = {asyncio.create_task(task): index for index, task in async_tasks}
+            
+            while pending:
+                done, pending_set = await asyncio.wait(pending.keys(), return_when=asyncio.FIRST_COMPLETED)
+                
+                # Aktualizuj pending tasks
+                pending = {task: index for task, index in pending.items() if task in pending_set}
+                
+                for task in done:
+                    original_index = next(index for t, index in pending.items() if t == task) if task in pending else None
+                    if original_index is None:
+                        # Znajdź index dla ukończonego taska
+                        for t, idx in async_tasks:
+                            if hasattr(t, '__await__') and task.get_coro() == t:
+                                original_index = idx
+                                break
+                    
+                    try:
+                        result = await task
+                        yield {
+                            'index': original_index, 
+                            'result': result, 
+                            'completed_at': datetime.now()
+                        }
+                    except Exception as e:
+                        yield {
+                            'index': original_index, 
+                            'result': AstralCallbackError(str(e)), 
+                            'completed_at': datetime.now()
+                        }
+    
+    def get_async_results_with_callbacks(self, results: List[Any], 
+                                        on_result_ready: Callable = None) -> List[Any]:
+        """Zwraca wyniki z callbackiem dla każdego ukończonego zadania"""
+        async_tasks = []
+        final_results = [None] * len(results)
+        
+        def set_result(index: int, result: Any):
+            final_results[index] = result
+            if on_result_ready:
+                on_result_ready(index, result)
+        
+        # Przetwórz wyniki
+        for i, result in enumerate(results):
+            if asyncio.iscoroutine(result) or hasattr(result, '__await__'):
+                # Dla async - utwórz task z callbackiem
+                async def handle_async_result(idx, async_result):
+                    try:
+                        if asyncio.iscoroutine(async_result):
+                            completed_result = await async_result
+                        else:
+                            completed_result = await async_result
+                        set_result(idx, completed_result)
+                        return completed_result
+                    except Exception as e:
+                        error_result = AstralCallbackError(str(e))
+                        set_result(idx, error_result)
+                        return error_result
+                
+                # Uruchom w tle
+                try:
+                    loop = asyncio.get_running_loop()
+                    task = loop.create_task(handle_async_result(i, result))
+                    async_tasks.append(task)
+                except RuntimeError:
+                    # Brak event loop - uruchom synchronicznie
+                    sync_result = asyncio.run(handle_async_result(i, result))
+                    set_result(i, sync_result)
+            else:
+                # Dla sync - ustaw od razu
+                set_result(i, result)
+        
+        return final_results
 
 class NamespaceManager:
     """Manager callbacków dla konkretnego namespace"""

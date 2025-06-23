@@ -285,36 +285,60 @@ def demonstrate_async_callbacks():
     
     async def run_async_demo():
         manager = get_astral_callback_manager()
+        
         async def async_heavy_processing(context):
             """Symuluje ciężkie przetwarzanie asynchroniczne"""
             print(f"🔄 Rozpoczynam asynchroniczne przetwarzanie: {context.data}")
-            # powtórz 60 razy
-            for i in range(60):
-                print(f"🔄 Przetwarzanie: {i+1}/60")
-                await asyncio.sleep(1)  # Symuluj długie przetwarzanie
+            await asyncio.sleep(3)  # Symuluj długie przetwarzanie
             print(f"✅ Zakończono asynchroniczne przetwarzanie: {context.data}")
             return f"processed_{context.data}"
         
-        async def sync_callback(context):
+        async def async_quick_processing(context):
+            """Symuluje szybkie przetwarzanie asynchroniczne"""
+            print(f"⚡ Rozpoczynam szybkie przetwarzanie: {context.data}")
+            await asyncio.sleep(1)  # Krótkie przetwarzanie
+            print(f"✅ Zakończono szybkie przetwarzanie: {context.data}")
+            return f"quick_processed_{context.data}"
+        
+        def sync_callback(context):
             """Synchroniczny callback"""
-            for i in range(10):
-                print(f"🔄 Przetwarzanie innej operacji: {i+1}/10")
-                await asyncio.sleep(1)  # Symuluj długie przetwarzanie
-            print(f"⚡ Synchroniczny callback: {context.data}")
+            print(f"🔵 Synchroniczny callback: {context.data}")
             return f"sync_processed_{context.data}"
         
-        # Rejestruj oba typy callbacków
-        manager.on('heavy_task', async_heavy_processing, priority=CallbackPriority.HIGH)
+        # Rejestruj różne typy callbacków
+        manager.on('multi_task', async_heavy_processing, priority=CallbackPriority.HIGH)
+        manager.on('multi_task', async_quick_processing, priority=CallbackPriority.NORMAL)
+        manager.on('multi_task', sync_callback, priority=CallbackPriority.LOW)
         
         # Emituj zdarzenie
-        results = manager.emit('heavy_task', {'task': 'process_astral_data'})
+        results = manager.emit('multi_task', {'task': 'process_astral_data'})
         print(f"📊 Pierwotne wyniki: {len(results)} callbacków wykonano")
         
-        # Oczekuj na wyniki asynchroniczne
-        final_results = await manager.wait_for_async_results(results)
-        print(f"✨ Finalne wyniki po oczekiwaniu na async:")
-        for i, result in enumerate(final_results):
-            print(f"   {i+1}. {result}")
+        # Demonstracja 1: Otrzymywanie wyników w miarę ukończenia
+        print(f"\n🌊 STREAMING WYNIKÓW W MIARĘ UKOŃCZENIA:")
+        async for result_data in manager.stream_async_results(results):
+            print(f"   ✅ Callback {result_data['index']} ukończony o {result_data['completed_at'].strftime('%H:%M:%S')}")
+            print(f"      Wynik: {result_data['result']}")
+        
+        print(f"\n🔄 Wszystkie callbacki zostały przetworzone!")
+        
+        # Demonstracja 2: Użycie callbacków dla każdego wyniku
+        print(f"\n📞 CALLBACKI DLA POSZCZEGÓLNYCH WYNIKÓW:")
+        
+        def on_single_result_ready(index: int, result: Any):
+            print(f"   🎯 Callback {index} gotowy! Wynik: {result}")
+        
+        # Nowe zadanie
+        results2 = manager.emit('multi_task', {'task': 'another_processing'})
+        final_results = manager.get_async_results_with_callbacks(
+            results2, 
+            on_result_ready=on_single_result_ready
+        )
+        
+        # Poczekaj trochę, żeby zobaczyć callbacki w akcji
+        await asyncio.sleep(4)
+        
+        print(f"\n✨ Finalne wyniki: {[r for r in final_results if r is not None]}")
     
     # Uruchom w event loop
     try:
@@ -362,6 +386,71 @@ def demonstrate_priorities():
     print("\n🔄 Wykonywanie callbacków w kolejności priorytetów:")
     manager.emit('priority_test', {'test': 'priority_order'})
 
+def demonstrate_independent_async_processing():
+    """Demonstracja niezależnego przetwarzania asynchronicznego"""
+    print("\n" + "="*60)
+    print("🔀 DEMONSTRACJA NIEZALEŻNEGO PRZETWARZANIA ASYNC")
+    print("="*60)
+    
+    async def run_independent_demo():
+        manager = get_astral_callback_manager()
+        
+        async def slow_callback(context):
+            task_id = context.data.get('id', 'unknown')
+            print(f"🐌 Wolny callback {task_id} startuje...")
+            await asyncio.sleep(5)
+            print(f"🐌 Wolny callback {task_id} zakończony!")
+            return f"slow_result_{task_id}"
+        
+        async def medium_callback(context):
+            task_id = context.data.get('id', 'unknown')
+            print(f"🚶 Średni callback {task_id} startuje...")
+            await asyncio.sleep(3)
+            print(f"🚶 Średni callback {task_id} zakończony!")
+            return f"medium_result_{task_id}"
+        
+        async def fast_callback(context):
+            task_id = context.data.get('id', 'unknown')
+            print(f"🏃 Szybki callback {task_id} startuje...")
+            await asyncio.sleep(1)
+            print(f"🏃 Szybki callback {task_id} zakończony!")
+            return f"fast_result_{task_id}"
+        
+        # Rejestruj callbacki
+        manager.on('independent_task', slow_callback)
+        manager.on('independent_task', medium_callback)
+        manager.on('independent_task', fast_callback)
+        
+        # Emituj zdarzenie
+        print("🚀 Uruchamianie wszystkich callbacków...")
+        results = manager.emit('independent_task', {'id': 'batch_1'})
+        
+        # Przetwarzaj wyniki niezależnie w miarę gotowości
+        result_count = 0
+        async for result_data in manager.stream_async_results(results):
+            result_count += 1
+            print(f"🎉 Wynik {result_count}/{len(results)} gotowy: {result_data['result']}")
+            
+            # Możemy od razu przetwarzać każdy wynik
+            if 'fast' in str(result_data['result']):
+                print("   ⚡ Szybki wynik - przetwarzamy natychmiast!")
+            elif 'medium' in str(result_data['result']):
+                print("   🔄 Średni wynik - dodajemy do kolejki przetwarzania")
+            elif 'slow' in str(result_data['result']):
+                print("   💾 Wolny wynik - zapisujemy do bazy danych")
+        
+        print("✅ Wszystkie wyniki przetworzone niezależnie!")
+    
+    try:
+        asyncio.run(run_independent_demo())
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called from a running event loop" in str(e):
+            loop = asyncio.get_event_loop()
+            task = loop.create_task(run_independent_demo())
+            print("🔄 Demo niezależnego przetwarzania uruchomione w tle")
+        else:
+            print(f"❌ Błąd: {e}")
+
 def show_statistics():
     """Pokazuje statystyki systemu callbacków"""
     print("\n" + "="*60)
@@ -394,6 +483,9 @@ def main():
         time.sleep(1)
         
         demonstrate_async_callbacks()
+        time.sleep(1)
+        
+        demonstrate_independent_async_processing()
         time.sleep(1)
         
         demonstrate_priorities()
