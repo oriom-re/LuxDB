@@ -17,6 +17,13 @@ from ..realms.base_realm import BaseRealm
 from ..realms.sqlite_realm import SQLiteRealm
 from ..realms.memory_realm import MemoryRealm
 
+try:
+    from ..beings.base_being import BaseBeing
+    from ..beings.manifestation import Manifestation
+except ImportError:
+    BaseBeing = None
+    Manifestation = None
+
 
 class SystemState:
     """Stan systemu astralnego"""

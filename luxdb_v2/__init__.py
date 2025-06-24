@@ -50,16 +50,30 @@ from .realms.base_realm import BaseRealm
 from .realms.sqlite_realm import SQLiteRealm
 from .realms.memory_realm import MemoryRealm
 
-from .beings.base_being import BaseBeing
-from .beings.manifestation import Manifestation
+try:
+    from .beings.base_being import BaseBeing
+    from .beings.manifestation import Manifestation
+except ImportError:
+    BaseBeing = None
+    Manifestation = None
 
-from .flows.rest_flow import RestFlow
-from .flows.ws_flow import WebSocketFlow
-from .flows.callback_flow import CallbackFlow
+try:
+    from .flows.rest_flow import RestFlow
+    from .flows.ws_flow import WebSocketFlow
+    from .flows.callback_flow import CallbackFlow
+except ImportError:
+    RestFlow = None
+    WebSocketFlow = None
+    CallbackFlow = None
 
-from .wisdom.sacred_queries import SacredQueries
-from .wisdom.divine_migrations import DivineMigrations
-from .wisdom.astral_logging import AstralLogger
+try:
+    from .wisdom.sacred_queries import SacredQueries
+    from .wisdom.divine_migrations import DivineMigrations
+    from .wisdom.astral_logging import AstralLogger
+except ImportError:
+    SacredQueries = None
+    DivineMigrations = None
+    AstralLogger = None
 
 # Główna funkcja inicjalizująca
 def create_astral_app(config=None):

@@ -1,0 +1,403 @@
+
+"""
+🌐 RestFlow - Przepływ REST API
+
+Zapewnia dostęp do systemu astralnego przez HTTP/REST
+"""
+
+import json
+from typing import Dict, Any, Optional, Callable
+from datetime import datetime
+from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
+import threading
+import time
+
+
+class RestFlow:
+    """
+    Przepływ REST - udostępnia funkcjonalność systemu przez HTTP API
+    """
+    
+    def __init__(self, astral_engine, config: Dict[str, Any]):
+        self.engine = astral_engine
+        self.config = config
+        self.app = Flask(__name__)
+        
+        # Konfiguracja CORS
+        if config.get('enable_cors', True):
+            CORS(self.app)
+        
+        self.host = config.get('host', '0.0.0.0')
+        self.port = config.get('port', 5000)
+        self.debug = config.get('debug', False)
+        
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+        self._setup_routes()
+        
+        self.request_count = 0
+        self.start_time: Optional[datetime] = None
+    
+    def _setup_routes(self):
+        """Konfiguruje wszystkie endpointy REST API"""
+        
+        @self.app.route('/astral/status', methods=['GET'])
+        def get_status():
+            """Status systemu astralnego"""
+            try:
+                status = self.engine.get_status()
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'status': status,
+                    'flow_info': {
+                        'requests_served': self.request_count,
+                        'uptime': str(datetime.now() - self.start_time) if self.start_time else '0:00:00'
+                    }
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/astral/meditate', methods=['POST'])
+        def meditate():
+            """Przeprowadza medytację systemu"""
+            try:
+                meditation_result = self.engine.meditate()
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'meditation': meditation_result
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/astral/harmonize', methods=['POST'])
+        def harmonize():
+            """Harmonizuje system"""
+            try:
+                harmony_result = self.engine.harmony.harmonize()
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'harmony': harmony_result
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms', methods=['GET'])
+        def list_realms():
+            """Lista wszystkich wymiarów"""
+            try:
+                realms = self.engine.list_realms()
+                realm_details = {}
+                
+                for realm_name in realms:
+                    realm = self.engine.get_realm(realm_name)
+                    if hasattr(realm, 'get_status'):
+                        realm_details[realm_name] = realm.get_status()
+                    else:
+                        realm_details[realm_name] = {'name': realm_name, 'type': 'unknown'}
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'realms': realm_details
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>', methods=['GET'])
+        def get_realm_status(realm_name):
+            """Status konkretnego wymiaru"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                status = realm.get_status() if hasattr(realm, 'get_status') else {'name': realm_name}
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'realm': status
+                })
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>/beings', methods=['GET'])
+        def list_beings(realm_name):
+            """Lista bytów w wymiarze"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                
+                if hasattr(realm, 'manifestation'):
+                    beings = realm.manifestation.active_beings
+                    beings_data = {
+                        soul_id: being.get_status() 
+                        for soul_id, being in beings.items()
+                    }
+                    
+                    self.request_count += 1
+                    return jsonify({
+                        'success': True,
+                        'realm': realm_name,
+                        'beings': beings_data,
+                        'count': len(beings_data)
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Wymiar nie obsługuje bytów'
+                    }), 400
+                    
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>/beings', methods=['POST'])
+        def manifest_being(realm_name):
+            """Manifestuje nowy byt w wymiarze"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                
+                if not hasattr(realm, 'manifestation'):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Wymiar nie obsługuje manifestacji bytów'
+                    }), 400
+                
+                data = request.get_json()
+                if not data:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Brak danych do manifestacji'
+                    }), 400
+                
+                being = realm.manifestation.manifest(data)
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'being': being.get_status(),
+                    'message': f'Byt zmanifestowany w wymiarze {realm_name}'
+                }), 201
+                
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>/beings/<soul_id>', methods=['GET'])
+        def get_being(realm_name, soul_id):
+            """Pobiera konkretny byt"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                
+                if not hasattr(realm, 'manifestation'):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Wymiar nie obsługuje bytów'
+                    }), 400
+                
+                being = realm.manifestation.find_being(soul_id)
+                if not being:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Byt nie został znaleziony'
+                    }), 404
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'being': being.get_status()
+                })
+                
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>/beings/<soul_id>', methods=['PUT'])
+        def evolve_being(realm_name, soul_id):
+            """Ewoluuje byt"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                
+                if not hasattr(realm, 'manifestation'):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Wymiar nie obsługuje bytów'
+                    }), 400
+                
+                data = request.get_json()
+                if not data:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Brak danych do ewolucji'
+                    }), 400
+                
+                being = realm.manifestation.evolve_being(soul_id, data)
+                if not being:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Byt nie został znaleziony'
+                    }), 404
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'being': being.get_status(),
+                    'message': 'Byt uległ ewolucji'
+                })
+                
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>/beings/<soul_id>', methods=['DELETE'])
+        def transcend_being(realm_name, soul_id):
+            """Transcenduje byt"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                
+                if not hasattr(realm, 'manifestation'):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Wymiar nie obsługuje bytów'
+                    }), 400
+                
+                result = realm.manifestation.transcend_being(soul_id)
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': result['success'],
+                    'transcendence': result
+                })
+                
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/realms/<realm_name>/contemplate', methods=['POST'])
+        def contemplate(realm_name):
+            """Kontemplacja - wyszukiwanie bytów"""
+            try:
+                realm = self.engine.get_realm(realm_name)
+                
+                if not hasattr(realm, 'manifestation'):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Wymiar nie obsługuje kontemplacji'
+                    }), 400
+                
+                data = request.get_json() or {}
+                intention = data.get('intention', 'find_beings')
+                criteria = data.get('criteria', {})
+                
+                beings = realm.manifestation.contemplate(intention, criteria)
+                beings_data = [being.get_status() for being in beings]
+                
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'intention': intention,
+                    'criteria': criteria,
+                    'beings': beings_data,
+                    'count': len(beings_data)
+                })
+                
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 404
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.errorhandler(404)
+        def not_found(error):
+            return jsonify({
+                'success': False,
+                'error': 'Endpoint nie został znaleziony w astralnym przestrzeni',
+                'available_endpoints': [
+                    '/astral/status',
+                    '/astral/meditate',
+                    '/astral/harmonize',
+                    '/realms',
+                    '/realms/<realm_name>',
+                    '/realms/<realm_name>/beings',
+                    '/realms/<realm_name>/contemplate'
+                ]
+            }), 404
+        
+        @self.app.errorhandler(500)
+        def internal_error(error):
+            return jsonify({
+                'success': False,
+                'error': 'Błąd astralnej energii w serwerze',
+                'message': 'Sprawdź logi systemu'
+            }), 500
+    
+    def start(self, debug: bool = False) -> None:
+        """
+        Uruchamia przepływ REST
+        
+        Args:
+            debug: Tryb debug Flask
+        """
+        if self._running:
+            self.engine.logger.warning("RestFlow już działa")
+            return
+        
+        self.start_time = datetime.now()
+        self._running = True
+        
+        def run_server():
+            try:
+                self.app.run(
+                    host=self.host,
+                    port=self.port,
+                    debug=debug and self.debug,
+                    use_reloader=False,
+                    threaded=True
+                )
+            except Exception as e:
+                self.engine.logger.error(f"Błąd REST Flow: {e}")
+                self._running = False
+        
+        self._thread = threading.Thread(target=run_server, daemon=True)
+        self._thread.start()
+        
+        # Poczekaj na uruchomienie
+        time.sleep(1)
+        
+        self.engine.logger.info(f"🌐 REST Flow aktywny na http://{self.host}:{self.port}")
+    
+    def stop(self) -> None:
+        """Zatrzymuje przepływ REST"""
+        self._running = False
+        # Flask nie ma built-in sposobu na graceful shutdown w wątkach
+        # W produkcji używałbyś gunicorn lub podobnego
+        self.engine.logger.info("🌐 REST Flow zatrzymany")
+    
+    def is_running(self) -> bool:
+        """Sprawdza czy przepływ działa"""
+        return self._running
+    
+    def get_status(self) -> Dict[str, Any]:
+        """Zwraca status przepływu"""
+        return {
+            'type': 'rest_flow',
+            'running': self._running,
+            'host': self.host,
+            'port': self.port,
+            'requests_served': self.request_count,
+            'uptime': str(datetime.now() - self.start_time) if self.start_time else '0:00:00',
+            'endpoints_count': len(self.app.url_map._rules)
+        }
+    
+    def balance_load(self) -> None:
+        """Balansuje obciążenie przepływu"""
+        # Podstawowa implementacja - w przyszłości można dodać cache, rate limiting itp.
+        if self.request_count > 1000:
+            self.engine.logger.info("🌐 REST Flow: Wysokie obciążenie, rozważ optymalizację")
