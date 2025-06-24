@@ -133,7 +133,7 @@ class BaseRealm(ABC):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(name='{self.name}', connected={self.is_connected})>"
-```"""Adding manifestation system to BaseRealm."""
+"""Adding manifestation system to BaseRealm."""
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
