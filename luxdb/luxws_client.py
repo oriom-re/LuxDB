@@ -15,6 +15,7 @@ import uuid
 
 from .utils.logging_utils import get_db_logger
 from .utils.error_handlers import LuxDBError
+from .callback_system import get_astral_callback_manager, CallbackPriority
 
 logger = get_db_logger()
 
@@ -61,7 +62,12 @@ class LuxWSClient:
             reconnection_delay=self.reconnect_delay
         )
         
+        # System callbacków astralnych
+        self.callback_manager = get_astral_callback_manager()
+        self.client_namespace = self.callback_manager.create_namespace("luxws_client")
+        
         self._setup_event_handlers()
+        self._setup_astral_callbacks()
     
     def _setup_event_handlers(self):
         """Konfiguruje handlery eventów WebSocket"""
@@ -195,7 +201,9 @@ class LuxWSClient:
                 return False
                 
         except Exception as e:
-            logger.log_error(f"Błąd połączenia: {e}")
+            logger.log_error("Błąd połączenia WebSocket", e,
+                           context={'server_url': self.server_url, 'client_type': self.client_type},
+                           error_code='WS_CONNECTION_ERROR')
             return False
     
     def authenticate(self, session_token: str) -> bool:
@@ -296,7 +304,9 @@ class LuxWSClient:
                     self.send_heartbeat()
                     time.sleep(self.heartbeat_interval)
                 except Exception as e:
-                    logger.log_error(f"Błąd heartbeat: {e}")
+                    logger.log_error("Błąd heartbeat WebSocket", e,
+                                   context={'client_type': self.client_type},
+                                   error_code='WS_HEARTBEAT_ERROR')
                     break
         
         self.heartbeat_thread = threading.Thread(target=heartbeat_worker, daemon=True)
@@ -352,6 +362,71 @@ class LuxWSClient:
             'table_name': table_name,
             'limit': limit
         }, callback)
+    
+    def _setup_astral_callbacks(self):
+        """Konfiguruje callbacki astralne dla klienta"""
+        
+        # Callback dla połączeń astralnych
+        def on_connect_to_astral_realm(context):
+            """Callback wywoływany po połączeniu z realem astralnym"""
+            logger.log_info(f"Połączono z realem astralnym: {context.data}")
+            self._trigger_callback('on_astral_realm_connected', context.data)
+        
+        # Callback dla otrzymanych wiadomości astralnych
+        def on_astral_message_received(context):
+            """Callback dla otrzymanych wiadomości astralnych"""
+            message_data = context.data
+            logger.log_info(f"Otrzymano wiadomość astralną: {message_data}")
+            self._trigger_callback('on_astral_message', message_data)
+        
+        # Callback dla zmian energii
+        def on_energy_shift_detected(context):
+            """Callback dla wykrytych zmian energii astralnej"""
+            energy_data = context.data
+            logger.log_info(f"Wykryto zmianę energii: {energy_data}")
+            self._trigger_callback('on_energy_shift', energy_data)
+        
+        # Callback dla synchronizacji wymiarów
+        def on_dimension_sync_event(context):
+            """Callback dla wydarzeń synchronizacji wymiarów"""
+            sync_data = context.data
+            logger.log_info(f"Synchronizacja wymiarów: {sync_data}")
+            self._trigger_callback('on_dimensional_sync', sync_data)
+        
+        # Rejestruj callbacki w namespace klienta
+        self.client_namespace.on('astral_realm_connection', on_connect_to_astral_realm,
+                                priority=CallbackPriority.HIGH)
+        self.client_namespace.on('astral_message', on_astral_message_received,
+                                priority=CallbackPriority.NORMAL)
+        self.client_namespace.on('energy_shift', on_energy_shift_detected,
+                                priority=CallbackPriority.NORMAL)
+        self.client_namespace.on('dimensional_sync', on_dimension_sync_event,
+                                priority=CallbackPriority.CRITICAL)
+        
+        logger.log_info("Skonfigurowano callbacki astralne dla LuxWS Client")
+    
+    def emit_astral_event(self, event_name: str, data: Any, **metadata):
+        """Emituje zdarzenie astralne przez system callbacków"""
+        return self.client_namespace.emit(
+            event_name=event_name,
+            data=data,
+            source="luxws_client",
+            session_id=self.session_token,
+            user_id=getattr(self, 'user_id', None),
+            **metadata
+        )
+    
+    def register_astral_callback(self, event_name: str, callback: Callable,
+                                priority: int = CallbackPriority.NORMAL,
+                                once: bool = False, filters: Dict[str, Any] = None) -> str:
+        """Rejestruje callback astralny dla klienta"""
+        return self.client_namespace.on(
+            event_name=event_name,
+            callback=callback,
+            priority=priority,
+            once=once,
+            filters=filters
+        )
 
 # Factory functions
 def create_client(server_url: str = "http://0.0.0.0:5001", client_type: str = "api_client") -> LuxWSClient:

@@ -1,32 +1,32 @@
 
 #!/usr/bin/env python3
 """
-Główny serwer LuxDB z wstępną konfiguracją sesji
-Uruchamia LuxAPI i LuxWS w trybie produkcyjnym z obsługą komunikacji klientów
+LuxCore Service - Zintegrowany serwis API + WebSocket
+Uruchamia pełny stos LuxDB na jednym porcie (deployment ready)
 """
 
 import signal
 import sys
+import os
 import time
 import threading
 from luxdb.luxcore import get_luxcore
-from luxdb.luxws_server import get_luxws_server
-from luxdb.session_manager import get_session_manager
 from luxdb.manager import get_db_manager
+from luxdb.session_manager import get_session_manager
 from luxdb.utils.logging_utils import get_db_logger
 
 logger = get_db_logger()
 
 def signal_handler(signum, frame):
     """Obsługuje sygnały systemowe"""
-    logger.log_info(f"Otrzymano sygnał {signum}, zatrzymywanie serwera...")
+    logger.log_info(f"Otrzymano sygnał {signum}, zatrzymywanie LuxCore Service...")
     luxcore = get_luxcore()
     luxcore.stop_all()
     sys.exit(0)
 
 def setup_initial_configuration():
-    """Wstępna konfiguracja serwera i baz danych"""
-    logger.log_info("Rozpoczynam wstępną konfigurację LuxCore...")
+    """Wstępna konfiguracja dla LuxCore"""
+    logger.log_info("Rozpoczynam konfigurację LuxCore Service...")
     
     try:
         # Inicjalizuj menedżer baz danych
@@ -55,14 +55,13 @@ def setup_initial_configuration():
             if test_user_id:
                 logger.log_info(f"Utworzono użytkownika testowego (ID: {test_user_id})")
         except Exception as e:
-            logger.log_info(f"Użytkownik testowy już istnieje lub błąd: {str(e)}")
-            # Continue without raising exception - this is not critical for server startup
+            logger.log_info(f"Użytkownik testowy już istnieje: {str(e)}")
         
-        logger.log_info("Wstępna konfiguracja zakończona pomyślnie")
+        logger.log_info("Konfiguracja LuxCore zakończona pomyślnie")
         return True
         
     except Exception as e:
-        logger.log_error("Błąd podczas wstępnej konfiguracji", e)
+        logger.log_error("Błąd podczas konfiguracji LuxCore", e)
         return False
 
 def setup_websocket_callbacks():
@@ -74,25 +73,24 @@ def setup_websocket_callbacks():
         logger.log_info(f"Zmiana w bazie {db_name}: {event_type}")
         
         # Rozgłoś zmiany przez WebSocket
-        luxcore.broadcast_database_event(db_name, event_type, data)
+        if hasattr(luxcore, 'luxws_server') and luxcore.luxws_server:
+            luxcore.luxws_server.broadcast_database_change(db_name, event_type, data)
     
     def on_user_activity(user_id, activity_type, data):
         """Callback dla aktywności użytkowników"""
         logger.log_info(f"Aktywność użytkownika {user_id}: {activity_type}")
         
         # Możemy tu dodać dodatkową logikę dla różnych typów aktywności
-        if activity_type == "login":
-            luxcore.broadcast_database_event("main", "user_login", {
+        if activity_type in ["login", "logout"] and hasattr(luxcore, 'luxws_server') and luxcore.luxws_server:
+            luxcore.luxws_server.broadcast_database_change("main", f"user_{activity_type}", {
                 "user_id": user_id,
                 "timestamp": data.get("timestamp")
             })
-        elif activity_type == "logout":
-            luxcore.broadcast_database_event("main", "user_logout", {
-                "user_id": user_id,
-                "timestamp": data.get("timestamp")
-            })
-    
-    # Zarejestruj callbacki (w przyszłości można rozbudować o system eventów)
+    # dodaj callbacki do WebSocket servera
+    if hasattr(luxcore, 'luxws_server') and luxcore.luxws_server:
+        luxcore.luxws_server.register_callback("database_change", on_database_change)
+        luxcore.luxws_server.register_callback("user_activity", on_user_activity)
+
     logger.log_info("Callbacki WebSocket skonfigurowane")
 
 def periodic_maintenance():
@@ -109,6 +107,11 @@ def periodic_maintenance():
                 if cleaned > 0:
                     logger.log_info(f"Konserwacja: wyczyszczono {cleaned} wygasłych sesji")
                 
+                # Wyczyść nieaktywne połączenia WebSocket
+                luxcore = get_luxcore()
+                if hasattr(luxcore, 'luxws_server') and luxcore.luxws_server:
+                    luxcore.luxws_server.cleanup_inactive_connections()
+                
             except Exception as e:
                 logger.log_error("Błąd podczas konserwacji", e)
     
@@ -117,30 +120,42 @@ def periodic_maintenance():
     maintenance_thread.start()
     logger.log_info("Uruchomiono okresową konserwację")
 
-def print_server_info():
-    """Wyświetla informacje o serwerze"""
+def print_service_info():
+    """Wyświetla informacje o serwisie"""
     luxcore = get_luxcore()
     status = luxcore.get_status()
     
-    print("🚀 LuxDB Server - Uruchamianie Astralnych Serwisów")
+    # Sprawdź czy jesteśmy w trybie deployment
+    is_deployment = os.environ.get('REPL_DEPLOYMENT') == '1'
+    
+    print("🚀 LuxCore Service - Pełny stos LuxDB")
     print("=" * 60)
-    print(f"✅ LuxAPI dostępny na: http://0.0.0.0:5000")
-    print(f"✅ LuxWS dostępny na: ws://0.0.0.0:5001")
+    
+    if is_deployment:
+        print(f"✅ Zintegrowany serwer na: http://0.0.0.0:5000")
+        print("   • REST API endpoints")
+        print("   • WebSocket connections")
+        print("   • Single port deployment")
+    else:
+        print(f"✅ REST API na: http://0.0.0.0:5000")
+        print(f"✅ WebSocket na: ws://0.0.0.0:5001")
+        print("   • Separate services mode")
+    
     print(f"📊 Status: http://0.0.0.0:5000/api/health")
     print(f"🔐 Auth: http://0.0.0.0:5000/api/auth/login")
-    print(f"📋 API Docs: http://0.0.0.0:5000/api/docs")
+    print(f"📋 API Docs: http://0.0.0.0:5000/api/databases")
     
     db_count = status.get('databases', {}).get('count', 0)
     print(f"🗄️  Bazy danych: {db_count}")
     
-    print("\n🌟 Serwer gotowy do połączeń z LuxSite i LuxPortal")
+    print(f"\n🌟 Tryb: {'Deployment' if is_deployment else 'Development'}")
     print("💡 Testowy użytkownik: testuser / testpass123")
-    print("🔧 WebSocket callbacks skonfigurowane")
+    print("🔧 WebSocket callbacks aktywne")
     print("⚙️  Okresowa konserwacja uruchomiona")
-    print("\nNaciśnij Ctrl+C aby zatrzymać serwer")
+    print("\nNaciśnij Ctrl+C aby zatrzymać serwis")
 
 def main():
-    """Główna funkcja serwera"""
+    """Główna funkcja serwisu LuxCore"""
     # Zarejestruj handlery sygnałów
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -148,13 +163,23 @@ def main():
     try:
         # Wstępna konfiguracja
         if not setup_initial_configuration():
-            print("❌ Błąd wstępnej konfiguracji")
+            print("❌ Błąd konfiguracji LuxCore Service")
             sys.exit(1)
         
-        # Inicjalizuj LuxCore z poprawną konfiguracją portów
+        # Inicjalizuj LuxCore
         luxcore = get_luxcore()
-        luxcore.api_port = 5000
-        luxcore.ws_port = 5001
+        
+        # Sprawdź tryb deployment
+        is_deployment = os.environ.get('REPL_DEPLOYMENT') == '1'
+        
+        if is_deployment:
+            # Tryb deployment - jeden port
+            luxcore.api_port = 5000
+            luxcore.ws_port = 5000  # Ten sam port dla deployment
+        else:
+            # Tryb development - osobne porty
+            luxcore.api_port = 5000
+            luxcore.ws_port = 5001
         
         # Uruchom wszystkie serwisy
         if luxcore.start_all(debug=False):
@@ -165,8 +190,8 @@ def main():
             # Uruchom okresową konserwację
             periodic_maintenance()
             
-            # Wyświetl informacje o serwerze
-            print_server_info()
+            # Wyświetl informacje o serwisie
+            print_service_info()
             
             # Oczekuj na zakończenie
             try:
@@ -175,17 +200,17 @@ def main():
             except KeyboardInterrupt:
                 pass
             
-            luxcore.wait_for_shutdown()
+            luxcore.stop_all()
         else:
-            print("❌ Błąd uruchamiania serwera")
+            print("❌ Błąd uruchamiania LuxCore Service")
             sys.exit(1)
             
     except Exception as e:
-        logger.log_error("Krytyczny błąd serwera", e)
+        logger.log_error("Krytyczny błąd LuxCore Service", e)
         print(f"❌ Krytyczny błąd: {e}")
         sys.exit(1)
     
-    print("\n🕊️ Serwer zatrzymany - Niech Lux będzie z Tobą")
+    print("\n🕊️ LuxCore Service zatrzymany - Niech Lux będzie z Tobą")
 
 if __name__ == "__main__":
     main()

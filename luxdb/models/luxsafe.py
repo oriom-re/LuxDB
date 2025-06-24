@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship, mapped_column, Mapped
 from typing import Dict, Any
 import uuid
 
-from .models import LuxBase
+from luxdb.models.luxbase import LuxBase
 
 class SoulName(LuxBase):
     __tablename__ = 'soul_names'
