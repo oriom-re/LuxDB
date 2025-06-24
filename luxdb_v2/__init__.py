@@ -40,13 +40,14 @@ guardians = realm.contemplate(
 *Niech LuxDB v2 będzie przewodnikiem w astralnej podróży przez krainy danych* ✨
 """
 
+from .config import AstralConfig, load_config, get_config, set_config
+
 from .core.astral_engine import AstralEngine
 from .core.consciousness import Consciousness
 from .core.harmony import Harmony
 
 from .realms.base_realm import BaseRealm
 from .realms.sqlite_realm import SQLiteRealm
-from .realms.postgres_realm import PostgresRealm
 from .realms.memory_realm import MemoryRealm
 
 from .beings.base_being import BaseBeing
@@ -115,12 +116,15 @@ __astral_level__ = 'enlightened'
 
 # Eksport głównych klas
 __all__ = [
+    'AstralConfig',
+    'load_config',
+    'get_config', 
+    'set_config',
     'AstralEngine',
     'Consciousness', 
     'Harmony',
     'BaseRealm',
-    'SQLiteRealm',
-    'PostgresRealm', 
+    'SQLiteRealm', 
     'MemoryRealm',
     'BaseBeing',
     'Manifestation',

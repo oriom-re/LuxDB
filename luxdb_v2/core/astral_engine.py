@@ -75,6 +75,61 @@ class SystemState:
             'uptime': str(datetime.now() - self.awakened_at) if self.awakened_at else '0:00:00'
         }
 
+import time
+import threading
+from typing import Dict, Any, List, Optional, Union
+from datetime import datetime
+
+from ..config import AstralConfig
+from .consciousness import Consciousness
+from .harmony import Harmony
+from ..realms.base_realm import BaseRealm
+from ..realms.sqlite_realm import SQLiteRealm
+from ..realms.memory_realm import MemoryRealm
+
+
+class SystemState:
+    """Stan systemu astralnego"""
+    def __init__(self):
+        self.awakened_at: Optional[datetime] = None
+        self.last_meditation: Optional[datetime] = None
+        self.harmony_score: float = 0.0
+        self.active_realms: int = 0
+        self.active_flows: int = 0
+        self.total_manifestations: int = 0
+        self.is_transcended: bool = False
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'awakened_at': self.awakened_at.isoformat() if self.awakened_at else None,
+            'last_meditation': self.last_meditation.isoformat() if self.last_meditation else None,
+            'harmony_score': self.harmony_score,
+            'active_realms': self.active_realms,
+            'active_flows': self.active_flows,
+            'total_manifestations': self.total_manifestations,
+            'is_transcended': self.is_transcended
+        }
+
+
+class AstralLogger:
+    """Prosty logger astralny"""
+    def __init__(self, level: str = "INFO"):
+        self.level = level
+    
+    def info(self, message: str):
+        print(f"[INFO] {message}")
+    
+    def debug(self, message: str):
+        if self.level == "DEBUG":
+            print(f"[DEBUG] {message}")
+    
+    def warning(self, message: str):
+        print(f"[WARNING] {message}")
+    
+    def error(self, message: str):
+        print(f"[ERROR] {message}")
+
+
 class AstralEngine:
     """
     Główny silnik astralny - koordynuje wszystkie aspekty systemu
