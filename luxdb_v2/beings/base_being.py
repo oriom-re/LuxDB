@@ -10,6 +10,22 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, field
 
+try:
+    from .genetic_identification import genetic_trace, astral_signature, get_genetic_system
+except ImportError:
+    def genetic_trace(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    
+    def astral_signature(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    
+    def get_genetic_system():
+        return None
+
 
 @dataclass
 class BeingEssence:
@@ -73,6 +89,7 @@ class BaseBeing:
         reserved_keys = {'soul_id', 'name', 'energy_level', 'consciousness_level', 'created_at', 'last_meditation'}
         self.attributes = {k: v for k, v in data.items() if k not in reserved_keys}
     
+    @genetic_trace(include_args=True, include_return=True, track_performance=True)
     def meditate(self) -> Dict[str, Any]:
         """
         Medytacja bytu - refleksja nad stanem i ewolucja
@@ -145,6 +162,8 @@ class BaseBeing:
         
         return memories[-limit:]
     
+    @genetic_trace(include_args=True, track_performance=True)
+    @astral_signature('new_attributes')
     def evolve(self, new_attributes: Dict[str, Any]) -> None:
         """
         Ewolucja bytu - aktualizacja atrybutów
@@ -165,6 +184,7 @@ class BaseBeing:
         # Ewolucja kosztuje energię
         self.essence.energy_level = max(0, self.essence.energy_level - 10)
     
+    @genetic_trace(include_args=False, include_return=True, track_performance=True)
     def transcend(self) -> Dict[str, Any]:
         """
         Transcendencja bytu - przejście na wyższy poziom

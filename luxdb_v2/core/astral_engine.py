@@ -406,12 +406,16 @@ class AstralEngine:
         Returns:
             Słownik ze statusem systemu
         """
+        # Genetyczna analiza systemu
+        genetic_analysis = self._get_genetic_analysis()
+        
         return {
             'astral_engine': {
                 'version': '2.0.0',
                 'consciousness_level': self.config.consciousness_level,
                 'running': self._running,
-                'uptime': str(datetime.now() - self.state.awakened_at) if self.state.awakened_at else '0:00:00'
+                'uptime': str(datetime.now() - self.state.awakened_at) if self.state.awakened_at else '0:00:00',
+                'genetic_analysis': genetic_analysis
             },
             'system_state': self.state.to_dict(),
             'realms': {
@@ -433,6 +437,82 @@ class AstralEngine:
         """Context manager entry"""
         self.awaken()
         return self
+
+    def _get_genetic_analysis(self) -> Dict[str, Any]:
+        """Pobiera analizę genetyczną systemu"""
+        try:
+            from ..beings.genetic_identification import get_genetic_system, analyze_function_genetics
+            genetic_system = get_genetic_system()
+            
+            if not genetic_system:
+                return {'status': 'not_available'}
+            
+            # Analizuj kluczowe funkcje
+            key_functions = ['meditate', 'evolve', 'transcend', 'manifest', 'contemplate']
+            function_analytics = {}
+            
+            for func_name in key_functions:
+                stats = analyze_function_genetics(func_name)
+                if stats.get('total_calls', 0) > 0:
+                    function_analytics[func_name] = stats
+            
+            return {
+                'status': 'active',
+                'total_tracked_functions': len(genetic_system.genome_registry),
+                'function_analytics': function_analytics,
+                'argument_lineages': len(genetic_system.argument_lineage)
+            }
+            
+        except ImportError:
+            return {'status': 'module_not_available'}
+        except Exception as e:
+            return {'status': 'error', 'message': str(e)}
+
+    def get_genetic_insights(self) -> Dict[str, Any]:
+        """Zwraca głębokie insights genetyczne systemu"""
+        try:
+            from ..beings.genetic_identification import get_genetic_system, find_genetic_patterns
+            genetic_system = get_genetic_system()
+            
+            if not genetic_system:
+                return {'insights': [], 'message': 'System genetyczny niedostępny'}
+            
+            insights = []
+            key_functions = ['meditate', 'evolve', 'transcend']
+            
+            for func_name in key_functions:
+                patterns = find_genetic_patterns(func_name, 0.6)
+                if patterns['patterns_found'] > 0:
+                    insights.append({
+                        'function': func_name,
+                        'pattern_count': patterns['patterns_found'],
+                        'total_calls': patterns['total_calls_analyzed'],
+                        'genetic_diversity': patterns['patterns_found'] / patterns['total_calls_analyzed'] if patterns['total_calls_analyzed'] > 0 else 0
+                    })
+            
+            return {
+                'insights': insights,
+                'genetic_health_score': sum(i['genetic_diversity'] for i in insights) / len(insights) if insights else 0,
+                'recommendations': self._generate_genetic_recommendations(insights)
+            }
+            
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def _generate_genetic_recommendations(self, insights: List[Dict]) -> List[str]:
+        """Generuje rekomendacje na podstawie analizy genetycznej"""
+        recommendations = []
+        
+        for insight in insights:
+            if insight['genetic_diversity'] < 0.3:
+                recommendations.append(f"Funkcja {insight['function']} wykazuje niską różnorodność genetyczną - rozważ zróżnicowanie wywołań")
+            elif insight['genetic_diversity'] > 0.8:
+                recommendations.append(f"Funkcja {insight['function']} ma wysoką różnorodność - dobry wskaźnik adaptacji")
+            
+            if insight['total_calls'] < 10:
+                recommendations.append(f"Funkcja {insight['function']} ma mało wywołań - więcej danych poprawiłoby analizę")
+        
+        return recommendations
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit"""
