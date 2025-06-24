@@ -36,7 +36,13 @@ def example_being_manifestation():
         soul_realm = engine.get_realm('souls')
         # Pobierz wymiar artefaktów
         artifact_realm = engine.get_realm('artifacts')
-        # Sprawdź połączenie
+        
+        # Jawnie nawiąż połączenia z wymiarami
+        if not soul_realm.is_connected:
+            soul_realm.connect()
+        if not artifact_realm.is_connected:
+            artifact_realm.connect()
+        
         # Lista wszystkich wymiarów
         all_realms = engine.list_realms()
         print(f"📋 Wszystkie wymiary: {', '.join(all_realms)}")
