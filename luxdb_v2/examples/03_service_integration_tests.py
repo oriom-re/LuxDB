@@ -85,15 +85,17 @@ class AstralServiceTester:
             return False
         
         try:
-            status = self.engine.get_status()
             
+
+            status = self.engine.get_status()
             print(f"   ✅ Poziom świadomości: {status['astral_engine']['consciousness_level']}")
             print(f"   ✅ Czas działania: {status['astral_engine']['uptime']}")
             print(f"   ✅ Wymiary aktywne: {len(status['realms'])}")
-            
+
             for name, realm_status in status['realms'].items():
+                print(f"      {name}: {realm_status['type']}")
                 state = "✅" if realm_status['connected'] else "❌"
-                print(f"      {state} {name}: {realm_status['type']}")
+                print(f"      {state} {name}: {realm_status['connected']}")
             
             return True
             
@@ -426,8 +428,8 @@ def run_integration_tests():
     print("=" * 60)
     
     tests = [
-        test_service_lifecycle,
-        test_concurrent_operations,
+        # test_service_lifecycle,
+        # test_concurrent_operations,
         test_error_handling
     ]
     

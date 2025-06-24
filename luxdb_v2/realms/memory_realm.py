@@ -58,7 +58,7 @@ class MemoryRealm(BaseRealm):
     def manifest(self, being_data: Dict[str, Any]) -> Dict[str, Any]:
         """Manifestuje nowy byt w wymiarze pamięci"""
         if not self.is_connected:
-            raise RuntimeError("Brak połączenia z wymiarem")
+            self.connect()
         
         # Przygotuj dane
         soul_id = self.next_soul_id

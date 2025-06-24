@@ -30,25 +30,9 @@ def example_being_manifestation():
     }
     
     with create_astral_app(config) as engine:
-        #stan systemu
-        print(f"🌌 Stan systemu: {engine.get_status()}")
+
         # Pobierz wymiar dusz
         soul_realm = engine.get_realm('souls')
-        # Pobierz wymiar artefaktów
-        artifact_realm = engine.get_realm('artifacts')
-        
-        # Jawnie nawiąż połączenia z wymiarami
-        if not soul_realm.is_connected:
-            soul_realm.connect()
-        if not artifact_realm.is_connected:
-            artifact_realm.connect()
-        
-        # Lista wszystkich wymiarów
-        all_realms = engine.list_realms()
-        print(f"📋 Wszystkie wymiary: {', '.join(all_realms)}")
-        
-        if not soul_realm.is_connected or not artifact_realm.is_connected:
-            raise RuntimeError("Błąd połączenia z wymiarami")
         
         print("🌟 Manifestowanie dusz w wymiarze...")
         
@@ -107,7 +91,6 @@ def example_being_contemplation():
     
     with create_astral_app(config) as engine:
         library_realm = engine.get_realm('library')
-        
         print("📚 Tworzenie biblioteki wiedzy astralnej...")
         
         # Manifestuj księgi wiedzy
@@ -208,7 +191,7 @@ def example_being_evolution():
     
     with create_astral_app(config) as engine:
         hero_realm = engine.get_realm('heroes')
-        
+        print("🏰 Tworzenie królestwa bohaterów...")
         print("🦸 Manifestowanie bohaterów...")
         
         # Początkowi bohaterowie
@@ -321,6 +304,9 @@ def example_multi_realm_operations():
         user_realm = engine.get_realm('users')
         session_realm = engine.get_realm('sessions')
         log_realm = engine.get_realm('logs')
+        # connect() jest wywoływane automatycznie przy manifest()
+        # to dla czego zwraca błąd połączenia z wymiarem?
+        
         
         # Manifestuj użytkowników
         users = [
@@ -391,9 +377,9 @@ def run_data_examples():
     
     examples = [
         example_being_manifestation,
-        # example_being_contemplation,
-        # example_being_evolution,
-        # example_multi_realm_operations
+        example_being_contemplation,
+        example_being_evolution,
+        example_multi_realm_operations
     ]
     
     for i, example in enumerate(examples, 1):
