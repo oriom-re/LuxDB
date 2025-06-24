@@ -179,8 +179,10 @@ def demonstrate_being_genetics():
         
         print(f"\n🧘 Medytacja wszystkich bytów...")
         for being in beings:
-            meditation_result = being.meditate()
-            print(f"   🌟 {being.essence.name}: energia {being.essence.energy_level}")
+            print(f" type: {type(being)}")
+            if hasattr(being, 'meditate'):
+                meditation_result = being.meditate()
+                print(f"   🌟 {being.essence.name}: energia {being.essence.energy_level}")
         
         print(f"\n🔄 Ewolucja bytów...")
         evolution_changes = [
@@ -235,7 +237,7 @@ def demonstrate_engine_genetic_insights():
     
     config = {
         'realms': {
-            'insight_realm': 'memory://genetic_insights'
+            'insight_realm': 'memory://soul_dimension'
         }
     }
     
@@ -277,11 +279,11 @@ def main():
     print("=" * 80)
     
     try:
-        demonstrate_basic_genetic_tracking()
-        demonstrate_astral_signatures()
-        demonstrate_meditation_genetics()
-        demonstrate_being_genetics()
-        demonstrate_genetic_analysis()
+        # demonstrate_basic_genetic_tracking()
+        # demonstrate_astral_signatures()
+        # demonstrate_meditation_genetics()
+        # demonstrate_being_genetics()
+        # demonstrate_genetic_analysis()
         demonstrate_engine_genetic_insights()
         
         print(f"\n🌟 Wszystkie demonstracje zakończone pomyślnie!")
