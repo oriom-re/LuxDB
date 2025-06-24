@@ -251,12 +251,13 @@ def demonstrate_engine_genetic_insights():
                 'type': random.choice(['warrior', 'mage', 'healer'])
             }
             being = realm.manifest(being_data)
-            being.meditate()
+            if hasattr(being, 'meditate'):
+                being.meditate()
             if i % 2 == 0:
                 being.evolve({'experience': random.randint(10, 50)})
 
-        # Sprawdź czy byty mają metodę meditate i wywołaj ją
-        for being in beings:  # Używaj beings z manifestacji powyżej
+        # Wykonaj medytację na wszystkich aktywnych bytach
+        for being in realm.manifestation.active_beings.values():
             if hasattr(being, 'meditate'):
                 being.meditate()
 
