@@ -19,22 +19,6 @@ from pathlib import Path
 # Dodaj ścieżkę do v2 jeśli jeszcze nie istnieje
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Import LuxDB v2
-try:
-    from luxdb_v2 import (
-        AstralEngine, 
-        AstralConfig, 
-        quick_start, 
-        print_astral_banner,
-        create_astral_app
-    )
-except ImportError as e:
-    print(f"❌ Błąd importu LuxDB v2: {e}")
-    print("🔧 Tworzę podstawową strukturę...")
-    create_v2_structure()
-    sys.exit(1)
-
-
 def create_v2_structure():
     """Tworzy podstawową strukturę LuxDB v2"""
     directories = [
@@ -57,6 +41,21 @@ def create_v2_structure():
             if not os.path.exists(init_file):
                 with open(init_file, 'w') as f:
                     f.write(f'"""LuxDB v2 - {directory.split("/")[-1]} module"""\n')
+
+
+# Import LuxDB v2
+try:
+    from luxdb_v2 import (
+        AstralEngine, 
+        AstralConfig, 
+        quick_start, 
+        print_astral_banner,
+        create_astral_app
+    )
+except ImportError as e:
+    print(f"❌ Błąd importu LuxDB v2: {e}")
+    print("🔧 Upewnij się, że zainstalowałeś psutil: uv add psutil")
+    sys.exit(1)
 
 
 class LuxDBv2Service:
