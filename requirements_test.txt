@@ -1,0 +1,5 @@
+
+# Dodatkowe zależności dla testów klienta LuxDB v2
+python-socketio[client]==5.10.0
+requests==2.31.0
+websockets==12.0
