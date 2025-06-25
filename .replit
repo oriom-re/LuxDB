@@ -12,7 +12,7 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["sh", "-c", "python server.py"]
+run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
@@ -80,6 +80,24 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python luxdb_v2_service.py"
+
+[[workflows.workflow]]
+name = "Deploy VM Production"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python deploy_vm.py"
+
+[[workflows.workflow]]
+name = "VM Health Check"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python vm_health_check.py"
 
 [[ports]]
 localPort = 5000

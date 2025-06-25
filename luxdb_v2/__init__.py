@@ -126,14 +126,18 @@ def quick_start(realm_type='sqlite', port=5000):
     
     return create_astral_app(config)
 
-# Legacy compatibility
+# Funkcja zastąpiona - v2 jest już w pełni niezależne
 def enable_legacy_compatibility():
     """
-    Włącza tryb kompatybilności z LuxDB v1
-    Pozwala na stopniową migrację kodu
+    Ostrzeżenie: LuxDB v2 jest już w pełni niezależne od v1
+    Ta funkcja została zachowana tylko dla kompatybilności API
     """
-    from .migration.legacy_adapter import LegacyAdapter
-    LegacyAdapter.enable_global_compatibility()
+    import warnings
+    warnings.warn(
+        "LuxDB v2 jest już w pełni niezależne. Legacy compatibility nie jest potrzebna.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
 # Wersja
 __version__ = '2.0.0'
