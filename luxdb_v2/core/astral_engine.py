@@ -105,6 +105,10 @@ class AstralEngine:
         self.rest_flow = None
         self.ws_flow = None
         self.callback_flow = None
+        self.gpt_flow = None
+        
+        # System generatywny funkcji
+        self.function_generator = None
 
         # Wątki medytacyjne
         self._meditation_thread: Optional[threading.Thread] = None
@@ -149,6 +153,9 @@ class AstralEngine:
 
             # 3. Inicjalizuj przepływy
             self._initialize_flows()
+            
+            # 4. Inicjalizuj systemy AI
+            self._initialize_ai_systems()
 
             # 4. Uruchom systemy monitorowania
             self._start_meditation_cycle()
@@ -238,6 +245,29 @@ class AstralEngine:
         except ImportError:
             self.logger.warning("⚠️ Moduł IntentionFlow nie jest dostępny")
             self.intention_flow = None
+    
+    def _initialize_ai_systems(self) -> None:
+        """Inicjalizuje systemy AI (GPT i Function Generator)"""
+        
+        # Function Generator
+        try:
+            from ..wisdom.function_generator import FunctionGenerator
+            self.function_generator = FunctionGenerator(self)
+            self.logger.info("🛠️ Function Generator aktywowany")
+        except ImportError:
+            self.logger.warning("⚠️ Moduł FunctionGenerator nie jest dostępny")
+            self.function_generator = None
+        
+        # GPT Flow
+        if 'gpt' in self.config.flows:
+            try:
+                from ..flows.gpt_flow import GPTFlow
+                self.gpt_flow = GPTFlow(self, self.config.flows['gpt'])
+                if self.gpt_flow.start():
+                    self.state.active_flows += 1
+                    self.logger.info("🤖 Przepływ GPT aktywowany")
+            except ImportError:
+                self.logger.warning("⚠️ Moduł GPTFlow nie jest dostępny")
 
     def _start_meditation_cycle(self) -> None:
         """Uruchamia cykl medytacyjny systemu"""
@@ -491,6 +521,8 @@ class AstralEngine:
             self.callback_flow.stop()
         if self.intention_flow and hasattr(self.intention_flow, 'stop'):
             self.intention_flow.stop()
+        if self.gpt_flow and hasattr(self.gpt_flow, 'stop'):
+            self.gpt_flow.stop()
 
         # Zamknij wymiary
         for realm in self.realms.values():
@@ -543,7 +575,11 @@ class AstralEngine:
                 'rest': self.rest_flow.get_status() if self.rest_flow and hasattr(self.rest_flow, 'get_status') else None,
                 'websocket': self.ws_flow.get_status() if self.ws_flow and hasattr(self.ws_flow, 'get_status') else None,
                 'callback': self.callback_flow.get_status() if self.callback_flow and hasattr(self.callback_flow, 'get_status') else None,
-                'intention': self.intention_flow.get_status() if self.intention_flow and hasattr(self.intention_flow, 'get_status') else None
+                'intention': self.intention_flow.get_status() if self.intention_flow and hasattr(self.intention_flow, 'get_status') else None,
+                'gpt': self.gpt_flow.get_status() if self.gpt_flow and hasattr(self.gpt_flow, 'get_status') else None
+            },
+            'ai_systems': {
+                'function_generator': self.function_generator.get_status() if self.function_generator and hasattr(self.function_generator, 'get_status') else None
             },
             'harmony': {
                 'score': self.state.harmony_score,

@@ -52,7 +52,13 @@ class AstralConfig:
     flows: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
         'rest': {'host': '0.0.0.0', 'port': 5000, 'enable_cors': True},
         'websocket': {'host': '0.0.0.0', 'port': 5001, 'enable_cors': True},
-        'callback': {'async_workers': 4, 'max_queue_size': 10000}
+        'callback': {'async_workers': 4, 'max_queue_size': 10000},
+        'gpt': {
+                'model': 'gpt-4',
+                'max_tokens': 1000,
+                'temperature': 0.7,
+                'openai_api_key': None  # Pobrane z ENV
+            }
     })
 
     # Mądrość (wisdom)
