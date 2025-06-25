@@ -254,12 +254,10 @@ def demonstrate_engine_genetic_insights():
             if hasattr(being, 'meditate'):
                 being.meditate()
             if i % 2 == 0:
-                being.evolve({'experience': random.randint(10, 50)})
+                if hasattr(being, 'evolve'):
+                    being.evolve({'experience': random.randint(10, 50)})
 
-        # Wykonaj medytację na wszystkich aktywnych bytach
-        for being in realm.manifestation.active_beings.values():
-            if hasattr(being, 'meditate'):
-                being.meditate()
+
 
         # Pobierz insights genetyczne
         print("🧠 Pobieranie insights genetycznych z AstralEngine...")
