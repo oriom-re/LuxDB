@@ -184,6 +184,81 @@ class CallbackFlow:
         system_ns.on('being_manifested', on_being_manifested, CallbackPriority.NORMAL)
         system_ns.on('realm_connected', on_realm_connected, CallbackPriority.NORMAL)
         system_ns.on('system_error', on_system_error, CallbackPriority.CRITICAL)
+        
+        # Namespace diagnostyki
+        diagnostic_ns = self.create_namespace('diagnostics')
+        
+        def on_container_error(event):
+            """Handler błędów kontenerów - analizuje i generuje poprawki"""
+            error_data = event.data
+            container_id = error_data.get('container_id')
+            function_name = error_data.get('function_name')
+            error_message = error_data.get('error_message')
+            
+            self.engine.logger.info(f"🔬 Diagnostyka błędu kontenera {container_id} w funkcji {function_name}")
+            
+            # Pobierz kontener do analizy
+            if hasattr(self.engine, 'container_manager'):
+                container = self.engine.container_manager.get_container(container_id)
+                if container:
+                    # Generuj sugestię poprawki na podstawie błędu
+                    fix_suggestion = self._analyze_error_and_suggest_fix(error_data, container)
+                    
+                    # Wyślij poprawkę z powrotem do kontenera
+                    if fix_suggestion.get('success'):
+                        self.emit_event('diagnostics', 'fix_ready', {
+                            'container_id': container_id,
+                            'function_name': function_name,
+                            'fix_suggestion': fix_suggestion['fix'],
+                            'diagnostic_confidence': fix_suggestion.get('confidence', 0.7)
+                        })
+                    else:
+                        self.engine.logger.warning(f"⚠️ Nie udało się wygenerować poprawki dla {container_id}")
+        
+        def on_fix_ready(event):
+            """Handler gotowej poprawki - aplikuje ją do funkcji"""
+            fix_data = event.data
+            container_id = fix_data.get('container_id')
+            function_name = fix_data.get('function_name')
+            fix_suggestion = fix_data.get('fix_suggestion')
+            
+            self.engine.logger.info(f"🔧 Aplikowanie poprawki dla funkcji {function_name} w kontenerze {container_id}")
+            
+            if hasattr(self.engine, 'container_manager'):
+                container = self.engine.container_manager.get_container(container_id)
+                if container:
+                    # Zastosuj poprawkę
+                    fix_result = self.engine.container_manager._apply_dynamic_function_fix(
+                        function_name, container, fix_suggestion
+                    )
+                    
+                    if fix_result['success']:
+                        # Spróbuj ponownie wywołać funkcję
+                        self.emit_event('diagnostics', 'retry_function', {
+                            'container_id': container_id,
+                            'function_name': function_name,
+                            'fix_applied': True
+                        })
+                        
+                        self.engine.logger.info(f"✅ Poprawka zastosowana pomyślnie dla {function_name}")
+                    else:
+                        self.engine.logger.error(f"❌ Nie udało się zastosować poprawki: {fix_result.get('error')}")
+        
+        def on_retry_function(event):
+            """Handler ponownego wywołania funkcji po poprawce"""
+            retry_data = event.data
+            container_id = retry_data.get('container_id')
+            function_name = retry_data.get('function_name')
+            
+            self.engine.logger.info(f"🔄 Ponowne wywołanie funkcji {function_name} dla kontenera {container_id}")
+            
+            # Tutaj mógłbyś automatycznie ponownie wywołać funkcję
+            # ale zostawiam to jako opcjonalne - może lepiej pozwolić aplikacji decydować
+        
+        # Rejestruj callbacki diagnostyczne
+        diagnostic_ns.on('container_error', on_container_error, CallbackPriority.HIGH)
+        diagnostic_ns.on('fix_ready', on_fix_ready, CallbackPriority.HIGH)
+        diagnostic_ns.on('retry_function', on_retry_function, CallbackPriority.NORMAL)
     
     def create_namespace(self, name: str) -> CallbackNamespace:
         """
@@ -375,3 +450,189 @@ class CallbackFlow:
                 ns.event_history.clear()
         
         return total_cleared
+    
+    def _analyze_error_and_suggest_fix(self, error_data: Dict[str, Any], container) -> Dict[str, Any]:
+        """Analizuje błąd i generuje sugestię poprawki"""
+        
+        error_message = error_data.get('error_message', '')
+        function_name = error_data.get('function_name')
+        expected_params = error_data.get('expected_params', {})
+        container_data = error_data.get('container_data', {})
+        
+        fix_suggestion = {
+            'success': False,
+            'fix': {},
+            'confidence': 0.0
+        }
+        
+        try:
+            # Analiza typowych błędów
+            if 'type' in error_message.lower() and 'expected' in error_message.lower():
+                # Błąd typu - dodaj konwersję typów
+                fix_suggestion = {
+                    'success': True,
+                    'fix': {
+                        'fix_type': 'type_conversion',
+                        'description': f'Funkcja {function_name} z automatyczną konwersją typów',
+                        'parameters': self._generate_type_safe_params(expected_params, container_data),
+                        'error_handling': {
+                            'type_conversion': True,
+                            'fallback_values': True
+                        },
+                        'validation_rules': {
+                            'auto_convert_types': True,
+                            'strict_validation': False
+                        }
+                    },
+                    'confidence': 0.8
+                }
+            
+            elif 'missing' in error_message.lower() or 'required' in error_message.lower():
+                # Brakujący parametr - dodaj wartości domyślne
+                fix_suggestion = {
+                    'success': True,
+                    'fix': {
+                        'fix_type': 'missing_parameter_handling',
+                        'description': f'Funkcja {function_name} z wartościami domyślnymi',
+                        'parameters': self._generate_params_with_defaults(expected_params),
+                        'error_handling': {
+                            'default_values': True,
+                            'optional_params': True
+                        },
+                        'validation_rules': {
+                            'allow_missing_params': True,
+                            'use_defaults': True
+                        }
+                    },
+                    'confidence': 0.9
+                }
+            
+            elif 'division by zero' in error_message.lower() or 'zerodivisionerror' in error_message.lower():
+                # Błąd dzielenia przez zero
+                fix_suggestion = {
+                    'success': True,
+                    'fix': {
+                        'fix_type': 'division_safety',
+                        'description': f'Funkcja {function_name} z zabezpieczeniem przed dzieleniem przez zero',
+                        'parameters': expected_params,
+                        'error_handling': {
+                            'zero_division_check': True,
+                            'fallback_result': 'infinity_or_none'
+                        },
+                        'validation_rules': {
+                            'check_divisor': True
+                        }
+                    },
+                    'confidence': 0.95
+                }
+            
+            elif 'keyerror' in error_message.lower() or 'key' in error_message.lower():
+                # Błąd brakującego klucza
+                fix_suggestion = {
+                    'success': True,
+                    'fix': {
+                        'fix_type': 'safe_key_access',
+                        'description': f'Funkcja {function_name} z bezpiecznym dostępem do kluczy',
+                        'parameters': expected_params,
+                        'error_handling': {
+                            'safe_dict_access': True,
+                            'default_key_values': True
+                        },
+                        'validation_rules': {
+                            'check_key_existence': True
+                        }
+                    },
+                    'confidence': 0.85
+                }
+            
+            else:
+                # Ogólny błąd - dodaj try-catch wrapper
+                fix_suggestion = {
+                    'success': True,
+                    'fix': {
+                        'fix_type': 'general_error_handling',
+                        'description': f'Funkcja {function_name} z ogólnym mechanizmem obsługi błędów',
+                        'parameters': expected_params,
+                        'error_handling': {
+                            'try_catch_wrapper': True,
+                            'graceful_degradation': True,
+                            'error_logging': True
+                        },
+                        'validation_rules': {
+                            'permissive_mode': True
+                        }
+                    },
+                    'confidence': 0.6
+                }
+        
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd podczas analizy błędu: {e}")
+        
+        return fix_suggestion
+    
+    def _generate_type_safe_params(self, expected_params: Dict[str, Any], container_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generuje parametry z bezpieczną konwersją typów"""
+        params = []
+        
+        for param_name, param_config in expected_params.items():
+            param_type = param_config.get('type', 'Any')
+            
+            param_def = {
+                'name': param_name,
+                'type': param_type,
+                'auto_convert': True,
+                'description': f'Parametr {param_name} z automatyczną konwersją na {param_type}'
+            }
+            
+            # Dodaj konwersję na podstawie typu
+            if param_type == 'int':
+                param_def['conversion_fallback'] = 0
+            elif param_type == 'float':
+                param_def['conversion_fallback'] = 0.0
+            elif param_type == 'str':
+                param_def['conversion_fallback'] = ''
+            elif param_type == 'bool':
+                param_def['conversion_fallback'] = False
+            elif param_type == 'list':
+                param_def['conversion_fallback'] = []
+            elif param_type == 'dict':
+                param_def['conversion_fallback'] = {}
+            
+            params.append(param_def)
+        
+        return params
+    
+    def _generate_params_with_defaults(self, expected_params: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generuje parametry z wartościami domyślnymi"""
+        params = []
+        
+        for param_name, param_config in expected_params.items():
+            param_type = param_config.get('type', 'Any')
+            required = param_config.get('required', False)
+            
+            param_def = {
+                'name': param_name,
+                'type': param_type,
+                'required': False,  # Zmień na opcjonalne
+                'description': f'Parametr {param_name} z wartością domyślną'
+            }
+            
+            # Dodaj wartość domyślną
+            if param_type == 'int':
+                param_def['default'] = 0
+            elif param_type == 'float':
+                param_def['default'] = 0.0
+            elif param_type == 'str':
+                param_def['default'] = ''
+            elif param_type == 'bool':
+                param_def['default'] = False
+            elif param_type == 'list':
+                param_def['default'] = []
+            elif param_type == 'dict':
+                param_def['default'] = {}
+            else:
+                param_def['default'] = None
+            
+            params.append(param_def)
+        
+        return params

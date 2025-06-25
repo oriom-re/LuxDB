@@ -10,7 +10,9 @@ Filozofia: Każda funkcja = jedna mała operacja + przekazanie kontenera dalej
 """
 
 import json
+import time
 from luxdb_v2 import create_astral_app, print_astral_banner
+from luxdb_v2.wisdom.astral_containers import ContainerState
 
 
 def demonstrate_micro_function_flow():
@@ -112,14 +114,201 @@ def demonstrate_error_logging_flow():
             ('format_result', {'division_result': {'type': 'float', 'required': False}})
         ]
         
-        # Wykonaj każdą funkcję, loguj błędy, ale kontynuuj
+        # Wykonaj każdą funkcję, loguj błędy i uruchamiaj diagnostykę
         for func_name, params in micro_functions:
             print(f"\n🔧 Wywołanie: {func_name}")
             
             result = engine.invoke_function_with_container(func_name, container, params)
             
             if result['success']:
-                print(f"   ✅ Sukces: {result.get('result', {})}")
+                print(f"   ✅ Sukces: {result.get('result', 'Brak rezultatu')}")
+            else:
+                print(f"   ❌ Błąd: {result.get('error', 'Nieznany błąd')}")
+                
+                # Sprawdź czy diagnostyka została uruchomiona
+                if result.get('diagnostic_triggered'):
+                    print(f"   🔬 Diagnostyka uruchomiona automatycznie")
+                    print(f"   ⏳ Kontener oczekuje na poprawkę...")
+                    
+                    # Poczekaj chwilę na diagnostykę (w prawdziwej aplikacji byłoby to asynchroniczne)
+                    time.sleep(1)
+                    
+                    # Sprawdź stan kontenera po diagnostyce
+                    updated_container = engine.get_astral_container(container.container_id)
+                    if updated_container:
+                        latest_transition = updated_container.history[-1] if updated_container.history else None
+                        if latest_transition and latest_transition.transformation.get('fix_applied'):
+                            print(f"   🔧 Poprawka zastosowana automatycznie!")
+                            print(f"   📋 Typ poprawki: {latest_transition.transformation.get('fix_type', 'unknown')}")
+                        else:
+                            print(f"   ⚠️ Poprawka jeszcze nie gotowa")
+                else:
+                    print(f"   ⚠️ Diagnostyka nie została uruchomiona")
+            
+            # Pokaż aktualny stan kontenera
+            print(f"   🔮 Stan kontenera: {container.state.value}")
+            
+            # Dodatkowo, sprawdź logi błędów
+            error_transitions = [t for t in container.history if t.to_state == ContainerState.ERROR]
+            if error_transitions:
+                latest_error = error_transitions[-1]
+                if latest_error.error_info:
+                    print(f"   📝 Ostatni błąd: {latest_error.error_info.get('error', 'Brak szczegółów')}")
+
+
+def demonstrate_auto_healing_system():
+    """Demonstruje system samo-naprawczy kontenerów"""
+    
+    print("\n🩹 === System Automatycznej Naprawy ===")
+    
+    with create_astral_app() as engine:
+        print("🔧 Konfiguracja systemu diagnostycznego...")
+        
+        # Sprawdź czy callback flow jest aktywny
+        if not engine.callback_flow:
+            print("   ⚠️ Callback Flow nie jest dostępny")
+            return
+        
+        if not engine.callback_flow.is_running():
+            engine.callback_flow.start()
+            print("   ✅ Callback Flow uruchomiony")
+        
+        # Kontener z danymi które gwarantowane wywołają błędy
+        problematic_container = engine.create_astral_container({
+            'text_number': 'definitely_not_a_number',
+            'zero_divisor': 0,
+            'missing_key_dict': {'other_key': 'value'},
+            'invalid_type': 'should_be_list'
+        }, origin_function='auto_healing_demo', purpose='self_healing_test')
+        
+        print(f"📦 Problematyczny kontener: {problematic_container.container_id}")
+        
+        # Lista funkcji które będą wywoływały różne typy błędów
+        problematic_functions = [
+            ('convert_to_integer', {'text_number': {'type': 'int', 'required': True}}),
+            ('safe_division', {'number': {'type': 'float', 'required': True}, 'zero_divisor': {'type': 'float', 'required': True}}),
+            ('access_specific_key', {'missing_key_dict': {'type': 'dict', 'required': True}}),
+            ('process_list_data', {'invalid_type': {'type': 'list', 'required': True}})
+        ]
+        
+        print("\n🔬 Test systemu auto-naprawy:")
+        
+        for func_name, expected_params in problematic_functions:
+            print(f"\n   🧪 Test funkcji: {func_name}")
+            
+            # Pierwsze wywołanie - spodziewamy się błędu
+            result = engine.invoke_function_with_container(func_name, problematic_container, expected_params)
+            
+            if result.get('diagnostic_triggered'):
+                print(f"      🔬 Diagnostyka uruchomiona")
+                print(f"      ⏱️ Oczekiwanie na automatyczną poprawkę...")
+                
+                # W prawdziwej aplikacji czekalibyśmy na callback
+                # Tutaj symulujemy czas potrzebny na analizę
+                time.sleep(2)
+                
+                # Sprawdź czy poprawka została zastosowana
+                callback_stats = engine.callback_flow.get_namespace_stats('diagnostics')
+                recent_events = callback_stats.get('recent_events', [])
+                
+                fix_events = [e for e in recent_events if e['event_type'] == 'fix_ready']
+                if fix_events:
+                    print(f"      ✅ Poprawka wygenerowana przez system diagnostyczny")
+                    
+                    # Spróbuj ponownie po poprawce
+                    retry_result = engine.invoke_function_with_container(func_name, problematic_container, expected_params)
+                    if retry_result.get('success'):
+                        print(f"      🎉 Funkcja działa po automatycznej naprawie!")
+                        print(f"      📊 Wynik: {retry_result.get('result', 'Brak wyniku')}")
+                    else:
+                        print(f"      ⚠️ Funkcja nadal nie działa: {retry_result.get('error')}")
+                else:
+                    print(f"      ⏳ Poprawka jeszcze nie gotowa")
+            else:
+                print(f"      ❌ Diagnostyka nie została uruchomiona")
+            
+            print(f"      📈 Aktualne błędy kontenera: {problematic_container.error_count}")
+            print(f"      🔄 Transformacje: {problematic_container.transformation_count}")
+        
+        # Podsumowanie
+        print(f"\n📊 Podsumowanie auto-naprawy:")
+        container_history = problematic_container.get_history_summary()
+        print(f"   🔢 Łączne błędy: {container_history['error_count']}")
+        print(f"   🔄 Transformacje: {container_history['transformation_count']}")
+        print(f"   ✅ Walidacje: {container_history['validation_count']}")
+        
+        # Statystyki systemu diagnostycznego
+        diagnostic_stats = engine.callback_flow.get_namespace_stats('diagnostics')
+        print(f"   🔬 Wydarzenia diagnostyczne: {diagnostic_stats.get('event_history_count', 0)}")
+        print(f"   🛠️ Callbacki diagnostyczne: {diagnostic_stats.get('total_callbacks', 0)}")
+
+
+def demonstrate_container_evolution():
+    """Demonstruje ewolucję kontenera przez błędy i naprawy"""
+    
+    print("\n🦋 === Ewolucja Kontenera ===")
+    
+    with create_astral_app() as engine:
+        
+        # Kontener który będzie ewoluował
+        evolving_container = engine.create_astral_container({
+            'raw_data': 'messy,data;with:different|separators',
+            'config': {'strict_mode': True}
+        })
+        
+        print(f"📦 Kontener ewolucyjny: {evolving_container.container_id}")
+        
+        # Sekwencja funkcji które wymuszą ewolucję
+        evolution_steps = [
+            ('parse_simple_csv', {'raw_data': {'type': 'str', 'required': True}}),
+            ('handle_multiple_separators', {'raw_data': {'type': 'str', 'required': True}}),
+            ('smart_data_parser', {'raw_data': {'type': 'str', 'required': True}, 'config': {'type': 'dict', 'required': False}}),
+            ('adaptive_parser', {'raw_data': {'type': 'str', 'required': True}})
+        ]
+        
+        print("\n🔄 Kroki ewolucji:")
+        
+        for i, (func_name, params) in enumerate(evolution_steps, 1):
+            print(f"\n   Krok {i}: {func_name}")
+            
+            result = engine.invoke_function_with_container(func_name, evolving_container, params)
+            
+            if result['success']:
+                print(f"      ✅ Sukces na pierwszej próbie")
+            else:
+                print(f"      ❌ Błąd: {result.get('error')}")
+                
+                if result.get('diagnostic_triggered'):
+                    print(f"      🔬 Ewolucja w toku przez diagnostykę...")
+                    time.sleep(1)  # Symulacja czasu analizy
+                    
+                    # Sprawdź historię kontnerów pod kątem ewolucji
+                    evolution_history = [t for t in evolving_container.history 
+                                       if t.transformation and t.transformation.get('fix_applied')]
+                    
+                    if evolution_history:
+                        latest_evolution = evolution_history[-1]
+                        print(f"      🦋 Ewolucja zastosowana: {latest_evolution.transformation.get('fix_type')}")
+                    else:
+                        print(f"      ⏳ Ewolucja jeszcze nie zakończona")
+            
+            # Pokaż stan ewolucji
+            print(f"      📊 Stan: {evolving_container.state.value}")
+            print(f"      🧬 Transformacje: {evolving_container.transformation_count}")
+            print(f"      🔄 Przejścia: {len(evolving_container.history)}")
+        
+        # Finalny stan ewolucji
+        final_history = evolving_container.get_full_history()
+        print(f"\n🎯 Finalna ewolucja kontenera:")
+        print(f"   ⚖️ Stosunek sukces/błąd: {(final_history['statistics']['transformation_count'] - final_history['statistics']['error_count'])}/{final_history['statistics']['error_count']}")
+        print(f"   🧠 Poziom adaptacji: {(final_history['statistics']['validation_count'] / max(len(final_history['history']), 1)):.1%}")
+        
+        # Analiza astry (jeśli dostępna)
+        if hasattr(engine, 'consciousness'):
+            astral_analysis = engine.consciousness.reflect()
+            print(f"   🔮 Analiza Astry:")
+            print(f"      🌊 Harmonia systemu: {astral_analysis['harmony'].get('energy_flow_balance', 'unknown')}")
+            print(f"      🧠 Rekomendacje: {astral_analysis.get('recommendations', [])}") Sukces: {result.get('result', {})}")
             else:
                 # Błąd został zalogowany do kontenera - nie przerywamy
                 print(f"   📝 Błąd zalogowany, kontynuujemy...")
@@ -254,6 +443,7 @@ def main():
     demos = [
         demonstrate_micro_function_flow,
         demonstrate_error_logging_flow,
+        demonstrate_auto_healing_system,
         demonstrate_container_evolution,
         demonstrate_astral_language
     ]

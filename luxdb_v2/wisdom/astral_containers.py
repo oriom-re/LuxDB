@@ -501,9 +501,35 @@ class AstralContainerManager:
                         'container_state': container.state.value
                     }
                 else:
-                    container.transition_to(ContainerState.ERROR, function_name, 
-                                          error_info={'error': result.get('error', 'Unknown error')})
-                    return result
+                    # Błąd w funkcji - uruchom diagnostykę
+                    error_info = {
+                        'error': result.get('error', 'Unknown error'),
+                        'error_type': 'function_execution_error',
+                        'function_name': function_name,
+                        'expected_params': expected_params,
+                        'traceback': result.get('traceback')
+                    }
+                    
+                    # Uruchom diagnostykę błędu
+                    diagnostic_result = self._trigger_error_diagnostics(container, error_info)
+                    
+                    # Jeśli diagnostyka się uruchomiła, oznacz kontener jako oczekujący na poprawkę
+                    if diagnostic_result.get('diagnostic_triggered'):
+                        container.transition_to(ContainerState.RETURNED, function_name, {
+                            'awaiting_diagnostic_fix': True,
+                            'diagnostic_event_id': diagnostic_result.get('diagnostic_event')
+                        })
+                        
+                        return {
+                            'success': False,
+                            'error': result.get('error', 'Unknown error'),
+                            'diagnostic_triggered': True,
+                            'container_id': container.container_id,
+                            'message': 'Błąd przesłany do diagnostyki - oczekiwanie na poprawkę'
+                        }
+                    else:
+                        container.transition_to(ContainerState.ERROR, function_name, error_info=error_info)
+                        return result
             else:
                 return {
                     'success': False,
@@ -575,6 +601,99 @@ class AstralContainerManager:
                 'success': False,
                 'error': generation_result.get('error', 'Nie można wygenerować funkcji'),
                 'message': f'Nie udało się wygenerować funkcji {function_name}'
+            }
+    
+    def _trigger_error_diagnostics(self, container: AstralDataContainer, error_info: Dict[str, Any]) -> Dict[str, Any]:
+        """Uruchamia diagnostykę błędu przez system callbacków"""
+        
+        # Dodaj błąd do logów kontenera
+        container.transition_to(ContainerState.ERROR, error_info.get('function_name', 'unknown'), error_info=error_info)
+        
+        # Uruchom event diagnostyczny przez callback system
+        if hasattr(self.engine, 'callback_flow'):
+            diagnostic_data = {
+                'container_id': container.container_id,
+                'error_type': error_info.get('error_type', 'unknown'),
+                'error_message': error_info.get('error', 'Unknown error'),
+                'function_name': error_info.get('function_name'),
+                'container_data': container.current_data,
+                'container_history': container.get_history_summary(),
+                'stacktrace': error_info.get('traceback'),
+                'expected_params': error_info.get('expected_params'),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            # Emituj event diagnostyczny asynchronicznie
+            self.engine.callback_flow.emit_event_async(
+                'diagnostics', 
+                'container_error', 
+                diagnostic_data, 
+                source='container_manager'
+            )
+            
+            self.engine.logger.info(f"🔬 Uruchomiono diagnostykę błędu dla kontenera {container.container_id}")
+            
+            return {
+                'diagnostic_triggered': True,
+                'diagnostic_event': 'container_error',
+                'container_id': container.container_id
+            }
+        else:
+            return {
+                'diagnostic_triggered': False,
+                'error': 'Callback Flow nie jest dostępny'
+            }
+    
+    def _apply_dynamic_function_fix(self, function_name: str, container: AstralDataContainer, 
+                                   fix_suggestion: Dict[str, Any]) -> Dict[str, Any]:
+        """Aplikuje dynamiczną poprawkę funkcji na podstawie sugestii diagnostyki"""
+        
+        try:
+            if not hasattr(self.engine, 'function_generator'):
+                return {
+                    'success': False,
+                    'error': 'Function Generator nie jest dostępny dla dynamicznych poprawek'
+                }
+            
+            # Przygotuj specyfikację poprawionej funkcji
+            fixed_function_spec = {
+                'name': function_name,
+                'description': fix_suggestion.get('description', f'Poprawiona funkcja {function_name}'),
+                'parameters': fix_suggestion.get('parameters', []),
+                'error_handling': fix_suggestion.get('error_handling', {}),
+                'validation_rules': fix_suggestion.get('validation_rules', {}),
+                'container_adaptations': fix_suggestion.get('container_adaptations', [])
+            }
+            
+            # Generuj poprawioną funkcję
+            fix_result = self.engine.function_generator.update_function(function_name, fixed_function_spec)
+            
+            if fix_result['success']:
+                # Zapisz informację o poprawce w kontenerze
+                container.transition_to(ContainerState.TRANSFORMED, function_name, {
+                    'fix_applied': True,
+                    'fix_type': fix_suggestion.get('fix_type', 'dynamic_adaptation'),
+                    'original_error': container.history[-2].error_info if len(container.history) >= 2 else None,
+                    'fix_suggestion': fix_suggestion
+                })
+                
+                self.engine.logger.info(f"🔧 Zastosowano dynamiczną poprawkę funkcji '{function_name}' dla kontenera {container.container_id}")
+                
+                return {
+                    'success': True,
+                    'message': f'Funkcja {function_name} została dynamicznie poprawiona',
+                    'fix_details': fix_suggestion
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'Nie udało się zastosować poprawki: {fix_result.get("error", "Unknown error")}'
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Błąd podczas aplikowania poprawki: {str(e)}'
             }
     
     def _attempt_auto_correction(self, container: AstralDataContainer, validation: ValidationResult) -> bool:
