@@ -60,14 +60,106 @@ class RestFlow:
 
         @self.app.route('/astral/meditate', methods=['POST'])
         def meditate():
-            """Przeprowadza medytację systemu"""
+            """Medytacja systemu"""
             try:
-                meditation_result = self.engine.meditate()
+                result = self.engine.meditate()
                 self.request_count += 1
                 return jsonify({
                     'success': True,
-                    'meditation': meditation_result
+                    'meditation': result
                 })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        # Endpointy dla kontenerów astralnych
+        @self.app.route('/astral/containers', methods=['POST'])
+        def create_container():
+            """Tworzy nowy kontener astralny"""
+            try:
+                data = request.get_json() or {}
+                initial_data = data.get('data', {})
+                origin_function = data.get('origin_function')
+                purpose = data.get('purpose', 'api_call')
+
+                container = self.engine.create_astral_container(initial_data, origin_function, purpose)
+
+                if container:
+                    self.request_count += 1
+                    return jsonify({
+                        'success': True,
+                        'container_id': container.container_id,
+                        'container_summary': container.get_history_summary()
+                    })
+                else:
+                    return jsonify({'success': False, 'error': 'Nie można utworzyć kontenera'}), 500
+
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/astral/containers/<container_id>', methods=['GET'])
+        def get_container(container_id):
+            """Pobiera informacje o kontenerze"""
+            try:
+                container = self.engine.get_astral_container(container_id)
+
+                if container:
+                    self.request_count += 1
+                    return jsonify({
+                        'success': True,
+                        'container': container.get_full_history()
+                    })
+                else:
+                    return jsonify({'success': False, 'error': 'Kontener nie znaleziony'}), 404
+
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/astral/containers', methods=['GET'])
+        def list_containers():
+            """Listuje aktywne kontenery"""
+            try:
+                containers = self.engine.list_astral_containers()
+                self.request_count += 1
+                return jsonify({
+                    'success': True,
+                    'containers': containers,
+                    'statistics': self.engine.get_container_statistics()
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/astral/containers/<container_id>/invoke/<function_name>', methods=['POST'])
+        def invoke_function_with_container(container_id, function_name):
+            """Wywołuje funkcję z kontenerem astralnym"""
+            try:
+                data = request.get_json() or {}
+                expected_params = data.get('expected_params')
+
+                container = self.engine.get_astral_container(container_id)
+                if not container:
+                    return jsonify({'success': False, 'error': 'Kontener nie znaleziony'}), 404
+
+                result = self.engine.invoke_function_with_container(function_name, container, expected_params)
+                self.request_count += 1
+
+                return jsonify(result)
+
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/astral/invoke/<function_name>', methods=['POST'])
+        def smart_invoke_function(function_name):
+            """Inteligentne wywołanie funkcji z automatycznym kontenerem"""
+            try:
+                data = request.get_json() or {}
+                function_data = data.get('data', {})
+                expected_params = data.get('expected_params')
+
+                result = self.engine.invoke_function_with_container(function_name, function_data, expected_params)
+                self.request_count += 1
+
+                return jsonify(result)
+
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
 

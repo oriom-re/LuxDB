@@ -109,6 +109,9 @@ class AstralEngine:
         
         # System generatywny funkcji
         self.function_generator = None
+        
+        # Zarządca kontenerów astralnych
+        self.container_manager = None
 
         # Wątki medytacyjne
         self._meditation_thread: Optional[threading.Thread] = None
@@ -257,6 +260,15 @@ class AstralEngine:
         except ImportError:
             self.logger.warning("⚠️ Moduł FunctionGenerator nie jest dostępny")
             self.function_generator = None
+        
+        # Astral Container Manager
+        try:
+            from ..wisdom.astral_containers import AstralContainerManager
+            self.container_manager = AstralContainerManager(self)
+            self.logger.info("🔮 Astral Container Manager aktywowany")
+        except ImportError:
+            self.logger.warning("⚠️ Moduł AstralContainerManager nie jest dostępny")
+            self.container_manager = None
         
         # GPT Flow
         if 'gpt' in self.config.flows:
@@ -579,7 +591,8 @@ class AstralEngine:
                 'gpt': self.gpt_flow.get_status() if self.gpt_flow and hasattr(self.gpt_flow, 'get_status') else None
             },
             'ai_systems': {
-                'function_generator': self.function_generator.get_status() if self.function_generator and hasattr(self.function_generator, 'get_status') else None
+                'function_generator': self.function_generator.get_status() if self.function_generator and hasattr(self.function_generator, 'get_status') else None,
+                'container_manager': self.container_manager.get_container_statistics() if self.container_manager else None
             },
             'harmony': {
                 'score': self.state.harmony_score,
@@ -621,6 +634,73 @@ class AstralEngine:
             return {'status': 'module_not_available'}
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
+
+    def create_astral_container(self, initial_data: Dict[str, Any] = None, 
+                               origin_function: str = None, purpose: str = None) -> Any:
+        """
+        Tworzy nowy kontener astralny dla przepływu danych między funkcjami
+        
+        Args:
+            initial_data: Początkowe dane kontenera
+            origin_function: Funkcja pochodzenia
+            purpose: Cel kontenera
+            
+        Returns:
+            Nowy kontener astralny
+        """
+        if self.container_manager:
+            return self.container_manager.create_container(initial_data, origin_function, purpose)
+        else:
+            self.logger.error("❌ Container Manager nie jest dostępny")
+            return None
+    
+    def invoke_function_with_container(self, function_name: str, container_or_data: Any,
+                                     expected_params: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Wywołuje funkcję z kontenerem astralnym
+        
+        Args:
+            function_name: Nazwa funkcji do wywołania
+            container_or_data: Kontener astralny lub dane
+            expected_params: Oczekiwane parametry funkcji
+            
+        Returns:
+            Wynik wywołania funkcji z informacjami o kontenerze
+        """
+        if not self.container_manager:
+            return {
+                'success': False,
+                'error': 'Container Manager nie jest dostępny'
+            }
+        
+        # Jeśli przekazano dane zamiast kontenera, utwórz kontener
+        if not hasattr(container_or_data, 'container_id'):
+            if isinstance(container_or_data, dict):
+                container = self.container_manager.create_container(container_or_data, 'system', 'auto_invoke')
+            else:
+                container = self.container_manager.create_container({'data': container_or_data}, 'system', 'auto_invoke')
+        else:
+            container = container_or_data
+        
+        return self.container_manager.invoke_function_with_container(function_name, container, expected_params)
+    
+    def get_astral_container(self, container_id: str) -> Any:
+        """Pobiera kontener astralny po ID"""
+        if self.container_manager:
+            return self.container_manager.get_container(container_id)
+        return None
+    
+    def list_astral_containers(self) -> List[Dict[str, Any]]:
+        """Zwraca listę aktywnych kontenerów astralnych"""
+        if self.container_manager:
+            return self.container_manager.list_active_containers()
+        return []
+    
+    def get_container_statistics(self) -> Dict[str, Any]:
+        """Zwraca statystyki kontenerów astralnych"""
+        if self.container_manager:
+            return self.container_manager.get_container_statistics()
+        return {'message': 'Container Manager nie jest dostępny'}
 
     def get_genetic_insights(self) -> Dict[str, Any]:
         """Zwraca głębokie insights genetyczne systemu"""
