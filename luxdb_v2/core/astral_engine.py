@@ -278,8 +278,8 @@ class AstralEngine:
                 if self.gpt_flow.start():
                     self.state.active_flows += 1
                     self.logger.info("🤖 Przepływ GPT aktywowany")
-            except ImportError:
-                self.logger.warning("⚠️ Moduł GPTFlow nie jest dostępny")
+            except Exception as ImportError:
+                self.logger.warning(f"⚠️ Moduł GPTFlow nie jest dostępny {ImportError}")
 
     def _start_meditation_cycle(self) -> None:
         """Uruchamia cykl medytacyjny systemu"""

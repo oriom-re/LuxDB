@@ -642,19 +642,19 @@ class FunctionGenerator:
                     'message': f'Funkcja {spec.name} już istnieje',
                     'existing_function': self.function_cache[spec.name].get_info()
                 }
-            
+            print("🛠️ Specyfikacja funkcji utworzona pomyślnie")
             # Wygeneruj kod
             if spec.code_template:
                 source_code = spec.code_template
             else:
                 source_code = self.code_engine.generate_code(spec)
-            
+            print("🛠️ Kod funkcji wygenerowany pomyślnie")
             # Skompiluj funkcję
             compiled_func = self._compile_function(source_code, spec.name)
-            
+            print("🛠️ Funkcja skompilowana pomyślnie")
             # Utwórz obiekt funkcji
             generated_func = GeneratedFunction(spec, source_code, compiled_func)
-            
+            print("🛠️ Funkcja utworzona pomyślnie")
             # Zapisz w bazie i cache
             function_id = self.function_db.save_function(generated_func)
             self.function_cache[spec.name] = generated_func

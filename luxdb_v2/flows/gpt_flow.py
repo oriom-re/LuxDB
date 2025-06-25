@@ -392,6 +392,8 @@ class GPTFlow:
             openai.api_key = self.api_key
             self.engine.logger.info("🤖 GPT Flow zainicjalizowany z OpenAI API")
         else:
+            
+
             self.engine.logger.warning("⚠️ GPT Flow: Brak klucza OpenAI API")
     
     def _get_api_key_from_env(self) -> Optional[str]:
