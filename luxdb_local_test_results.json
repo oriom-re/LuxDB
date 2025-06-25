@@ -1,0 +1,223 @@
+{
+  "rest_api": {
+    "astral_status": {
+      "success": true,
+      "status_code": 200,
+      "data": {
+        "flow_info": {
+          "requests_served": 6,
+          "uptime": "2:10:56.853360"
+        },
+        "status": {
+          "astral_engine": {
+            "consciousness_level": "development",
+            "genetic_analysis": {
+              "argument_lineages": 0,
+              "function_analytics": {},
+              "status": "active",
+              "total_tracked_functions": 0
+            },
+            "running": true,
+            "uptime": "2:10:57.136567",
+            "version": "2.0.0"
+          },
+          "flows": {
+            "callback": null,
+            "intention": {
+              "active_channels": 0,
+              "channels_summary": [],
+              "failed_materializations": 0,
+              "materialization_queue_size": 0,
+              "running": true,
+              "success_rate": 0.0,
+              "successful_materializations": 0,
+              "total_interactions": 0,
+              "type": "intention_flow",
+              "uptime": "2:10:57.129371"
+            },
+            "rest": {
+              "endpoints_count": 12,
+              "host": "0.0.0.0",
+              "port": 5000,
+              "requests_served": 5,
+              "running": true,
+              "type": "rest_flow",
+              "uptime": "2:10:56.853328"
+            },
+            "websocket": {
+              "available_commands": [
+                "get_status",
+                "meditate",
+                "subscribe_realm",
+                "manifest_being",
+                "contemplate"
+              ],
+              "connected_clients": 0,
+              "host": "0.0.0.0",
+              "messages_processed": 0,
+              "port": 5001,
+              "running": true,
+              "type": "websocket_flow",
+              "uptime": "2:10:55.852565"
+            }
+          },
+          "harmony": {
+            "last_check": "2025-06-25T17:15:39.776345",
+            "score": 79.63
+          },
+          "realms": {
+            "primary": {
+              "active": true,
+              "being_count": 0,
+              "connected": true,
+              "connection_string": "sqlite://db/primary.db",
+              "created_at": "2025-06-25T15:05:05.050918",
+              "healthy": true,
+              "name": "primary",
+              "type": "SQLiteRealm"
+            }
+          },
+          "system_state": {
+            "active_flows": 3,
+            "active_realms": 1,
+            "awakened_at": "2025-06-25T15:05:05.050905",
+            "energy_level": 100.0,
+            "harmony_score": 79.63,
+            "is_transcended": false,
+            "last_meditation": "2025-06-25T17:15:39.776345",
+            "total_manifestations": 0,
+            "uptime": "2:10:57.136581"
+          }
+        },
+        "success": true
+      },
+      "error": null
+    },
+    "meditation": {
+      "success": true,
+      "status_code": 200,
+      "data": {
+        "meditation": {
+          "duration": 0.20113348960876465,
+          "harmony_score": 81.28,
+          "insights": {
+            "harmony": {
+              "energy_flow_balance": "harmonious",
+              "flow_efficiency": "efficient",
+              "realm_health": "excellent"
+            },
+            "recommendations": [
+              "System działa harmonijnie ✨"
+            ],
+            "system": {
+              "active_realms": 1,
+              "cpu_usage": 55.8,
+              "memory_usage": {
+                "available_mb": 35980.25,
+                "percent": 44.1,
+                "used_mb": 27603.14453125
+              },
+              "total_connections": 0,
+              "uptime_formatted": "02:10:57",
+              "uptime_seconds": 7857.139199256897
+            },
+            "timestamp": "2025-06-25T17:16:02.290600"
+          },
+          "system_state": {
+            "active_flows": 3,
+            "active_realms": 1,
+            "awakened_at": "2025-06-25T15:05:05.050905",
+            "energy_level": 100.0,
+            "harmony_score": 81.28,
+            "is_transcended": false,
+            "last_meditation": "2025-06-25T17:16:02.290611",
+            "total_manifestations": 0,
+            "uptime": "2:10:57.340308"
+          },
+          "timestamp": "2025-06-25T17:16:02.391205"
+        },
+        "success": true
+      },
+      "error": null
+    },
+    "harmonize": {
+      "success": true,
+      "status_code": 200,
+      "data": {
+        "harmony": {
+          "actions_taken": [],
+          "duration": 0.3014190196990967,
+          "harmony_score_after": 81.33,
+          "harmony_score_before": 81.47,
+          "improvement": -0.14000000000000057,
+          "recommendations": [],
+          "timestamp": "2025-06-25T17:16:02.394643"
+        },
+        "success": true
+      },
+      "error": null
+    },
+    "list_realms": {
+      "success": true,
+      "status_code": 200,
+      "data": {
+        "realms": {
+          "primary": {
+            "active": true,
+            "being_count": 0,
+            "connected": true,
+            "connection_string": "sqlite://db/primary.db",
+            "created_at": "2025-06-25T15:05:05.050918",
+            "healthy": true,
+            "name": "primary",
+            "type": "SQLiteRealm"
+          }
+        },
+        "success": true
+      },
+      "error": null
+    },
+    "realm_status": {
+      "success": true,
+      "status_code": 200,
+      "data": {
+        "realm": {
+          "active": true,
+          "being_count": 0,
+          "connected": true,
+          "connection_string": "sqlite://db/primary.db",
+          "created_at": "2025-06-25T15:05:05.050918",
+          "healthy": true,
+          "name": "primary",
+          "type": "SQLiteRealm"
+        },
+        "success": true
+      },
+      "error": null
+    },
+    "manifest_being": {
+      "success": false,
+      "status_code": 400,
+      "data": null,
+      "error": "{\"error\":\"Wymiar nie obs\\u0142uguje manifestacji byt\\u00f3w\",\"success\":false}\n"
+    },
+    "list_beings": {
+      "success": false,
+      "status_code": 400,
+      "data": null,
+      "error": "{\"error\":\"Wymiar nie obs\\u0142uguje byt\\u00f3w\",\"success\":false}\n"
+    },
+    "contemplate": {
+      "success": false,
+      "status_code": 400,
+      "data": null,
+      "error": "{\"error\":\"Wymiar nie obs\\u0142uguje kontemplacji\",\"success\":false}\n"
+    }
+  },
+  "websocket": {
+    "connection": false
+  },
+  "test_duration": "0:00:00.526744",
+  "start_time": "2025-06-25T17:16:02.183781",
+  "end_time": "2025-06-25T17:16:02.710525"
+}

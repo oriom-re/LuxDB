@@ -16,7 +16,7 @@ run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run LuxDB v2 Service"
+runButton = "Run LuxCore Service"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
