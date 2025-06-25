@@ -51,20 +51,31 @@ from .realms.sqlite_realm import SQLiteRealm
 from .realms.memory_realm import MemoryRealm
 
 try:
+    from .realms.intention_realm import IntentionRealm
+except ImportError:
+    IntentionRealm = None
+
+try:
     from .beings.base_being import BaseBeing
     from .beings.manifestation import Manifestation
+    from .beings.intention_being import IntentionBeing, IntentionState, IntentionPriority
 except ImportError:
     BaseBeing = None
     Manifestation = None
+    IntentionBeing = None
+    IntentionState = None
+    IntentionPriority = None
 
 try:
     from .flows.rest_flow import RestFlow
     from .flows.ws_flow import WebSocketFlow
     from .flows.callback_flow import CallbackFlow
+    from .flows.intention_flow import IntentionFlow
 except ImportError:
     RestFlow = None
     WebSocketFlow = None
     CallbackFlow = None
+    IntentionFlow = None
 
 try:
     from .wisdom.sacred_queries import SacredQueries
@@ -140,11 +151,16 @@ __all__ = [
     'BaseRealm',
     'SQLiteRealm', 
     'MemoryRealm',
+    'IntentionRealm',
     'BaseBeing',
     'Manifestation',
+    'IntentionBeing',
+    'IntentionState',
+    'IntentionPriority',
     'RestFlow',
     'WebSocketFlow',
     'CallbackFlow',
+    'IntentionFlow',
     'SacredQueries',
     'DivineMigrations',
     'AstralLogger',

@@ -188,6 +188,9 @@ class AstralEngine:
             raise ValueError(f"PostgreSQL realm nie jest jeszcze zaimplementowany")
         elif config.startswith('memory://'):
             return MemoryRealm(name, config, self)
+        elif config.startswith('intention://'):
+            from ..realms.intention_realm import IntentionRealm
+            return IntentionRealm(name, config, self)
         else:
             raise ValueError(f"Nieznany typ wymiaru: {config}")
 
@@ -224,6 +227,17 @@ class AstralEngine:
                 self.logger.info("🔄 Przepływ Callback aktywowany")
             except ImportError:
                 self.logger.warning("⚠️ Moduł CallbackFlow nie jest dostępny")
+
+        # Intention Flow - system intencji
+        try:
+            from ..flows.intention_flow import IntentionFlow
+            self.intention_flow = IntentionFlow(self)
+            self.intention_flow.initialize()
+            self.state.active_flows += 1
+            self.logger.info("🎯 Przepływ Intencji aktywowany")
+        except ImportError:
+            self.logger.warning("⚠️ Moduł IntentionFlow nie jest dostępny")
+            self.intention_flow = None
 
     def _start_meditation_cycle(self) -> None:
         """Uruchamia cykl medytacyjny systemu"""
@@ -357,6 +371,107 @@ class AstralEngine:
 
         self.logger.info("🌊 Wszystkie przepływy uruchomione")
 
+    def manifest_intention(self, intention_data: Dict[str, Any], realm_name: str = "intentions") -> Any:
+        """
+        Manifestuje nową intencję w systemie
+        
+        Args:
+            intention_data: Dane intencji z warstwami duchową i materialną
+            realm_name: Nazwa wymiaru dla intencji
+            
+        Returns:
+            Zmanifestowana intencja
+        """
+        try:
+            # Pobierz lub utwórz wymiar intencji
+            if realm_name not in self.realms:
+                self.create_realm(realm_name, "intention://memory")
+            
+            realm = self.get_realm(realm_name)
+            intention = realm.manifest(intention_data)
+            
+            self.logger.info(f"🎯 Intencja '{intention.essence.name}' zmanifestowana w wymiarze '{realm_name}'")
+            return intention
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd manifestacji intencji: {e}")
+            raise
+    
+    def interact_with_intention(self, intention_id: str, interaction_type: str, data: Dict[str, Any], user_id: str = "system", realm_name: str = "intentions") -> Dict[str, Any]:
+        """
+        Interakcja z intencją
+        
+        Args:
+            intention_id: ID intencji
+            interaction_type: Typ interakcji (wzmocnij, korektuj, realizuj, przypisz_opiekuna)
+            data: Dane interakcji
+            user_id: ID użytkownika
+            realm_name: Nazwa wymiaru
+            
+        Returns:
+            Wynik interakcji
+        """
+        try:
+            if self.intention_flow:
+                return self.intention_flow.process_interaction(intention_id, interaction_type, data, user_id)
+            else:
+                # Fallback - bezpośrednia interakcja przez realm
+                realm = self.get_realm(realm_name)
+                if hasattr(realm, 'interact_with_intention'):
+                    return realm.interact_with_intention(intention_id, interaction_type, data, user_id)
+                else:
+                    return {'success': False, 'message': 'Realm nie obsługuje interakcji z intencjami'}
+                    
+        except Exception as e:
+            self.logger.error(f"❌ Błąd interakcji z intencją: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def get_intention_status(self, intention_id: str, realm_name: str = "intentions") -> Dict[str, Any]:
+        """
+        Pobiera status intencji
+        
+        Args:
+            intention_id: ID intencji
+            realm_name: Nazwa wymiaru
+            
+        Returns:
+            Status intencji
+        """
+        try:
+            realm = self.get_realm(realm_name)
+            if hasattr(realm, 'get_intention_by_id'):
+                intention = realm.get_intention_by_id(intention_id)
+                if intention:
+                    return intention.get_status()
+                else:
+                    return {'error': 'Intencja nie znaleziona'}
+            else:
+                return {'error': 'Realm nie obsługuje intencji'}
+                
+        except Exception as e:
+            self.logger.error(f"❌ Błąd pobierania statusu intencji: {e}")
+            return {'error': str(e)}
+    
+    def contemplate_intentions(self, conditions: Dict[str, Any], realm_name: str = "intentions") -> List[Dict[str, Any]]:
+        """
+        Kontempluje intencje według warunków
+        
+        Args:
+            conditions: Warunki wyszukiwania
+            realm_name: Nazwa wymiaru
+            
+        Returns:
+            Lista intencji
+        """
+        try:
+            realm = self.get_realm(realm_name)
+            intentions = realm.contemplate("find_intentions", **conditions)
+            return [intention.get_status() for intention in intentions]
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd kontemplacji intencji: {e}")
+            return []
+
     def transcend(self) -> None:
         """
         Gracefully zamyka system astralny
@@ -374,6 +489,8 @@ class AstralEngine:
             self.ws_flow.stop()
         if self.callback_flow and hasattr(self.callback_flow, 'stop'):
             self.callback_flow.stop()
+        if self.intention_flow and hasattr(self.intention_flow, 'stop'):
+            self.intention_flow.stop()
 
         # Zamknij wymiary
         for realm in self.realms.values():
@@ -425,7 +542,8 @@ class AstralEngine:
             'flows': {
                 'rest': self.rest_flow.get_status() if self.rest_flow and hasattr(self.rest_flow, 'get_status') else None,
                 'websocket': self.ws_flow.get_status() if self.ws_flow and hasattr(self.ws_flow, 'get_status') else None,
-                'callback': self.callback_flow.get_status() if self.callback_flow and hasattr(self.callback_flow, 'get_status') else None
+                'callback': self.callback_flow.get_status() if self.callback_flow and hasattr(self.callback_flow, 'get_status') else None,
+                'intention': self.intention_flow.get_status() if self.intention_flow and hasattr(self.intention_flow, 'get_status') else None
             },
             'harmony': {
                 'score': self.state.harmony_score,
