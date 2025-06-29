@@ -346,8 +346,8 @@ def get_status(self) -> Dict[str, Any]
     'system_state': {
         'awakened_at': '2024-01-01T10:00:00',
         'energy_level': 100.0,
-        'active_realms': 3,
-        'active_flows': 3,
+        'active_realms': 2,
+        'active_flows': 2,
         'total_manifestations': 1250,
         'harmony_score': 95.5
     },
