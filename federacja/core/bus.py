@@ -79,6 +79,15 @@ class FederationBus:
                 self.subscribers[module_name].remove(callback)
                 self.logger.debug(f"❌ Module '{module_name}' unsubscribed from bus")
     
+    def register_module(self, module_name: str, module_instance: Any):
+        """Rejestruje moduł w bus'ie"""
+        # Automatycznie subskrybuj moduł jeśli ma metodę handle_message
+        if hasattr(module_instance, 'handle_message'):
+            self.subscribe(module_name, module_instance.handle_message)
+        
+        self.logger.info(f"📋 Module '{module_name}' registered in bus")
+        return True
+    
     async def send(self, message: FederationMessage):
         """Wysyła wiadomość"""
         self.stats['messages_sent'] += 1
