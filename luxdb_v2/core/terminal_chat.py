@@ -15,7 +15,7 @@ from typing import Dict, Any, List
 
 # Import LuxBus
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from core.luxbus_core import LuxBusCore, LuxPacket, PacketType
+from luxbus_core import LuxBusCore, LuxPacket, PacketType
 
 
 class LuxTerminalChat:

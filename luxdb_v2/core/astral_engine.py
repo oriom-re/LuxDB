@@ -752,4 +752,3 @@ class AstralEngine:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit"""
         self.transcend()
-</replit_final_file>
