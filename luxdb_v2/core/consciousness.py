@@ -104,6 +104,10 @@ class ConsciousnessV3:
             'anomalies_found': 0
         }
         
+        # Flagi ochrony przed rekursją
+        self._reflecting = False
+        self._sending_reflection_event = False
+        
         # Inicjalizuj podstawowe sensory
         self._register_core_sensors()
         self._register_core_analyzers()
@@ -122,9 +126,14 @@ class ConsciousnessV3:
             response_data = None
             
             if command == 'reflect':
-                # Wykonaj refleksję
-                reflection = self.reflect()
-                response_data = reflection
+                # Wykonaj refleksję - unikaj rekursji
+                try:
+                    reflection = self._internal_reflect()
+                    response_data = reflection
+                except RecursionError:
+                    response_data = {'error': 'Recursion detected in consciousness reflection'}
+                except Exception as e:
+                    response_data = {'error': f'Consciousness reflection error: {str(e)}'}
                 
             elif command == 'deep_reflect':
                 # Głęboka refleksja z analizą wzorców
@@ -407,6 +416,26 @@ class ConsciousnessV3:
         Returns:
             Słownik z insights o systemie
         """
+        # Sprawdź czy nie ma już refleksji w toku
+        if hasattr(self, '_reflecting') and self._reflecting:
+            return {'error': 'Reflection already in progress', 'timestamp': datetime.now().isoformat()}
+        
+        return self._internal_reflect()
+    
+    def _internal_reflect(self) -> Dict[str, Any]:
+        """
+        Wewnętrzna refleksja - bez sprawdzania rekursji
+        """
+        self._reflecting = True
+        try:
+            return self._perform_reflection()
+        finally:
+            self._reflecting = False
+    
+    def _perform_reflection(self) -> Dict[str, Any]:
+        """
+        Wykonuje właściwą refleksję
+        """
         reflection_start = time.time()
         
         # Zbierz dane ze wszystkich sensorów
@@ -474,14 +503,18 @@ class ConsciousnessV3:
         if len(self.observations) > 100:
             self.observations = self.observations[-100:]
         
-        # Wyślij event o refleksji przez LuxBus
-        if self.luxbus:
-            self.luxbus.send_event("consciousness_reflection", {
-                'consciousness_id': self.consciousness_id,
-                'awareness_level': self.awareness_level,
-                'insights_count': len(new_insights),
-                'critical_insights': [i.to_dict() for i in new_insights if i.priority == 'critical']
-            })
+        # Wyślij event o refleksji przez LuxBus - unikaj rekursji
+        if self.luxbus and not hasattr(self, '_sending_reflection_event'):
+            self._sending_reflection_event = True
+            try:
+                self.luxbus.send_event("consciousness_reflection", {
+                    'consciousness_id': self.consciousness_id,
+                    'awareness_level': self.awareness_level,
+                    'insights_count': len(new_insights),
+                    'critical_insights': [i.to_dict() for i in new_insights if i.priority == 'critical']
+                })
+            finally:
+                self._sending_reflection_event = False
         
         return reflection_record
     
