@@ -1,0 +1,356 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Federa Chat - Interfejs Webowy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .message.user {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .message.federa {
+            background: #e9ecef;
+            color: #333;
+            margin-right: auto;
+            border-left: 4px solid #667eea;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .message-data {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .federa .message-data {
+            background: rgba(0,0,0,0.05);
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+        
+        .chat-input button {
+            margin-left: 10px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .chat-input button:hover {
+            transform: scale(1.05);
+        }
+        
+        .quick-commands {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .quick-command {
+            padding: 8px 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .quick-command:hover {
+            background: #5a6268;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .data-item {
+            background: rgba(255,255,255,0.2);
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="status-indicator status-online"></div>
+            🧠 Federa - Inteligentna Koordynatorka Federacji
+        </div>
+        
+        <div class="chat-messages" id="messages">
+            <div class="message federa">
+                <div class="message-content">
+                    Witaj! Jestem Federa - inteligentna koordynatorka systemu federacji. 
+                    Mogę pomóc Ci w zarządzaniu modułami, monitorowaniu systemu i diagnostyce problemów.
+                    Użyj przycisków poniżej lub napisz komendę!
+                </div>
+                <div class="message-time" id="welcome-time"></div>
+            </div>
+        </div>
+        
+        <div class="quick-commands">
+            <button class="quick-command" onclick="sendQuickCommand('status')">📊 Status</button>
+            <button class="quick-command" onclick="sendQuickCommand('modules')">📦 Moduły</button>
+            <button class="quick-command" onclick="sendQuickCommand('health')">🏥 Zdrowie</button>
+            <button class="quick-command" onclick="sendQuickCommand('diagnosis')">🔍 Diagnostyka</button>
+            <button class="quick-command" onclick="sendQuickCommand('help')">💡 Pomoc</button>
+            <button class="quick-command" onclick="clearChat()">🧹 Wyczyść</button>
+        </div>
+        
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Napisz komendę lub zadaj pytanie Federze..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Wyślij</button>
+        </div>
+    </div>
+
+    <script>
+        // Ustaw czas powitalny
+        document.getElementById('welcome-time').textContent = new Date().toLocaleString();
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function sendQuickCommand(command) {
+            document.getElementById('messageInput').value = command;
+            sendMessage();
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Dodaj wiadomość użytkownika
+            addMessage('user', message);
+            
+            // Wyczyść input
+            input.value = '';
+            
+            // Wyślij do serwera
+            try {
+                const response = await fetch('/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addMessage('federa', data.response.message, data.response.type, data.response.data);
+                } else {
+                    addMessage('federa', 'Przepraszam, wystąpił błąd: ' + data.error);
+                }
+            } catch (error) {
+                addMessage('federa', 'Błąd komunikacji: ' + error.message);
+            }
+        }
+        
+        function addMessage(sender, content, type = null, data = null) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            let messageContent = `
+                <div class="message-content">${content}</div>
+                <div class="message-time">${new Date().toLocaleString()}</div>
+            `;
+            
+            // Dodaj sformatowane dane jeśli dostępne
+            if (data && Object.keys(data).length > 0) {
+                messageContent += '<div class="message-data">';
+                messageContent += formatData(type, data);
+                messageContent += '</div>';
+            }
+            
+            messageDiv.innerHTML = messageContent;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function formatData(type, data) {
+            let html = '';
+            
+            if (type === 'status') {
+                html += `<div class="data-grid">`;
+                html += `<div class="data-item">📊 Status<br><strong>${data.active ? 'Aktywna' : 'Nieaktywna'}</strong></div>`;
+                html += `<div class="data-item">📦 Moduły<br><strong>${data.modules}</strong></div>`;
+                html += `<div class="data-item">📈 Obciążenie<br><strong>${Math.round(data.system_load * 100)}%</strong></div>`;
+                html += `<div class="data-item">⚠️ Problemy<br><strong>${data.issues}</strong></div>`;
+                html += `</div>`;
+            } else if (type === 'modules') {
+                html += `<div><strong>✅ Aktywne:</strong> ${data.active ? data.active.join(', ') : 'Brak'}</div>`;
+                html += `<div><strong>🧠 Zarządzane:</strong> ${data.managed_by_federa ? data.managed_by_federa.join(', ') : 'Brak'}</div>`;
+                if (data.failed && data.failed.length > 0) {
+                    html += `<div><strong>❌ Nieudane:</strong> ${data.failed.join(', ')}</div>`;
+                }
+            } else if (type === 'health') {
+                html += `<div><strong>🏥 Zdrowie modułów:</strong></div>`;
+                for (const [module, healthy] of Object.entries(data)) {
+                    const status = healthy ? '✅ Zdrowy' : '❌ Wymaga naprawy';
+                    html += `<div>• ${module}: ${status}</div>`;
+                }
+            } else if (type === 'diagnosis') {
+                html += `<div><strong>🎯 Może zarządzać:</strong> ${data.can_manage ? '✅ Tak' : '❌ Nie'}</div>`;
+                if (data.working_components) {
+                    html += `<div><strong>✅ Działające komponenty:</strong> ${data.working_components.join(', ')}</div>`;
+                }
+                if (data.issues) {
+                    html += `<div><strong>⚠️ Problemy:</strong> ${data.issues.join(', ')}</div>`;
+                }
+                if (data.suggestions) {
+                    html += `<div><strong>🔧 Sugestie:</strong></div>`;
+                    data.suggestions.forEach(suggestion => {
+                        html += `<div>• ${suggestion}</div>`;
+                    });
+                }
+            } else if (type === 'help') {
+                html += `<div><strong>💡 Dostępne komendy:</strong></div>`;
+                data.commands.forEach(command => {
+                    html += `<div>• ${command}</div>`;
+                });
+            }
+            
+            return html;
+        }
+        
+        async function clearChat() {
+            if (confirm('Czy na pewno chcesz wyczyścić historię chatu?')) {
+                try {
+                    await fetch('/clear');
+                    document.getElementById('messages').innerHTML = `
+                        <div class="message federa">
+                            <div class="message-content">Historia chatu została wyczyszczona. Jak mogę Ci pomóc?</div>
+                            <div class="message-time">${new Date().toLocaleString()}</div>
+                        </div>
+                    `;
+                } catch (error) {
+                    alert('Błąd czyszczenia chatu: ' + error.message);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
