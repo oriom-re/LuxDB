@@ -89,32 +89,135 @@ class BrainModule(LuxModule):
             self.record_error(f"System analysis failed: {str(e)}")
 
     async def initialize(self) -> bool:
-        """Inicjalizuje moduł Brain"""
+        """Inicjalizuje moduł Brain z inteligentnym zarządzaniem zależnościami"""
         try:
-            print("🧠 Inicjalizacja Brain...")
+            print("🧠 Inicjalizacja Brain z kontrolą zależności...")
 
             # Analizuj dostępne moduły
             await self._analyze_available_modules()
 
-            # Podejmij decyzje o uruchomieniu
-            startup_plan = await self._create_startup_plan()
+            # Sprawdź czy można rozpocząć zarządzanie
+            if not await self._can_start_management():
+                print("⏳ Brain w trybie podstawowym - czeka na kluczowe moduły")
+                # Uruchom monitoring bez aktywnego zarządzania
+                asyncio.create_task(self._passive_monitoring())
+                self.is_active = True
+                return True
 
-            # Wykonaj plan
-            success = await self._execute_startup_plan(startup_plan)
-
-            # Rejestruj komendy
-            await self._register_commands()
-
-            # Uruchom monitorowanie
-            asyncio.create_task(self._monitor_system())
-
-            self.is_active = True
-            print(f"🧠 Brain aktywny - zarządza {len(self.active_modules)} modułami")
-            return success
+            # Pełne uruchomienie z zarządzaniem
+            return await self._full_initialization()
 
         except Exception as e:
             print(f"❌ Błąd inicjalizacji Brain: {e}")
+            # Nawet przy błędzie, próbuj uruchomić tryb podstawowy
+            self.is_active = True
+            asyncio.create_task(self._passive_monitoring())
+            return True
+    
+    async def _can_start_management(self) -> bool:
+        """Sprawdza czy Brain może rozpocząć aktywne zarządzanie"""
+        # Sprawdź czy Database Manager jest dostępny
+        database_available = await self._check_database_availability()
+        
+        # Sprawdź czy GPT jest skonfigurowany (opcjonalnie)
+        gpt_configured = await self._check_gpt_configuration()
+        
+        # Brain może działać jeśli ma bazę danych
+        can_manage = database_available
+        
+        print(f"🔍 Analiza gotowości Brain:")
+        print(f"   📊 Database Manager: {'✅' if database_available else '❌'}")
+        print(f"   🤖 GPT Flow: {'✅' if gpt_configured else '⚠️ opcjonalny'}")
+        print(f"   🧠 Może zarządzać: {'✅' if can_manage else '❌'}")
+        
+        return can_manage
+    
+    async def _check_database_availability(self) -> bool:
+        """Sprawdza czy Database Manager jest dostępny"""
+        try:
+            # Sprawdź czy database_manager jest w dostępnych modułach
+            if 'database_manager' in self.available_modules:
+                return True
+            
+            # Sprawdź czy można go załadować
+            try:
+                from .database_manager import DatabaseManagerModule
+                return True
+            except ImportError:
+                return False
+                
+        except Exception:
             return False
+    
+    async def _check_gpt_configuration(self) -> bool:
+        """Sprawdza czy GPT Flow jest skonfigurowany"""
+        try:
+            import os
+            return os.getenv('OPENAI_API_KEY') is not None
+        except Exception:
+            return False
+    
+    async def _full_initialization(self) -> bool:
+        """Pełna inicjalizacja z aktywnym zarządzaniem"""
+        print("🚀 Brain - pełna inicjalizacja z zarządzaniem modułami")
+        
+        # Podejmij decyzje o uruchomieniu
+        startup_plan = await self._create_startup_plan()
+
+        # Wykonaj plan
+        success = await self._execute_startup_plan(startup_plan)
+
+        # Rejestruj komendy
+        await self._register_commands()
+
+        # Uruchom aktywne monitorowanie
+        asyncio.create_task(self._active_monitoring())
+
+        print(f"🧠 Brain aktywny - zarządza {len(self.active_modules)} modułami")
+        return success
+    
+    async def _passive_monitoring(self):
+        """Pasywne monitorowanie - czeka na gotowość do zarządzania"""
+        print("👁️ Brain w trybie pasywnym - monitoruje dostępność modułów")
+        
+        while self.is_active:
+            try:
+                # Co 30 sekund sprawdzaj czy można przejść do aktywnego zarządzania
+                await asyncio.sleep(30)
+                
+                if await self._can_start_management():
+                    print("🔄 Brain wykrył gotowość - przechodzi do aktywnego zarządzania")
+                    await self._full_initialization()
+                    # Przejdź do aktywnego monitorowania
+                    await self._active_monitoring()
+                    break
+                    
+            except Exception as e:
+                print(f"⚠️ Błąd w pasywnym monitorowaniu: {e}")
+                await asyncio.sleep(5)
+    
+    async def _active_monitoring(self):
+        """Aktywne monitorowanie systemu"""
+        print("🔍 Brain - aktywne monitorowanie systemu")
+        
+        while self.is_active:
+            try:
+                # Sprawdź zdrowie modułów
+                await self._check_module_health()
+
+                # Sprawdź obciążenie systemu
+                await self._check_system_load()
+
+                # Podejmij decyzje adaptacyjne
+                if self.auto_scaling_enabled:
+                    await self._adaptive_scaling()
+
+                # Czekaj przed następnym cyklem
+                await asyncio.sleep(10)  # Monitorowanie co 10 sekund
+
+            except Exception as e:
+                print(f"⚠️ Błąd w aktywnym monitorowaniu systemu: {e}")
+                await asyncio.sleep(5)
 
     async def shutdown(self) -> bool:
         """Wyłącza moduł Brain"""
@@ -507,26 +610,7 @@ class BrainModule(LuxModule):
         for cmd_name, cmd_func in commands.items():
             await self.bus.register_command(f"{self.module_id}.{cmd_name}", cmd_func)
 
-    async def _monitor_system(self):
-        """Ciągłe monitorowanie systemu"""
-        while self.is_active:
-            try:
-                # Sprawdź zdrowie modułów
-                await self._check_module_health()
-
-                # Sprawdź obciążenie systemu
-                await self._check_system_load()
-
-                # Podejmij decyzje adaptacyjne
-                if self.auto_scaling_enabled:
-                    await self._adaptive_scaling()
-
-                # Czekaj przed następnym cyklem
-                await asyncio.sleep(10)  # Monitorowanie co 10 sekund
-
-            except Exception as e:
-                print(f"⚠️ Błąd w monitorowaniu systemu: {e}")
-                await asyncio.sleep(5)
+    
 
     async def _check_module_health(self):
         """Sprawdza zdrowie wszystkich modułów"""

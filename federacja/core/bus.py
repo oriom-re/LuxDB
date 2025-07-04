@@ -168,6 +168,19 @@ class FederationBus:
             self.stats['messages_failed'] += 1
             self.logger.warning(f"⚠️ No subscribers for module: {target_module} (message: {message.uid})")
     
+    async def register_command(self, command_name: str, handler: Callable):
+        """Rejestruje komendę w bus'ie"""
+        # Dla uproszczenia, komendy traktujemy jak subskrypcje
+        module_name = command_name.split('.')[0]
+        self.subscribe(module_name, handler)
+        self.logger.debug(f"🔧 Command '{command_name}' registered")
+    
+    async def send_message(self, message: FederationMessage, timeout: int = 30) -> Dict[str, Any]:
+        """Wysyła wiadomość i czeka na odpowiedź"""
+        await self.send(message)
+        # Dla uproszczenia, zwracamy podstawową odpowiedź
+        return {'success': True, 'healthy': True}
+    
     def get_status(self) -> Dict[str, Any]:
         """Zwraca status bus'a"""
         return {

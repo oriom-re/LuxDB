@@ -1,75 +1,56 @@
 modules:
-  # System modules
   brain:
     enabled: true
-    class: "BrainModule"
+    class: BrainModule
+    path: modules/brain.py
+    auto_scaling: true
+    intelligent_routing: true
     dependencies: []
-    config:
-      model: "basic"
 
   database_manager:
-    enabled: true
-    class: "DatabaseManagerModule"  
+    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
+    class: DatabaseManagerModule
+    path: modules/database_manager.py
     dependencies: []
-    config:
-      default_realm: "sqlite"
 
   realm_sqlite:
-    enabled: true
-    class: "RealmSqliteModule"
-    dependencies: ["database_manager"]
-    config:
-      database_path: "db/federation.db"
+    enabled: false  # Tymczasowo wyłączony - zależy od database_manager
+    class: RealmSqliteModule  
+    path: modules/realm_sqlite.py
+    dependencies: [database_manager]
 
   realm_memory:
-    enabled: true
-    class: "RealmMemoryModule" 
-    dependencies: ["database_manager"]
-    config:
-      max_memory: "100MB"
+    enabled: false  # Tymczasowo wyłączony - zależy od database_manager
+    class: RealmMemoryModule
+    path: modules/realm_memory.py
+    dependencies: [database_manager]
 
-  # LuxDB v2 ported modules
   consciousness:
-    enabled: true
-    class: "ConsciousnessModule"
-    dependencies: ["brain"]
-    config:
-      reflection_interval: 60
+    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
+    class: ConsciousnessModule
+    path: modules/consciousness.py
+    dependencies: [brain]
 
   harmony:
-    enabled: true
-    class: "HarmonyModule"
-    dependencies: ["consciousness"]
-    config:
-      harmonization_interval: 30
+    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
+    class: HarmonyModule
+    path: modules/harmony.py
+    dependencies: [consciousness]
 
   astral_containers:
-    enabled: true
-    class: "AstralContainersModule"
-    dependencies: []
-    config:
-      max_active_containers: 100
+    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
+    class: AstralContainersModule
+    path: modules/astral_containers.py
+    dependencies: [database_manager]
 
   websocket_flow:
-    enabled: true
-    class: "WebSocketFlowModule"
-    dependencies: []
-    config:
-      host: "0.0.0.0"
-      port: 5001
-
-  # Communication modules
-  rest_api:
-    enabled: false
-    class: "RestApiModule"
-    dependencies: []
-    config:
-      host: "0.0.0.0"
-      port: 5000
+    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
+    class: WebSocketFlowModule
+    path: modules/websocket_flow.py
+    dependencies: [brain]
 
   module_metadata_manager:
     enabled: true
-    class: "ModuleMetadataManager"
+    class: ModuleMetadataManagerModule
+    path: modules/module_metadata_manager.py
     dependencies: []
-    config:
-      metadata_path: "federacja/manifests/module_metadata.yaml"
