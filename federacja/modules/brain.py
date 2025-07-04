@@ -17,14 +17,15 @@ from ..core.lux_module import LuxModule, ModuleType, ModuleVersion, ModuleStabil
 
 class BrainModule(LuxModule):
     """
-    🧠 Brain - Inteligentny Koordynator Federacji
+    🧠 Federa - Inteligentna Koordynatorka Federacji
 
-    Decyduje jakie moduły uruchomić i jak nimi zarządzać
+    Mądra, cierpliwa inteligencja, która decyduje jakie moduły uruchomić
+    i jak nimi zarządzać. Federa to serce i umysł całej federacji.
     """
 
     def __init__(self, config: Dict[str, Any], bus: FederationBus):
         super().__init__(
-            name="brain",
+            name="federa",  # Nowa nazwa!
             module_type=ModuleType.INTELLIGENCE,
             version=ModuleVersion(1, 0, 0, ModuleStability.STABLE),
             config=config,
@@ -32,7 +33,8 @@ class BrainModule(LuxModule):
             creator_id="federation_system"
         )
 
-        self.module_id = "brain"
+        self.module_id = "federa"
+        self.personality_name = "Federa"
 
         # Stan systemu
         self.active_modules: Set[str] = set()
@@ -57,14 +59,14 @@ class BrainModule(LuxModule):
         # Słownik modulemetadata manager
         self.metadata_manager = None
 
-        print("🧠 Brain Module initialized")
+        print("🧠 Federa - Inteligentna Koordynatorka Federacji zainicjalizowana")
 
     async def start(self) -> bool:
         """Uruchamia Brain Module"""
         if not await super().start():
             return False
 
-        print("🧠 Brain Module started - analyzing system...")
+        print("🧠 Federa rozpoczyna analizę systemu...")
         return True
 
     async def heartbeat(self) -> bool:
@@ -125,10 +127,10 @@ class BrainModule(LuxModule):
         # Brain może działać jeśli ma bazę danych
         can_manage = database_available
         
-        print(f"🔍 Analiza gotowości Brain:")
+        print(f"🔍 Federa analizuje gotowość systemu:")
         print(f"   📊 Database Manager: {'✅' if database_available else '❌'}")
         print(f"   🤖 GPT Flow: {'✅' if gpt_configured else '⚠️ opcjonalny'}")
-        print(f"   🧠 Może zarządzać: {'✅' if can_manage else '❌'}")
+        print(f"   🧠 Federa może zarządzać: {'✅' if can_manage else '❌'}")
         
         return can_manage
     
@@ -178,7 +180,7 @@ class BrainModule(LuxModule):
     
     async def _passive_monitoring(self):
         """Pasywne monitorowanie - czeka na gotowość do zarządzania"""
-        print("👁️ Brain w trybie pasywnym - monitoruje dostępność modułów")
+        print("👁️ Federa w trybie obserwacji - cierpliwie czeka na gotowość systemu")
         
         while self.is_active:
             try:

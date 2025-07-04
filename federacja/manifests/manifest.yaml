@@ -1,11 +1,12 @@
 modules:
-  brain:
+  federa:
     enabled: true
     class: BrainModule
     path: modules/brain.py
     auto_scaling: true
     intelligent_routing: true
     dependencies: []
+    personality: "Mądra, cierpliwa koordynatorka federacji"
 
   database_manager:
     enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
