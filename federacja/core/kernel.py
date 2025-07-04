@@ -23,7 +23,7 @@ class ModuleStatus:
     status: str  # 'loading', 'active', 'error', 'stopped'
     loaded_at: Optional[datetime] = None
     error: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    meta_data: Dict[str, Any] = None
 
 
 class FederationKernel:
@@ -117,7 +117,7 @@ class FederationKernel:
                 name=module_name,
                 status='active',
                 loaded_at=datetime.now(),
-                metadata=module_config
+                meta_data=module_config
             )
             
             self.logger.info(f"📦 Module loaded: {module_name}")
