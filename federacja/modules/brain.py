@@ -13,7 +13,6 @@ from datetime import datetime
 
 from ..core.bus import FederationBus, FederationMessage
 from ..core.lux_module import LuxModule, ModuleType, ModuleVersion, ModuleStability
-from ..core.logger import FederationLogger
 
 
 class BrainModule(LuxModule):
@@ -21,15 +20,14 @@ class BrainModule(LuxModule):
     Moduł Brain - inteligentny koordynator całej federacji
     """
 
-    def __init__(self, config: Dict[str, Any], bus: FederationBus, logger: FederationLogger):
+    def __init__(self, config: Dict[str, Any], bus: FederationBus):
         super().__init__(
             name="brain",
             module_type=ModuleType.INTELLIGENCE,
             version=ModuleVersion(1, 0, 0, ModuleStability.STABLE),
             config=config,
             bus=bus,
-            creator_id="federation_system",
-            logger=logger
+            creator_id="federation_system"
         )
 
         self.module_id = "brain"
