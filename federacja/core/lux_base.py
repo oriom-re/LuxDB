@@ -6,7 +6,7 @@ Każdy byt ma unikalny identyfikator i zapis genetyczny dla śledzenia
 """
 
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, field
 
