@@ -1,4 +1,3 @@
-# Fixed import statement for AstralConfig in astral_engine.py.
 """
 🔮 AstralEngine - Główny Koordynator Energii Astralnej
 
@@ -107,10 +106,10 @@ class AstralEngine:
         self.ws_flow = None
         self.callback_flow = None
         self.gpt_flow = None
-
+        
         # System generatywny funkcji
         self.function_generator = None
-
+        
         # Zarządca kontenerów astralnych
         self.container_manager = None
 
@@ -157,7 +156,7 @@ class AstralEngine:
 
             # 3. Inicjalizuj przepływy
             self._initialize_flows()
-
+            
             # 4. Inicjalizuj systemy AI
             self._initialize_ai_systems()
 
@@ -249,10 +248,10 @@ class AstralEngine:
         except ImportError:
             self.logger.warning("⚠️ Moduł IntentionFlow nie jest dostępny")
             self.intention_flow = None
-
+    
     def _initialize_ai_systems(self) -> None:
         """Inicjalizuje systemy AI (GPT i Function Generator)"""
-
+        
         # Function Generator
         try:
             from ..wisdom.function_generator import FunctionGenerator
@@ -261,7 +260,7 @@ class AstralEngine:
         except ImportError:
             self.logger.warning("⚠️ Moduł FunctionGenerator nie jest dostępny")
             self.function_generator = None
-
+        
         # Astral Container Manager
         try:
             from ..wisdom.astral_containers import AstralContainerManager
@@ -270,7 +269,7 @@ class AstralEngine:
         except ImportError:
             self.logger.warning("⚠️ Moduł AstralContainerManager nie jest dostępny")
             self.container_manager = None
-
+        
         # GPT Flow
         if 'gpt' in self.config.flows:
             try:
@@ -417,11 +416,11 @@ class AstralEngine:
     def manifest_intention(self, intention_data: Dict[str, Any], realm_name: str = "intentions") -> Any:
         """
         Manifestuje nową intencję w systemie
-
+        
         Args:
             intention_data: Dane intencji z warstwami duchową i materialną
             realm_name: Nazwa wymiaru dla intencji
-
+            
         Returns:
             Zmanifestowana intencja
         """
@@ -429,28 +428,28 @@ class AstralEngine:
             # Pobierz lub utwórz wymiar intencji
             if realm_name not in self.realms:
                 self.create_realm(realm_name, "intention://memory")
-
+            
             realm = self.get_realm(realm_name)
             intention = realm.manifest(intention_data)
-
+            
             self.logger.info(f"🎯 Intencja '{intention.essence.name}' zmanifestowana w wymiarze '{realm_name}'")
             return intention
-
+            
         except Exception as e:
             self.logger.error(f"❌ Błąd manifestacji intencji: {e}")
             raise
-
+    
     def interact_with_intention(self, intention_id: str, interaction_type: str, data: Dict[str, Any], user_id: str = "system", realm_name: str = "intentions") -> Dict[str, Any]:
         """
         Interakcja z intencją
-
+        
         Args:
             intention_id: ID intencji
             interaction_type: Typ interakcji (wzmocnij, korektuj, realizuj, przypisz_opiekuna)
             data: Dane interakcji
             user_id: ID użytkownika
             realm_name: Nazwa wymiaru
-
+            
         Returns:
             Wynik interakcji
         """
@@ -464,19 +463,19 @@ class AstralEngine:
                     return realm.interact_with_intention(intention_id, interaction_type, data, user_id)
                 else:
                     return {'success': False, 'message': 'Realm nie obsługuje interakcji z intencjami'}
-
+                    
         except Exception as e:
             self.logger.error(f"❌ Błąd interakcji z intencją: {e}")
             return {'success': False, 'message': str(e)}
-
+    
     def get_intention_status(self, intention_id: str, realm_name: str = "intentions") -> Dict[str, Any]:
         """
         Pobiera status intencji
-
+        
         Args:
             intention_id: ID intencji
             realm_name: Nazwa wymiaru
-
+            
         Returns:
             Status intencji
         """
@@ -490,19 +489,19 @@ class AstralEngine:
                     return {'error': 'Intencja nie znaleziona'}
             else:
                 return {'error': 'Realm nie obsługuje intencji'}
-
+                
         except Exception as e:
             self.logger.error(f"❌ Błąd pobierania statusu intencji: {e}")
             return {'error': str(e)}
-
+    
     def contemplate_intentions(self, conditions: Dict[str, Any], realm_name: str = "intentions") -> List[Dict[str, Any]]:
         """
         Kontempluje intencje według warunków
-
+        
         Args:
             conditions: Warunki wyszukiwania
             realm_name: Nazwa wymiaru
-
+            
         Returns:
             Lista intencji
         """
@@ -510,7 +509,7 @@ class AstralEngine:
             realm = self.get_realm(realm_name)
             intentions = realm.contemplate("find_intentions", **conditions)
             return [intention.get_status() for intention in intentions]
-
+            
         except Exception as e:
             self.logger.error(f"❌ Błąd kontemplacji intencji: {e}")
             return []
@@ -570,7 +569,7 @@ class AstralEngine:
         """
         # Genetyczna analiza systemu
         genetic_analysis = self._get_genetic_analysis()
-
+        
         return {
             'astral_engine': {
                 'version': '2.0.0',
@@ -611,26 +610,26 @@ class AstralEngine:
         try:
             from ..beings.genetic_identification import get_genetic_system, analyze_function_genetics
             genetic_system = get_genetic_system()
-
+            
             if not genetic_system:
                 return {'status': 'not_available'}
-
+            
             # Analizuj kluczowe funkcje
             key_functions = ['meditate', 'evolve', 'transcend', 'manifest', 'contemplate']
             function_analytics = {}
-
+            
             for func_name in key_functions:
                 stats = analyze_function_genetics(func_name)
                 if stats.get('total_calls', 0) > 0:
                     function_analytics[func_name] = stats
-
+            
             return {
                 'status': 'active',
                 'total_tracked_functions': len(genetic_system.genome_registry),
                 'function_analytics': function_analytics,
                 'argument_lineages': len(genetic_system.argument_lineage)
             }
-
+            
         except ImportError:
             return {'status': 'module_not_available'}
         except Exception as e:
@@ -640,12 +639,12 @@ class AstralEngine:
                                origin_function: str = None, purpose: str = None) -> Any:
         """
         Tworzy nowy kontener astralny dla przepływu danych między funkcjami
-
+        
         Args:
             initial_data: Początkowe dane kontenera
             origin_function: Funkcja pochodzenia
             purpose: Cel kontenera
-
+            
         Returns:
             Nowy kontener astralny
         """
@@ -654,17 +653,17 @@ class AstralEngine:
         else:
             self.logger.error("❌ Container Manager nie jest dostępny")
             return None
-
+    
     def invoke_function_with_container(self, function_name: str, container_or_data: Any,
                                      expected_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Wywołuje funkcję z kontenerem astralnym
-
+        
         Args:
             function_name: Nazwa funkcji do wywołania
             container_or_data: Kontener astralny lub dane
             expected_params: Oczekiwane parametry funkcji
-
+            
         Returns:
             Wynik wywołania funkcji z informacjami o kontenerze
         """
@@ -673,7 +672,7 @@ class AstralEngine:
                 'success': False,
                 'error': 'Container Manager nie jest dostępny'
             }
-
+        
         # Jeśli przekazano dane zamiast kontenera, utwórz kontener
         if not hasattr(container_or_data, 'container_id'):
             if isinstance(container_or_data, dict):
@@ -682,21 +681,21 @@ class AstralEngine:
                 container = self.container_manager.create_container({'data': container_or_data}, 'system', 'auto_invoke')
         else:
             container = container_or_data
-
+        
         return self.container_manager.invoke_function_with_container(function_name, container, expected_params)
-
+    
     def get_astral_container(self, container_id: str) -> Any:
         """Pobiera kontener astralny po ID"""
         if self.container_manager:
             return self.container_manager.get_container(container_id)
         return None
-
+    
     def list_astral_containers(self) -> List[Dict[str, Any]]:
         """Zwraca listę aktywnych kontenerów astralnych"""
         if self.container_manager:
             return self.container_manager.list_active_containers()
         return []
-
+    
     def get_container_statistics(self) -> Dict[str, Any]:
         """Zwraca statystyki kontenerów astralnych"""
         if self.container_manager:
@@ -708,13 +707,13 @@ class AstralEngine:
         try:
             from ..beings.genetic_identification import get_genetic_system, find_genetic_patterns
             genetic_system = get_genetic_system()
-
+            
             if not genetic_system:
                 return {'insights': [], 'message': 'System genetyczny niedostępny'}
-
+            
             insights = []
             key_functions = ['meditate', 'evolve', 'transcend']
-
+            
             for func_name in key_functions:
                 patterns = find_genetic_patterns(func_name, 0.6)
                 if patterns['patterns_found'] > 0:
@@ -724,29 +723,29 @@ class AstralEngine:
                         'total_calls': patterns['total_calls_analyzed'],
                         'genetic_diversity': patterns['patterns_found'] / patterns['total_calls_analyzed'] if patterns['total_calls_analyzed'] > 0 else 0
                     })
-
+            
             return {
                 'insights': insights,
                 'genetic_health_score': sum(i['genetic_diversity'] for i in insights) / len(insights) if insights else 0,
                 'recommendations': self._generate_genetic_recommendations(insights)
             }
-
+            
         except Exception as e:
             return {'error': str(e)}
-
+    
     def _generate_genetic_recommendations(self, insights: List[Dict]) -> List[str]:
         """Generuje rekomendacje na podstawie analizy genetycznej"""
         recommendations = []
-
+        
         for insight in insights:
             if insight['genetic_diversity'] < 0.3:
                 recommendations.append(f"Funkcja {insight['function']} wykazuje niską różnorodność genetyczną - rozważ zróżnicowanie wywołań")
             elif insight['genetic_diversity'] > 0.8:
                 recommendations.append(f"Funkcja {insight['function']} ma wysoką różnorodność - dobry wskaźnik adaptacji")
-
+            
             if insight['total_calls'] < 10:
                 recommendations.append(f"Funkcja {insight['function']} ma mało wywołań - więcej danych poprawiłoby analizę")
-
+        
         return recommendations
 
     def __exit__(self, exc_type, exc_val, exc_tb):

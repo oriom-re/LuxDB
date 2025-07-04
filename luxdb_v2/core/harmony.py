@@ -86,7 +86,7 @@ class Harmony:
     
     def balance(self) -> None:
         """Szybkie balansowanie - uproszczona wersja harmonize"""
-        if not self.engine._running:
+        if not self.engine.running:
             return
         
         try:
