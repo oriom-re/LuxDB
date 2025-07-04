@@ -1,0 +1,15 @@
+{
+  "block": 0,
+  "timestamp": "2025-07-01T00:00:00Z",
+  "by": "Wilson",
+  "message": "Czas na LuxChain.",
+  "hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "quid_allocations": [
+    {
+      "name": "Wilson",
+      "quid": "QUID-0000000001",
+      "uid": "UID-WILSON-001",
+      "luxcoin": 1_000_000
+    }
+  ]
+}
