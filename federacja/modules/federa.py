@@ -59,6 +59,11 @@ class BrainModule(LuxModule):
         # Słownik modulemetadata manager
         self.metadata_manager = None
 
+        # System nadzoru modułów
+        self.module_logs: Dict[str, List[Dict[str, Any]]] = {}
+        self.initialization_results: Dict[str, Dict[str, Any]] = {}
+        self.module_performance: Dict[str, Dict[str, Any]] = {}
+
         print("🧠 Federa - Inteligentna Koordynatorka Federacji zainicjalizowana")
 
     async def start(self) -> bool:
@@ -206,6 +211,10 @@ class BrainModule(LuxModule):
                 
                 # Wyświetl raport diagnostyczny
                 await self._display_diagnostic_report(diagnostic_report)
+                
+                # Wyświetl raport monitorowania jeśli są dane
+                if self.initialization_results:
+                    await self.display_monitoring_report()
                 
                 # Sprawdź czy można przejść do aktywnego zarządzania
                 if diagnostic_report['can_manage']:
@@ -807,44 +816,90 @@ class BrainModule(LuxModule):
         return success_count > 0
 
     async def _start_module(self, module_name: str) -> bool:
-        """Uruchamia pojedynczy moduł"""
+        """Uruchamia pojedynczy moduł z pełnym nadzorem"""
+        start_time = datetime.now()
+        
+        # Inicjalizuj struktury nadzoru
+        self.module_logs[module_name] = []
+        self.initialization_results[module_name] = {
+            'start_time': start_time.isoformat(),
+            'status': 'initializing',
+            'steps': []
+        }
+        
         try:
+            self._log_module_event(module_name, 'info', 'Rozpoczęcie inicjalizacji modułu')
+            
             # Pobierz konfigurację modułu
             module_config = self.config.get('modules', {}).get(module_name, {})
+            self._log_module_event(module_name, 'info', f'Konfiguracja załadowana: {len(module_config)} parametrów')
             
-            # Sprawdź czy to moduł statyczny - jeśli tak, już powinien być uruchomiony
+            # Sprawdź czy to moduł statyczny
             if module_config.get('static_startup', False):
-                print(f"ℹ️ Moduł {module_name} - statyczny, już uruchomiony")
+                self._log_module_event(module_name, 'info', 'Moduł statyczny - już uruchomiony przez kernel')
+                self._finalize_module_monitoring(module_name, True, 'Static module - already running')
                 return True
             
-            # Dynamiczny import modułu
+            # Krok 1: Import modułu
+            self._add_initialization_step(module_name, 'import', 'starting')
             module_path = f"federacja.modules.{module_name}"
             module_class_name = module_config.get('class', f"{module_name.title()}Module")
             
-            module_mod = __import__(module_path, fromlist=[module_class_name])
-            module_class = getattr(module_mod, module_class_name)
+            self._log_module_event(module_name, 'debug', f'Importowanie: {module_path}.{module_class_name}')
             
-            # Inicjalizuj moduł zarządzany przez Federę
-            module_instance = module_class(
-                config=module_config,
-                bus=self.bus
-            )
+            try:
+                module_mod = __import__(module_path, fromlist=[module_class_name])
+                module_class = getattr(module_mod, module_class_name)
+                self._add_initialization_step(module_name, 'import', 'success')
+                self._log_module_event(module_name, 'info', f'Klasa {module_class_name} zaimportowana pomyślnie')
+            except Exception as import_error:
+                self._add_initialization_step(module_name, 'import', 'failed', str(import_error))
+                raise import_error
             
-            # Uruchom moduł
-            if hasattr(module_instance, 'initialize'):
-                success = await module_instance.initialize()
-            else:
-                success = await module_instance.start()
+            # Krok 2: Tworzenie instancji
+            self._add_initialization_step(module_name, 'instantiation', 'starting')
+            self._log_module_event(module_name, 'debug', 'Tworzenie instancji modułu')
             
-            if success:
-                print(f"✅ Federa uruchomiła moduł: {module_name}")
-                return True
-            else:
-                print(f"❌ Federa nie mogła uruchomić modułu: {module_name}")
-                return False
+            try:
+                module_instance = module_class(
+                    config=module_config,
+                    bus=self.bus
+                )
+                self._add_initialization_step(module_name, 'instantiation', 'success')
+                self._log_module_event(module_name, 'info', 'Instancja modułu utworzona')
+            except Exception as instance_error:
+                self._add_initialization_step(module_name, 'instantiation', 'failed', str(instance_error))
+                raise instance_error
+            
+            # Krok 3: Inicjalizacja/Start
+            init_method = 'initialize' if hasattr(module_instance, 'initialize') else 'start'
+            self._add_initialization_step(module_name, init_method, 'starting')
+            self._log_module_event(module_name, 'debug', f'Wywoływanie metody {init_method}')
+            
+            try:
+                if init_method == 'initialize':
+                    success = await module_instance.initialize()
+                else:
+                    success = await module_instance.start()
+                
+                if success:
+                    self._add_initialization_step(module_name, init_method, 'success')
+                    self._log_module_event(module_name, 'info', f'Metoda {init_method} zakończona pomyślnie')
+                    self._finalize_module_monitoring(module_name, True, 'Module started successfully')
+                    return True
+                else:
+                    self._add_initialization_step(module_name, init_method, 'failed', 'Method returned False')
+                    self._log_module_event(module_name, 'error', f'Metoda {init_method} zwróciła False')
+                    self._finalize_module_monitoring(module_name, False, 'Initialization method returned False')
+                    return False
+                    
+            except Exception as init_error:
+                self._add_initialization_step(module_name, init_method, 'failed', str(init_error))
+                raise init_error
 
         except Exception as e:
-            print(f"❌ Błąd uruchamiania {module_name}: {e}")
+            self._log_module_event(module_name, 'error', f'Błąd inicjalizacji: {str(e)}')
+            self._finalize_module_monitoring(module_name, False, str(e))
             return False
 
     async def _create_shutdown_plan(self) -> List[str]:
@@ -913,7 +968,11 @@ class BrainModule(LuxModule):
             'module_health': self.get_module_health,
             'decision_history': self.get_decision_history,
             'restart_module': self.restart_module,
-            'scale_system': self.scale_system
+            'scale_system': self.scale_system,
+            'get_module_logs': self.get_module_logs,
+            'get_monitoring_summary': self.get_monitoring_summary,
+            'clear_module_logs': self.clear_module_logs,
+            'get_failed_modules_diagnostics': self.get_failed_modules_diagnostics
         }
 
         for cmd_name, cmd_func in commands.items():
@@ -971,13 +1030,22 @@ class BrainModule(LuxModule):
             return await self.restart_module(data.get('module_name'))
         elif command == 'scale_system':
             return await self.scale_system(data.get('action'))
+        elif command == 'get_module_logs':
+            return await self.get_module_logs(data.get('module_name'))
+        elif command == 'get_monitoring_summary':
+            return await self.get_monitoring_summary()
+        elif command == 'clear_module_logs':
+            return await self.clear_module_logs(data.get('module_name'))
         else:
             return {'error': f'Nieznana komenda: {command}'}
 
     async def get_status(self) -> Dict[str, Any]:
         """Zwraca status Brain"""
+        monitoring_summary = await self.get_monitoring_summary()
+        
         return {
             'module_id': self.module_id,
+            'personality_name': self.personality_name,
             'active': self.is_active,
             'active_modules': list(self.active_modules),
             'module_count': len(self.active_modules),
@@ -985,7 +1053,13 @@ class BrainModule(LuxModule):
             'healthy_modules': sum(1 for h in self.module_health.values() if h),
             'decision_count': len(self.decision_history),
             'auto_scaling': self.auto_scaling_enabled,
-            'intelligent_routing': self.intelligent_routing
+            'intelligent_routing': self.intelligent_routing,
+            'monitoring': {
+                'total_modules_monitored': monitoring_summary['summary']['total_modules_monitored'],
+                'success_rate': monitoring_summary['summary']['success_rate'],
+                'average_init_time': monitoring_summary['summary']['average_initialization_time'],
+                'recent_failures_count': len(monitoring_summary['recent_failures'])
+            }
         }
 
     async def list_active_modules(self) -> List[str]:
@@ -1040,6 +1114,243 @@ class BrainModule(LuxModule):
             # Logika wyłączania zbędnych modułów
 
         return True
+    
+    def _log_module_event(self, module_name: str, level: str, message: str):
+        """Loguje wydarzenie związane z modułem"""
+        event = {
+            'timestamp': datetime.now().isoformat(),
+            'level': level,
+            'message': message,
+            'federa_monitoring': True
+        }
+        
+        if module_name not in self.module_logs:
+            self.module_logs[module_name] = []
+        
+        self.module_logs[module_name].append(event)
+        
+        # Wyświetl w konsoli z prefiksem Federy
+        level_emoji = {
+            'debug': '🔍',
+            'info': 'ℹ️',
+            'warning': '⚠️',
+            'error': '❌'
+        }
+        
+        emoji = level_emoji.get(level, 'ℹ️')
+        print(f"🧠 Federa [{module_name}] {emoji} {message}")
+    
+    def _add_initialization_step(self, module_name: str, step_name: str, status: str, error_message: str = None):
+        """Dodaje krok inicjalizacji do monitorowania"""
+        step = {
+            'name': step_name,
+            'status': status,
+            'timestamp': datetime.now().isoformat(),
+            'error': error_message
+        }
+        
+        if module_name in self.initialization_results:
+            self.initialization_results[module_name]['steps'].append(step)
+    
+    def _finalize_module_monitoring(self, module_name: str, success: bool, final_message: str):
+        """Finalizuje monitorowanie modułu"""
+        end_time = datetime.now()
+        start_time_str = self.initialization_results[module_name]['start_time']
+        start_time = datetime.fromisoformat(start_time_str)
+        duration = (end_time - start_time).total_seconds()
+        
+        self.initialization_results[module_name].update({
+            'end_time': end_time.isoformat(),
+            'duration_seconds': duration,
+            'status': 'success' if success else 'failed',
+            'final_message': final_message,
+            'logs_count': len(self.module_logs.get(module_name, []))
+        })
+        
+        # Zapisz metryki wydajności
+        self.module_performance[module_name] = {
+            'initialization_duration': duration,
+            'steps_count': len(self.initialization_results[module_name]['steps']),
+            'success': success,
+            'timestamp': end_time.isoformat()
+        }
+        
+        # Wyświetl podsumowanie
+        status_emoji = '✅' if success else '❌'
+        print(f"🧠 Federa [{module_name}] {status_emoji} Inicjalizacja zakończona w {duration:.2f}s - {final_message}")
+    
+    async def get_module_logs(self, module_name: str = None) -> Dict[str, Any]:
+        """Zwraca logi modułów"""
+        if module_name:
+            return {
+                'logs': self.module_logs.get(module_name, []),
+                'initialization': self.initialization_results.get(module_name, {}),
+                'performance': self.module_performance.get(module_name, {})
+            }
+        else:
+            return {
+                'all_logs': self.module_logs,
+                'all_initialization_results': self.initialization_results,
+                'all_performance': self.module_performance
+            }
+    
+    async def get_monitoring_summary(self) -> Dict[str, Any]:
+        """Zwraca podsumowanie monitorowania"""
+        total_modules = len(self.initialization_results)
+        successful_modules = sum(1 for result in self.initialization_results.values() 
+                               if result.get('status') == 'success')
+        failed_modules = sum(1 for result in self.initialization_results.values() 
+                           if result.get('status') == 'failed')
+        
+        avg_duration = 0
+        if self.module_performance:
+            total_duration = sum(perf.get('initialization_duration', 0) 
+                               for perf in self.module_performance.values())
+            avg_duration = total_duration / len(self.module_performance)
+        
+        return {
+            'summary': {
+                'total_modules_monitored': total_modules,
+                'successful_initializations': successful_modules,
+                'failed_initializations': failed_modules,
+                'success_rate': (successful_modules / max(total_modules, 1)) * 100,
+                'average_initialization_time': avg_duration
+            },
+            'module_statuses': {
+                name: result.get('status', 'unknown') 
+                for name, result in self.initialization_results.items()
+            },
+            'recent_failures': [
+                {
+                    'module': name,
+                    'error': result.get('final_message', 'Unknown error'),
+                    'timestamp': result.get('end_time')
+                }
+                for name, result in self.initialization_results.items()
+                if result.get('status') == 'failed'
+            ][-5:]  # Ostatnie 5 błędów
+        }
+    
+    async def clear_module_logs(self, module_name: str = None) -> Dict[str, Any]:
+        """Czyści logi modułów"""
+        if module_name:
+            if module_name in self.module_logs:
+                cleared_count = len(self.module_logs[module_name])
+                self.module_logs[module_name] = []
+                return {
+                    'success': True, 
+                    'cleared_logs': cleared_count,
+                    'module': module_name
+                }
+            else:
+                return {'success': False, 'error': f'Brak logów dla modułu {module_name}'}
+        else:
+            total_cleared = sum(len(logs) for logs in self.module_logs.values())
+            self.module_logs.clear()
+            return {
+                'success': True,
+                'cleared_logs': total_cleared,
+                'modules_cleared': len(self.module_logs)
+            }
+    
+    async def get_failed_modules_diagnostics(self) -> Dict[str, Any]:
+        """Zwraca szczegółową diagnostykę modułów, które nie udało się uruchomić"""
+        failed_modules = {}
+        
+        for module_name, result in self.initialization_results.items():
+            if result.get('status') == 'failed':
+                failed_steps = [
+                    step for step in result.get('steps', [])
+                    if step.get('status') == 'failed'
+                ]
+                
+                failed_modules[module_name] = {
+                    'final_error': result.get('final_message'),
+                    'duration': result.get('duration_seconds', 0),
+                    'failed_steps': failed_steps,
+                    'all_steps': result.get('steps', []),
+                    'logs': self.module_logs.get(module_name, [])
+                }
+        
+        return {
+            'failed_modules_count': len(failed_modules),
+            'diagnostics': failed_modules,
+            'common_failure_patterns': self._analyze_failure_patterns(failed_modules)
+        }
+    
+    def _analyze_failure_patterns(self, failed_modules: Dict[str, Any]) -> Dict[str, Any]:
+        """Analizuje wzorce błędów w modułach"""
+        patterns = {
+            'import_errors': 0,
+            'instantiation_errors': 0,
+            'initialization_errors': 0,
+            'common_error_keywords': {}
+        }
+        
+        for module_name, diagnostics in failed_modules.items():
+            for step in diagnostics.get('failed_steps', []):
+                step_name = step.get('name', '')
+                if 'import' in step_name:
+                    patterns['import_errors'] += 1
+                elif 'instantiation' in step_name:
+                    patterns['instantiation_errors'] += 1
+                elif step_name in ['initialize', 'start']:
+                    patterns['initialization_errors'] += 1
+                
+                # Analizuj słowa kluczowe w błędach
+                error_msg = step.get('error', '').lower()
+                for keyword in ['missing', 'not found', 'import', 'module', 'attribute']:
+                    if keyword in error_msg:
+                        patterns['common_error_keywords'][keyword] = patterns['common_error_keywords'].get(keyword, 0) + 1
+        
+        return patterns
+    
+    async def display_monitoring_report(self):
+        """Wyświetla szczegółowy raport monitorowania"""
+        print("\n" + "="*80)
+        print("🧠 FEDERA - RAPORT MONITOROWANIA MODUŁÓW")
+        print("="*80)
+        
+        summary = await self.get_monitoring_summary()
+        
+        # Podsumowanie ogólne
+        print(f"\n📊 PODSUMOWANIE OGÓLNE:")
+        print(f"   • Monitorowanych modułów: {summary['summary']['total_modules_monitored']}")
+        print(f"   • Udanych inicjalizacji: {summary['summary']['successful_initializations']}")
+        print(f"   • Nieudanych inicjalizacji: {summary['summary']['failed_initializations']}")
+        print(f"   • Wskaźnik sukcesu: {summary['summary']['success_rate']:.1f}%")
+        print(f"   • Średni czas inicjalizacji: {summary['summary']['average_initialization_time']:.2f}s")
+        
+        # Status modułów
+        print(f"\n📦 STATUS MODUŁÓW:")
+        for module_name, status in summary['module_statuses'].items():
+            status_emoji = '✅' if status == 'success' else '❌' if status == 'failed' else '⏳'
+            duration = self.module_performance.get(module_name, {}).get('initialization_duration', 0)
+            print(f"   {status_emoji} {module_name}: {status} ({duration:.2f}s)")
+        
+        # Ostatnie błędy
+        if summary['recent_failures']:
+            print(f"\n⚠️ OSTATNIE BŁĘDY ({len(summary['recent_failures'])}):")
+            for failure in summary['recent_failures']:
+                print(f"   • {failure['module']}: {failure['error']}")
+                print(f"     ⏰ {failure['timestamp']}")
+        
+        # Diagnostyka błędów
+        if summary['summary']['failed_initializations'] > 0:
+            diagnostics = await self.get_failed_modules_diagnostics()
+            patterns = diagnostics['common_failure_patterns']
+            
+            print(f"\n🔍 ANALIZA WZORCÓW BŁĘDÓW:")
+            print(f"   • Błędy importu: {patterns['import_errors']}")
+            print(f"   • Błędy tworzenia instancji: {patterns['instantiation_errors']}")
+            print(f"   • Błędy inicjalizacji: {patterns['initialization_errors']}")
+            
+            if patterns['common_error_keywords']:
+                print(f"   • Najczęstsze słowa kluczowe w błędach:")
+                for keyword, count in patterns['common_error_keywords'].items():
+                    print(f"     - '{keyword}': {count} wystąpień")
+        
+        print("="*80)
 
     async def search_modules(self, criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Wyszukuje moduły na podstawie kryteriów"""
