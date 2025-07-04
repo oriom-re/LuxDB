@@ -16,7 +16,7 @@ run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Start Federation Kernel"
+runButton = "Start Enhanced Federation"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
@@ -110,6 +110,15 @@ args = "python luxdb_v3_service.py"
 
 [[workflows.workflow]]
 name = "Start Federation Kernel"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_kernel.py"
+
+[[workflows.workflow]]
+name = "Start Enhanced Federation"
 author = 43346420
 mode = "sequential"
 

@@ -1,131 +1,75 @@
 modules:
-  # Core Intelligence
+  # System modules
   brain:
     enabled: true
-    path: "modules/brain.py"
-    type: "core_intelligence"
-    description: "Intelligent system coordinator and decision maker"
+    class: "BrainModule"
     dependencies: []
+    config:
+      model: "basic"
 
-  # Database Management
   database_manager:
     enabled: true
-    path: "modules/database_manager.py"
-    type: "database_core"
-    description: "Main database coordination module"
+    class: "DatabaseManagerModule"  
     dependencies: []
+    config:
+      default_realm: "sqlite"
 
-  # Realm Modules
   realm_sqlite:
     enabled: true
-    path: "modules/realm_sqlite.py"
-    type: "data_realm"
-    description: "SQLite data realm module"
+    class: "RealmSqliteModule"
     dependencies: ["database_manager"]
+    config:
+      database_path: "db/federation.db"
 
   realm_memory:
     enabled: true
-    path: "modules/realm_memory.py"
-    type: "data_realm"
-    description: "Memory data realm module"
+    class: "RealmMemoryModule" 
     dependencies: ["database_manager"]
+    config:
+      max_memory: "100MB"
 
-  # Legacy LuxDB integration
-  luxdb:
-    enabled: false
-    path: "modules/luxdb.py"
-    type: "data_layer"
-    description: "LuxDB data layer integration (legacy)"
-    dependencies: []
-
-  # Przykładowe moduły
-  modul_ws:
-    enabled: false
-    path: "modules/modul_ws.py"
-    type: "websocket"
-    description: "WebSocket handling module"
-    dependencies: ["database_manager"]
-
-  ws_server:
+  # LuxDB v2 ported modules
+  consciousness:
     enabled: true
-    class: WebSocketModule
-    description: "WebSocket server for real-time communication"
+    class: "ConsciousnessModule"
+    dependencies: ["brain"]
+    config:
+      reflection_interval: 60
+
+  harmony:
+    enabled: true
+    class: "HarmonyModule"
+    dependencies: ["consciousness"]
+    config:
+      harmonization_interval: 30
+
+  astral_containers:
+    enabled: true
+    class: "AstralContainersModule"
+    dependencies: []
+    config:
+      max_active_containers: 100
+
+  websocket_flow:
+    enabled: true
+    class: "WebSocketFlowModule"
     dependencies: []
     config:
       host: "0.0.0.0"
       port: 5001
 
+  # Communication modules
   rest_api:
-    enabled: true
-    class: RestApiModule
-    description: "REST API server"
-    dependencies: ["luxdb"]
+    enabled: false
+    class: "RestApiModule"
+    dependencies: []
     config:
       host: "0.0.0.0"
       port: 5000
 
-  consciousness:
-    enabled: true
-    class: ConsciousnessModule
-    description: "System consciousness and self-reflection"
-    dependencies: ["luxdb"]
-    config:
-      meditation_interval: 60
-
   module_metadata_manager:
     enabled: true
-    class: ModuleMetadataManager
-    description: "Module metadata storage and search"
+    class: "ModuleMetadataManager"
     dependencies: []
     config:
-      db_path: "db/module_metadata.db"
-
-federation:
-  name: "LuxDB Federation"
-  version: "1.0.0"
-  kernel:
-    session_timeout: 3600
-    health_check_interval: 30
-
-logging:
-  level: "INFO"
-  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-
-config:
-  kernel:
-    max_modules: 50
-    startup_timeout: 30
-    shutdown_timeout: 10
-
-  # Brain configuration
-  brain:
-    auto_scaling: true
-    intelligent_routing: true
-    monitoring_interval: 10
-    max_decision_history: 100
-
-  # Module metadata configuration
-  metadata:
-    db_path: "db/module_metadata.db"
-    cleanup_interval_hours: 24
-    max_module_age_days: 30
-
-  # Database configuration
-  database:
-    default_realm: "primary"
-    realms:
-      primary:
-        type: "sqlite"
-        connection_string: "db/primary.db"
-        auto_create: true
-
-      memory_cache:
-        type: "memory"
-        connection_string: "memory://"
-        auto_create: true
-
-      # Przykład kolejnego realm
-      # secondary:
-      #   type: "sqlite"
-      #   connection_string: "db/secondary.db"
-      #   auto_create: false
+      metadata_path: "federacja/manifests/module_metadata.yaml"
