@@ -137,13 +137,30 @@ class BrainModule(LuxModule):
     async def _check_database_availability(self) -> bool:
         """Sprawdza czy Database Manager jest dostępny"""
         try:
+            # Sprawdź czy database_manager już działa w busie
+            try:
+                message = FederationMessage(
+                    uid="federa_db_check",
+                    from_module="federa",
+                    to_module="database_manager",
+                    message_type="get_status",
+                    data={},
+                    timestamp=datetime.now().timestamp()
+                )
+                
+                response = await self.bus.send_message(message, timeout=2)
+                if response.get('active', False):
+                    return True
+            except Exception:
+                pass
+            
             # Sprawdź czy database_manager jest w dostępnych modułach
             if 'database_manager' in self.available_modules:
                 return True
             
             # Sprawdź czy można go załadować
             try:
-                from .database_manager import DatabaseManagerModule
+                from .database_manager import DatabaseManager
                 return True
             except ImportError:
                 return False
@@ -188,7 +205,8 @@ class BrainModule(LuxModule):
                 await asyncio.sleep(30)
                 
                 if await self._can_start_management():
-                    print("🔄 Brain wykrył gotowość - przechodzi do aktywnego zarządzania")
+                    print("🔄 Federa wykryła gotowość systemu - przejmuje kontrolę!")
+                    print("📊 Wykryto działający Database Manager - rozpoczynam zarządzanie")
                     await self._full_initialization()
                     # Przejdź do aktywnego monitorowania
                     await self._active_monitoring()

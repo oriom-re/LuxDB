@@ -95,6 +95,9 @@ class FederationKernel:
                 status='loading'
             )
             
+            # Sprawdź czy to moduł statyczny
+            is_static = module_config.get('static_startup', False)
+            
             # Dynamiczny import modułu
             module_path = f"federacja.modules.{module_name}"
             module_class_name = module_config.get('class', f"{module_name.title()}Module")
@@ -103,13 +106,51 @@ class FederationKernel:
             module_class = getattr(module_mod, module_class_name)
             
             # Inicjalizuj moduł
-            module_instance = module_class(
-                bus=self.bus,
-                config=module_config
-            )
+            if is_static:
+                # Statyczny moduł - prosty konstruktor
+                module_instance = module_class(
+                    config=module_config, 
+                    bus=self.bus
+                )
+            else:
+                # Zarządzany moduł - pełny konstruktor
+                module_instance = module_class(
+                    bus=self.bus,
+                    config=module_config
+                )
             
             # Uruchom moduł
-            await module_instance.start()
+            if hasattr(module_instance, 'initialize'):
+                success = await module_instance.initialize()
+            else:
+                success = await module_instance.start()
+            
+            if success:
+                self.modules[module_name] = module_instance
+                self.module_statuses[module_name] = ModuleStatus(
+                    name=module_name,
+                    status='active',
+                    loaded_at=datetime.now(),
+                    meta_data={'static_startup': is_static}
+                )
+                
+                startup_type = "statycznie" if is_static else "zarządzanie"
+                self.logger.info(f"📦 Module loaded: {module_name} ({startup_type})")
+            else:
+                self.module_statuses[module_name] = ModuleStatus(
+                    name=module_name,
+                    status='error',
+                    error="Failed to start"
+                )
+                self.logger.error(f"❌ Module failed to load: {module_name}")
+                
+        except Exception as e:
+            self.module_statuses[module_name] = ModuleStatus(
+                name=module_name,
+                status='error',
+                error=str(e)
+            )
+            self.logger.error(f"❌ Error loading module {module_name}: {e}")
             
             self.modules[module_name] = module_instance
             self.module_statuses[module_name] = ModuleStatus(

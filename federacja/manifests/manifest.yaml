@@ -9,10 +9,11 @@ modules:
     personality: "Mądra, cierpliwa koordynatorka federacji"
 
   database_manager:
-    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
-    class: DatabaseManagerModule
+    enabled: true  # Włączony - startuje niezależnie
+    class: DatabaseManager
     path: modules/database_manager.py
     dependencies: []
+    static_startup: true  # Statyczny start bez nadzoru Federy
 
   realm_sqlite:
     enabled: false  # Tymczasowo wyłączony - zależy od database_manager
@@ -21,10 +22,11 @@ modules:
     dependencies: [database_manager]
 
   realm_memory:
-    enabled: false  # Tymczasowo wyłączony - zależy od database_manager
-    class: RealmMemoryModule
+    enabled: true  # Włączony - podstawowy realm
+    class: MemoryRealmModule
     path: modules/realm_memory.py
     dependencies: [database_manager]
+    static_startup: true  # Statyczny start z database_manager
 
   consciousness:
     enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
