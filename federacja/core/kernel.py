@@ -34,7 +34,7 @@ class FederationKernel:
     def __init__(self, config: FederationConfig):
         self.config = config
         self.logger = FederationLogger(config.logger)
-        self.bus = FederationBus()
+        self.bus = FederationBus(self.logger)
         
         self.session_id = f"federation_{uuid.uuid4().hex[:8]}"
         self.modules: Dict[str, Any] = {}
