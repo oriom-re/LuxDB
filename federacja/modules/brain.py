@@ -6,28 +6,41 @@ Brain decyduje jakie moduły uruchomić i jak nimi zarządzać
 """
 
 import asyncio
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Type, Optional
 from datetime import datetime
 
 from ..core.bus import FederationBus, FederationMessage
+from ..core.lux_module import LuxModule, ModuleType, ModuleVersion, ModuleStability
 
 
-class BrainModule:
+class BrainModule(LuxModule):
     """
     Moduł Brain - inteligentny koordynator całej federacji
     """
     
     def __init__(self, config: Dict[str, Any], bus: FederationBus):
-        self.config = config
-        self.bus = bus
+        super().__init__(
+            name="brain",
+            module_type=ModuleType.INTELLIGENCE,
+            version=ModuleVersion(1, 0, 0, ModuleStability.STABLE),
+            config=config,
+            bus=bus,
+            creator_id="federation_system"
+        )
+        
         self.module_id = "brain"
-        self.is_active = False
         
         # Stan systemu
         self.active_modules: Set[str] = set()
         self.module_dependencies: Dict[str, List[str]] = {}
         self.module_health: Dict[str, bool] = {}
         self.system_load = 0.0
+        
+        # Magazyn modułów
+        self.available_modules: Dict[str, Type[LuxModule]] = {}
+        self.binary_modules: Dict[str, str] = {}  # UUID -> binary data
+        self.experimental_modules: Dict[str, LuxModule] = {}
+        self.stable_fallbacks: Dict[str, LuxModule] = {}
         
         # Inteligencja Brain'a
         self.decision_history: List[Dict[str, Any]] = []
@@ -85,7 +98,7 @@ class BrainModule:
             return False
     
     async def _analyze_available_modules(self):
-        """Analizuje dostępne moduły z manifestu"""
+        """Analizuje dostępne moduły z manifestu i klas"""
         manifest = self.config.get('modules', {})
         
         for module_name, module_config in manifest.items():
@@ -94,7 +107,202 @@ class BrainModule:
                 self.module_dependencies[module_name] = dependencies
                 self.module_health[module_name] = False  # Domyślnie nieaktywne
                 
+                # Spróbuj załadować klasę modułu
+                await self._discover_module_class(module_name, module_config)
+                
                 print(f"🔍 Znaleziono moduł: {module_name} (deps: {dependencies})")
+    
+    async def _discover_module_class(self, module_name: str, module_config: Dict[str, Any]):
+        """Odkrywa i analizuje klasę modułu"""
+        try:
+            # Spróbuj zaimportować moduł
+            if 'path' in module_config:
+                module_path = module_config['path'].replace('/', '.').replace('.py', '')
+                module = __import__(f"federacja.{module_path}", fromlist=[module_name])
+                
+                # Szukaj klas dziedziczących po LuxModule
+                for attr_name in dir(module):
+                    attr = getattr(module, attr_name)
+                    if (isinstance(attr, type) and 
+                        issubclass(attr, LuxModule) and 
+                        attr != LuxModule):
+                        
+                        self.available_modules[module_name] = attr
+                        
+                        # Analizuj moduł
+                        module_info = await self._analyze_module_class(attr)
+                        print(f"📊 Moduł {module_name}: {module_info}")
+                        
+                        break
+                        
+        except Exception as e:
+            print(f"⚠️ Nie udało się załadować modułu {module_name}: {e}")
+    
+    async def _analyze_module_class(self, module_class: Type[LuxModule]) -> Dict[str, Any]:
+        """Analizuje klasę modułu"""
+        # Utwórz tymczasową instancję dla analizy
+        try:
+            temp_instance = module_class(
+                name="temp_analysis",
+                module_type=ModuleType.CORE,  # Domyślny typ
+                config={}
+            )
+            
+            type_info = temp_instance.get_type_info()
+            
+            # Zapisz informacje o module
+            analysis = {
+                'class_name': module_class.__name__,
+                'base_classes': [cls.__name__ for cls in module_class.__mro__],
+                'is_lux_module': issubclass(module_class, LuxModule),
+                'capabilities': type_info.get('capabilities', []),
+                'module_type': type_info.get('module_type', 'unknown'),
+                'experimental': type_info.get('experimental', False)
+            }
+            
+            return analysis
+            
+        except Exception as e:
+            return {
+                'class_name': module_class.__name__,
+                'error': str(e),
+                'analyzable': False
+            }
+    
+    async def register_binary_module(self, module_uuid: str, binary_data: str) -> bool:
+        """Rejestruje moduł binarny w systemie"""
+        try:
+            # Spróbuj zdeserializować dla walidacji
+            module = LuxModule.deserialize_from_binary(binary_data, self.bus)
+            
+            # Zapisz w magazynie
+            self.binary_modules[module_uuid] = binary_data
+            
+            # Dodaj do dostępnych modułów
+            self.available_modules[module.name] = module.__class__
+            
+            print(f"📦 Zarejestrowano moduł binarny: {module.name} (UUID: {module_uuid})")
+            
+            self.decision_history.append({
+                'type': 'binary_module_registered',
+                'timestamp': datetime.now().isoformat(),
+                'module_name': module.name,
+                'module_uuid': module_uuid
+            })
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Błąd rejestracji modułu binarnego {module_uuid}: {e}")
+            return False
+    
+    async def load_binary_module(self, module_uuid: str) -> Optional[LuxModule]:
+        """Ładuje moduł z formatu binarnego"""
+        if module_uuid not in self.binary_modules:
+            return None
+        
+        try:
+            binary_data = self.binary_modules[module_uuid]
+            module = LuxModule.deserialize_from_binary(binary_data, self.bus)
+            
+            print(f"📂 Załadowano moduł binarny: {module.name}")
+            return module
+            
+        except Exception as e:
+            print(f"❌ Błąd ładowania modułu binarnego {module_uuid}: {e}")
+            return None
+    
+    async def handle_experimental_module(self, module_name: str, experimental_module: LuxModule) -> bool:
+        """Obsługuje moduł eksperymentalny z fallback do stabilnego"""
+        try:
+            # Spróbuj uruchomić eksperymentalny
+            success = await experimental_module.initialize()
+            
+            if success:
+                self.experimental_modules[module_name] = experimental_module
+                self.active_modules.add(module_name)
+                
+                print(f"🧪 Uruchomiono moduł eksperymentalny: {module_name}")
+                
+                # Monitoruj błędy
+                asyncio.create_task(self._monitor_experimental_module(module_name, experimental_module))
+                
+                return True
+            else:
+                # Fallback do stabilnego
+                return await self._fallback_to_stable_module(module_name)
+                
+        except Exception as e:
+            print(f"❌ Błąd modułu eksperymentalnego {module_name}: {e}")
+            return await self._fallback_to_stable_module(module_name)
+    
+    async def _monitor_experimental_module(self, module_name: str, module: LuxModule):
+        """Monitoruje moduł eksperymentalny"""
+        while module.is_active and not module.should_fallback_to_stable():
+            await asyncio.sleep(30)  # Sprawdzaj co 30 sekund
+        
+        if module.should_fallback_to_stable():
+            print(f"🔄 Moduł eksperymentalny {module_name} przekroczył limit błędów - fallback")
+            await self._fallback_to_stable_module(module_name)
+    
+    async def _fallback_to_stable_module(self, module_name: str) -> bool:
+        """Przywraca stabilną wersję modułu"""
+        try:
+            # Wyłącz eksperymentalny jeśli aktywny
+            if module_name in self.experimental_modules:
+                await self.experimental_modules[module_name].shutdown()
+                del self.experimental_modules[module_name]
+            
+            # Uruchom stabilny
+            stable_module = await self._create_stable_module(module_name)
+            if stable_module:
+                success = await stable_module.initialize()
+                if success:
+                    self.stable_fallbacks[module_name] = stable_module
+                    self.active_modules.add(module_name)
+                    
+                    print(f"🛡️ Przywrócono stabilną wersję modułu: {module_name}")
+                    
+                    self.decision_history.append({
+                        'type': 'experimental_fallback',
+                        'timestamp': datetime.now().isoformat(),
+                        'module_name': module_name,
+                        'reason': 'Experimental module failed'
+                    })
+                    
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"❌ Błąd fallback modułu {module_name}: {e}")
+            return False
+    
+    async def _create_stable_module(self, module_name: str) -> Optional[LuxModule]:
+        """Tworzy stabilną wersję modułu"""
+        if module_name not in self.available_modules:
+            return None
+        
+        try:
+            module_class = self.available_modules[module_name]
+            config = self.config.get('modules', {}).get(module_name, {})
+            
+            # Utwórz z flagą stabilności
+            stable_version = ModuleVersion(1, 0, 0, ModuleStability.STABLE)
+            
+            module = module_class(
+                name=module_name,
+                module_type=ModuleType.CORE,  # Domyślny typ
+                version=stable_version,
+                config=config,
+                bus=self.bus
+            )
+            
+            return module
+            
+        except Exception as e:
+            print(f"❌ Błąd tworzenia stabilnego modułu {module_name}: {e}")
+            return None
     
     async def _create_startup_plan(self) -> List[str]:
         """Tworzy inteligentny plan uruchomienia modułów"""

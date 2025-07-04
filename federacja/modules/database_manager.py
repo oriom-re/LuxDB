@@ -10,12 +10,13 @@ from typing import Dict, Any, List, Optional, Type
 from datetime import datetime
 
 from ..core.bus import FederationBus, FederationMessage
+from ..core.lux_module import LuxModule, ModuleType, ModuleVersion
 from .realm_base import BaseRealmModule
 from .realm_sqlite import SQLiteRealmModule
 from .realm_memory import MemoryRealmModule
 
 
-class DatabaseManager:
+class DatabaseManager(LuxModule):
     """
     Główny menedżer bazy danych - koordynuje wszystkie realms
     """
@@ -28,10 +29,16 @@ class DatabaseManager:
     }
     
     def __init__(self, config: Dict[str, Any], bus: FederationBus):
-        self.config = config
-        self.bus = bus
+        super().__init__(
+            name="database_manager",
+            module_type=ModuleType.CORE,
+            version=ModuleVersion(1, 0, 0),
+            config=config,
+            bus=bus,
+            creator_id="federation_system"
+        )
+        
         self.module_id = "database_manager"
-        self.is_active = False
         
         # Słownik aktywnych realms
         self.realms: Dict[str, BaseRealmModule] = {}
@@ -39,7 +46,6 @@ class DatabaseManager:
         # Statystyki
         self.total_beings = 0
         self.total_operations = 0
-        self.created_at = datetime.now()
         
         # Rejestracja w bus'ie
         self.bus.register_module(self.module_id, self)

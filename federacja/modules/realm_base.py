@@ -11,21 +11,27 @@ from datetime import datetime
 import asyncio
 
 from ..core.bus import FederationBus, FederationMessage
+from ..core.lux_module import LuxModule, ModuleType, ModuleVersion
 
 
-class BaseRealmModule(ABC):
+class BaseRealmModule(LuxModule, ABC):
     """
     Bazowy moduł wymiaru - każdy realm będzie dziedziczyć po tej klasie
     """
     
     def __init__(self, name: str, config: Dict[str, Any], bus: FederationBus):
-        self.name = name
-        self.config = config
-        self.bus = bus
+        super().__init__(
+            name=f"realm_{name}",
+            module_type=ModuleType.REALM,
+            version=ModuleVersion(1, 0, 0),
+            config=config,
+            bus=bus,
+            creator_id="federation_system"
+        )
+        
+        self.realm_name = name
         self.module_id = f"realm_{name}"
-        self.is_active = False
         self.is_connected = False
-        self.created_at = datetime.now()
         self._being_count = 0
         
         # Rejestracja w bus'ie
