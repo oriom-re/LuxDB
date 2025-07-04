@@ -1,0 +1,49 @@
+
+# 🏛️ Federation Manifest - Rejestr wszystkich modułów
+
+modules:
+  luxdb:
+    enabled: true
+    class: LuxdbModule
+    description: "LuxDB data layer integration"
+    dependencies: []
+    config:
+      realm_type: "sqlite"
+      db_path: "db/federation.db"
+  
+  ws_server:
+    enabled: true
+    class: WebSocketModule
+    description: "WebSocket server for real-time communication"
+    dependencies: []
+    config:
+      host: "0.0.0.0"
+      port: 5001
+  
+  rest_api:
+    enabled: true
+    class: RestApiModule
+    description: "REST API server"
+    dependencies: ["luxdb"]
+    config:
+      host: "0.0.0.0"
+      port: 5000
+  
+  consciousness:
+    enabled: true
+    class: ConsciousnessModule
+    description: "System consciousness and self-reflection"
+    dependencies: ["luxdb"]
+    config:
+      meditation_interval: 60
+
+federation:
+  name: "LuxDB Federation"
+  version: "1.0.0"
+  kernel:
+    session_timeout: 3600
+    health_check_interval: 30
+  
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
