@@ -351,6 +351,7 @@ class AstralEngineV3:
         while self.running:
             try:
                 await asyncio.sleep(getattr(self.config, 'harmony_check_interval', 30))
+                print("🎵 Sprawdzanie harmonii...")
                 if self.running and self.harmony:
                     self.harmony.balance()
 
