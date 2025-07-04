@@ -105,8 +105,7 @@ class FederationKernel:
             # Inicjalizuj moduł
             module_instance = module_class(
                 bus=self.bus,
-                config=module_config,
-                logger=self.logger
+                config=module_config
             )
             
             # Uruchom moduł
