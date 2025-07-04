@@ -52,7 +52,7 @@ class BrainModule(LuxModule):
         self.intelligent_routing = config.get('intelligent_routing', True)
 
         # Rejestracja w bus'ie
-        self.bus.register_module(self.module_id, self)
+        # self.bus.register_module(self.module_id, self)
 
         # Słownik modulemetadata manager
         self.metadata_manager = None
