@@ -13,7 +13,7 @@ from datetime import datetime
 
 from .luxbus_core import LuxBusCore, LuxPacket, PacketType, get_luxbus_core
 from .consciousness import Consciousness
-from .harmony import Harmony
+from .harmony import HarmonyV3
 from ..config import AstralConfig
 from ..wisdom.astral_logging import AstralLogger
 
@@ -174,9 +174,9 @@ class AstralEngineV3:
 
     async def _initialize_harmony(self):
         """Inicjalizuje harmony jako moduł LuxBus"""
-        self.harmony = Harmony(self)
+        self.harmony = HarmonyV3(self)
         self.luxbus.register_module("harmony", self.harmony)
-        self.logger.info("⚖️ Harmony zainicjalizowana")
+        self.logger.info("⚖️ Harmony v3 zainicjalizowana")
 
     async def _load_configured_modules(self):
         """Ładuje moduły z konfiguracji"""
