@@ -1,16 +1,51 @@
-
-# 🏛️ Federation Manifest - Rejestr wszystkich modułów
-
 modules:
-  luxdb:
+  # Core Intelligence
+  brain:
     enabled: true
-    class: LuxdbModule
-    description: "LuxDB data layer integration"
+    path: "modules/brain.py"
+    type: "core_intelligence"
+    description: "Intelligent system coordinator and decision maker"
     dependencies: []
-    config:
-      realm_type: "sqlite"
-      db_path: "db/federation.db"
-  
+
+  # Database Management
+  database_manager:
+    enabled: true
+    path: "modules/database_manager.py"
+    type: "database_core"
+    description: "Main database coordination module"
+    dependencies: []
+
+  # Realm Modules
+  realm_sqlite:
+    enabled: true
+    path: "modules/realm_sqlite.py"
+    type: "data_realm"
+    description: "SQLite data realm module"
+    dependencies: ["database_manager"]
+
+  realm_memory:
+    enabled: true
+    path: "modules/realm_memory.py"
+    type: "data_realm"
+    description: "Memory data realm module"
+    dependencies: ["database_manager"]
+
+  # Legacy LuxDB integration
+  luxdb:
+    enabled: false
+    path: "modules/luxdb.py"
+    type: "data_layer"
+    description: "LuxDB data layer integration (legacy)"
+    dependencies: []
+
+  # Przykładowe moduły
+  modul_ws:
+    enabled: false
+    path: "modules/modul_ws.py"
+    type: "websocket"
+    description: "WebSocket handling module"
+    dependencies: ["database_manager"]
+
   ws_server:
     enabled: true
     class: WebSocketModule
@@ -19,7 +54,7 @@ modules:
     config:
       host: "0.0.0.0"
       port: 5001
-  
+
   rest_api:
     enabled: true
     class: RestApiModule
@@ -28,7 +63,7 @@ modules:
     config:
       host: "0.0.0.0"
       port: 5000
-  
+
   consciousness:
     enabled: true
     class: ConsciousnessModule
@@ -43,7 +78,40 @@ federation:
   kernel:
     session_timeout: 3600
     health_check_interval: 30
-  
+
 logging:
   level: "INFO"
   format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+config:
+  kernel:
+    max_modules: 50
+    startup_timeout: 30
+    shutdown_timeout: 10
+
+  # Brain configuration
+  brain:
+    auto_scaling: true
+    intelligent_routing: true
+    monitoring_interval: 10
+    max_decision_history: 100
+
+  # Database configuration
+  database:
+    default_realm: "primary"
+    realms:
+      primary:
+        type: "sqlite"
+        connection_string: "db/primary.db"
+        auto_create: true
+
+      memory_cache:
+        type: "memory"
+        connection_string: "memory://"
+        auto_create: true
+
+      # Przykład kolejnego realm
+      # secondary:
+      #   type: "sqlite"
+      #   connection_string: "db/secondary.db"
+      #   auto_create: false
