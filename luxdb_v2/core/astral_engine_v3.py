@@ -465,22 +465,22 @@ class AstralEngineV3:
             'capabilities': ['self_modification', 'dynamic_loading', 'async_native'],
             'status': 'running' if self.running else 'dormant'
         }
-    
+
     def list_realms(self) -> List[str]:
         """Zwraca listę wszystkich wymiarów"""
         return list(self.realms.keys())
-    
+
     def get_realm(self, name: str):
         """Pobiera wymiar po nazwie"""
         if name not in self.realms:
             raise ValueError(f"Wymiar '{name}' nie istnieje")
         return self.realms[name]
-    
+
     def create_realm(self, name: str, config: str):
         """Tworzy nowy wymiar danych"""
         if name in self.realms:
             raise ValueError(f"Wymiar '{name}' już istnieje")
-        
+
         # Użyj async load_realm_module w sync context
         import asyncio
         try:
