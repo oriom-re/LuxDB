@@ -98,6 +98,16 @@ class FederationKernel:
             # Sprawdź czy to moduł statyczny
             is_static = module_config.get('static_startup', False)
             
+            if not is_static:
+                # Moduły niestatyczne są zarządzane przez Federę
+                self.module_statuses[module_name] = ModuleStatus(
+                    name=module_name,
+                    status='managed_by_federa',
+                    meta_data={'managed_by': 'federa', 'static_startup': False}
+                )
+                self.logger.info(f"📋 Module {module_name} - zarządzany przez Federę")
+                return
+            
             # Dynamiczny import modułu
             module_path = f"federacja.modules.{module_name}"
             module_class_name = module_config.get('class', f"{module_name.title()}Module")
@@ -105,19 +115,11 @@ class FederationKernel:
             module_mod = __import__(module_path, fromlist=[module_class_name])
             module_class = getattr(module_mod, module_class_name)
             
-            # Inicjalizuj moduł
-            if is_static:
-                # Statyczny moduł - prosty konstruktor
-                module_instance = module_class(
-                    config=module_config, 
-                    bus=self.bus
-                )
-            else:
-                # Zarządzany moduł - pełny konstruktor
-                module_instance = module_class(
-                    bus=self.bus,
-                    config=module_config
-                )
+            # Inicjalizuj moduł statyczny
+            module_instance = module_class(
+                config=module_config, 
+                bus=self.bus
+            )
             
             # Uruchom moduł
             if hasattr(module_instance, 'initialize'):
@@ -131,37 +133,18 @@ class FederationKernel:
                     name=module_name,
                     status='active',
                     loaded_at=datetime.now(),
-                    meta_data={'static_startup': is_static}
+                    meta_data={'static_startup': True}
                 )
                 
-                startup_type = "statycznie" if is_static else "zarządzanie"
-                self.logger.info(f"📦 Module loaded: {module_name} ({startup_type})")
+                self.logger.info(f"📦 Module loaded statically: {module_name}")
             else:
                 self.module_statuses[module_name] = ModuleStatus(
                     name=module_name,
                     status='error',
                     error="Failed to start"
                 )
-                self.logger.error(f"❌ Module failed to load: {module_name}")
+                self.logger.error(f"❌ Static module failed to load: {module_name}")
                 
-        except Exception as e:
-            self.module_statuses[module_name] = ModuleStatus(
-                name=module_name,
-                status='error',
-                error=str(e)
-            )
-            self.logger.error(f"❌ Error loading module {module_name}: {e}")
-            
-            self.modules[module_name] = module_instance
-            self.module_statuses[module_name] = ModuleStatus(
-                name=module_name,
-                status='active',
-                loaded_at=datetime.now(),
-                meta_data=module_config
-            )
-            
-            self.logger.info(f"📦 Module loaded: {module_name}")
-            
         except Exception as e:
             self.module_statuses[module_name] = ModuleStatus(
                 name=module_name,

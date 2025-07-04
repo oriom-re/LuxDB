@@ -264,6 +264,13 @@ class BrainModule(LuxModule):
 
         for module_name, module_config in manifest.items():
             if module_config.get('enabled', True):
+                # Federa zarządza tylko modułami niestatycznymi
+                is_static = module_config.get('static_startup', False)
+                
+                if is_static:
+                    print(f"📋 Moduł {module_name} - statyczny, pomijany przez Federę")
+                    continue
+                
                 dependencies = module_config.get('dependencies', [])
                 self.module_dependencies[module_name] = dependencies
                 self.module_health[module_name] = False  # Domyślnie nieaktywne
@@ -271,7 +278,7 @@ class BrainModule(LuxModule):
                 # Spróbuj załadować klasę modułu
                 await self._discover_module_class(module_name, module_config)
 
-                print(f"🔍 Znaleziono moduł: {module_name} (deps: {dependencies})")
+                print(f"🔍 Znaleziono moduł niestatyczny: {module_name} (deps: {dependencies})")
 
     async def _discover_module_class(self, module_name: str, module_config: Dict[str, Any]):
         """Odkrywa i analizuje klasę modułu"""
@@ -537,22 +544,39 @@ class BrainModule(LuxModule):
     async def _start_module(self, module_name: str) -> bool:
         """Uruchamia pojedynczy moduł"""
         try:
-            # Specjalna logika dla różnych typów modułów
-            if module_name == "database_manager":
-                # Uruchom Database Manager z konfiguracją realms
-                from .database_manager import DatabaseManager
-                db_config = self.config.get('database', {})
-                db_manager = DatabaseManager(db_config, self.bus)
-                return await db_manager.initialize()
-
-            elif module_name.startswith("realm_"):
-                # Realms są uruchamiane przez Database Manager
+            # Pobierz konfigurację modułu
+            module_config = self.config.get('modules', {}).get(module_name, {})
+            
+            # Sprawdź czy to moduł statyczny - jeśli tak, już powinien być uruchomiony
+            if module_config.get('static_startup', False):
+                print(f"ℹ️ Moduł {module_name} - statyczny, już uruchomiony")
                 return True
-
+            
+            # Dynamiczny import modułu
+            module_path = f"federacja.modules.{module_name}"
+            module_class_name = module_config.get('class', f"{module_name.title()}Module")
+            
+            module_mod = __import__(module_path, fromlist=[module_class_name])
+            module_class = getattr(module_mod, module_class_name)
+            
+            # Inicjalizuj moduł zarządzany przez Federę
+            module_instance = module_class(
+                config=module_config,
+                bus=self.bus
+            )
+            
+            # Uruchom moduł
+            if hasattr(module_instance, 'initialize'):
+                success = await module_instance.initialize()
             else:
-                # Inne moduły - ogólna logika
-                print(f"ℹ️ Moduł {module_name} - ogólne uruchomienie")
+                success = await module_instance.start()
+            
+            if success:
+                print(f"✅ Federa uruchomiła moduł: {module_name}")
                 return True
+            else:
+                print(f"❌ Federa nie mogła uruchomić modułu: {module_name}")
+                return False
 
         except Exception as e:
             print(f"❌ Błąd uruchamiania {module_name}: {e}")
