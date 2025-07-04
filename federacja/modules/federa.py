@@ -201,24 +201,36 @@ class BrainModule(LuxModule):
         
         while self.is_active:
             try:
-                # Co 30 sekund sprawdzaj czy można przejść do aktywnego zarządzania
-                await asyncio.sleep(30)
+                # Przeprowadź pełną diagnostykę systemu
+                diagnostic_report = await self._perform_system_diagnosis()
                 
-                if await self._can_start_management():
+                # Wyświetl raport diagnostyczny
+                await self._display_diagnostic_report(diagnostic_report)
+                
+                # Sprawdź czy można przejść do aktywnego zarządzania
+                if diagnostic_report['can_manage']:
                     print("🔄 Federa wykryła gotowość systemu - przejmuje kontrolę!")
-                    print("📊 Wykryto działający Database Manager - rozpoczynam zarządzanie")
+                    print("📊 Wszystkie kluczowe komponenty gotowe - rozpoczynam zarządzanie")
                     await self._full_initialization()
                     # Przejdź do aktywnego monitorowania
                     await self._active_monitoring()
                     break
+                else:
+                    # Zaproponuj naprawę
+                    await self._suggest_repairs(diagnostic_report)
+                
+                # Co 30 sekund powtarzaj diagnostykę
+                await asyncio.sleep(30)
                     
             except Exception as e:
                 print(f"⚠️ Błąd w pasywnym monitorowaniu: {e}")
+                # Nawet przy błędzie, spróbuj zdiagnozować problem
+                await self._diagnose_monitoring_error(e)
                 await asyncio.sleep(5)
     
     async def _active_monitoring(self):
         """Aktywne monitorowanie systemu"""
-        print("🔍 Brain - aktywne monitorowanie systemu")
+        print("🔍 Federa - aktywne monitorowanie systemu")
         
         while self.is_active:
             try:
@@ -237,7 +249,260 @@ class BrainModule(LuxModule):
 
             except Exception as e:
                 print(f"⚠️ Błąd w aktywnym monitorowaniu systemu: {e}")
+                # Zdiagnozuj błąd aktywnego monitorowania
+                await self._diagnose_monitoring_error(e)
                 await asyncio.sleep(5)
+
+    async def _perform_system_diagnosis(self) -> Dict[str, Any]:
+        """Przeprowadza pełną diagnostykę systemu"""
+        diagnosis = {
+            'timestamp': datetime.now().isoformat(),
+            'can_manage': False,
+            'issues': [],
+            'working_components': [],
+            'missing_components': [],
+            'repair_suggestions': []
+        }
+        
+        # 1. Sprawdź Database Manager
+        db_status = await self._diagnose_database_manager()
+        diagnosis.update(db_status)
+        
+        # 2. Sprawdź dostępne moduły
+        modules_status = await self._diagnose_available_modules()
+        diagnosis.update(modules_status)
+        
+        # 3. Sprawdź bus komunikacyjny
+        bus_status = await self._diagnose_federation_bus()
+        diagnosis.update(bus_status)
+        
+        # 4. Sprawdź konfigurację
+        config_status = await self._diagnose_configuration()
+        diagnosis.update(config_status)
+        
+        # 5. Określ czy można zarządzać
+        diagnosis['can_manage'] = (
+            db_status.get('database_available', False) and
+            len(diagnosis['issues']) == 0
+        )
+        
+        return diagnosis
+    
+    async def _diagnose_database_manager(self) -> Dict[str, Any]:
+        """Diagnozuje stan Database Manager"""
+        result = {
+            'database_available': False,
+            'database_status': 'unknown'
+        }
+        
+        try:
+            # Sprawdź czy Database Manager jest w bus'ie
+            if 'database_manager' in self.bus.subscribers:
+                # Spróbuj wysłać ping
+                message = FederationMessage(
+                    uid="federa_db_ping",
+                    from_module="federa",
+                    to_module="database_manager",
+                    message_type="get_status",
+                    data={},
+                    timestamp=datetime.now().timestamp()
+                )
+                
+                response = await self.bus.send_message(message, timeout=3)
+                if response and response.get('active', False):
+                    result['database_available'] = True
+                    result['database_status'] = 'active'
+                    result['working_components'] = ['database_manager']
+                    return result
+            
+            # Sprawdź czy można zaimportować
+            try:
+                from .database_manager import DatabaseManager
+                result['database_status'] = 'importable_but_not_running'
+                result['issues'] = ['Database Manager nie jest uruchomiony']
+                result['repair_suggestions'] = ['Uruchom Database Manager']
+            except ImportError as e:
+                result['database_status'] = 'import_error'
+                result['issues'] = [f'Błąd importu Database Manager: {e}']
+                result['repair_suggestions'] = ['Sprawdź ścieżkę do modułu database_manager.py']
+                
+        except Exception as e:
+            result['database_status'] = 'error'
+            result['issues'] = [f'Błąd diagnostyki Database Manager: {e}']
+        
+        if not result['database_available']:
+            result['missing_components'] = ['database_manager']
+            
+        return result
+    
+    async def _diagnose_available_modules(self) -> Dict[str, Any]:
+        """Diagnozuje dostępne moduły"""
+        result = {
+            'modules_discovered': 0,
+            'modules_importable': 0,
+            'module_import_errors': []
+        }
+        
+        manifest = self.config.get('modules', {})
+        importable_modules = []
+        
+        for module_name, module_config in manifest.items():
+            if not module_config.get('enabled', True):
+                continue
+                
+            # Nie sprawdzaj modułów statycznych - są zarządzane przez kernel
+            if module_config.get('static_startup', False):
+                continue
+                
+            result['modules_discovered'] += 1
+            
+            try:
+                # Spróbuj zaimportować
+                module_path = f"federacja.modules.{module_name}"
+                module_class_name = module_config.get('class', f"{module_name.title()}Module")
+                
+                module_mod = __import__(module_path, fromlist=[module_class_name])
+                module_class = getattr(module_mod, module_class_name)
+                
+                result['modules_importable'] += 1
+                importable_modules.append(module_name)
+                
+            except Exception as e:
+                result['module_import_errors'].append(f"{module_name}: {e}")
+        
+        result['importable_modules'] = importable_modules
+        
+        if result['module_import_errors']:
+            result['issues'] = result['module_import_errors']
+            result['repair_suggestions'] = [
+                'Sprawdź ścieżki do modułów',
+                'Upewnij się że wszystkie zależności są zainstalowane'
+            ]
+        
+        return result
+    
+    async def _diagnose_federation_bus(self) -> Dict[str, Any]:
+        """Diagnozuje stan bus'a federacji"""
+        result = {}
+        
+        try:
+            if self.bus and hasattr(self.bus, 'running') and self.bus.running:
+                result['bus_status'] = 'running'
+                result['subscribers_count'] = len(self.bus.subscribers)
+                result['working_components'] = result.get('working_components', []) + ['federation_bus']
+            else:
+                result['bus_status'] = 'not_running'
+                result['issues'] = result.get('issues', []) + ['Federation Bus nie działa']
+                result['missing_components'] = result.get('missing_components', []) + ['federation_bus']
+                
+        except Exception as e:
+            result['bus_status'] = 'error'
+            result['issues'] = result.get('issues', []) + [f'Błąd diagnostyki bus\'a: {e}']
+            
+        return result
+    
+    async def _diagnose_configuration(self) -> Dict[str, Any]:
+        """Diagnozuje konfigurację systemu"""
+        result = {}
+        
+        try:
+            # Sprawdź manifest
+            manifest = self.config.get('modules', {})
+            if not manifest:
+                result['issues'] = result.get('issues', []) + ['Brak konfiguracji modułów w manifeście']
+                result['repair_suggestions'] = result.get('repair_suggestions', []) + ['Sprawdź plik manifest.yaml']
+            else:
+                enabled_modules = [name for name, config in manifest.items() if config.get('enabled', True)]
+                result['enabled_modules_count'] = len(enabled_modules)
+                result['working_components'] = result.get('working_components', []) + ['configuration']
+                
+        except Exception as e:
+            result['issues'] = result.get('issues', []) + [f'Błąd odczytu konfiguracji: {e}']
+            
+        return result
+    
+    async def _display_diagnostic_report(self, diagnosis: Dict[str, Any]):
+        """Wyświetla raport diagnostyczny"""
+        print("\n" + "="*60)
+        print("🔍 RAPORT DIAGNOSTYCZNY FEDERY")
+        print("="*60)
+        print(f"⏰ Czas: {diagnosis['timestamp']}")
+        print(f"🎯 Stan systemu: {'✅ Gotowy' if diagnosis['can_manage'] else '⚠️ Wymaga naprawy'}")
+        
+        # Działające komponenty
+        if diagnosis.get('working_components'):
+            print(f"\n✅ DZIAŁAJĄCE KOMPONENTY ({len(diagnosis['working_components'])}):")
+            for component in diagnosis['working_components']:
+                print(f"   • {component}")
+        
+        # Brakujące komponenty
+        if diagnosis.get('missing_components'):
+            print(f"\n❌ BRAKUJĄCE KOMPONENTY ({len(diagnosis['missing_components'])}):")
+            for component in diagnosis['missing_components']:
+                print(f"   • {component}")
+        
+        # Problemy
+        if diagnosis.get('issues'):
+            print(f"\n⚠️ WYKRYTE PROBLEMY ({len(diagnosis['issues'])}):")
+            for i, issue in enumerate(diagnosis['issues'], 1):
+                print(f"   {i}. {issue}")
+        
+        # Status bazy danych
+        if 'database_status' in diagnosis:
+            print(f"\n📊 STATUS BAZY DANYCH: {diagnosis['database_status']}")
+        
+        # Moduły
+        if 'modules_discovered' in diagnosis:
+            print(f"\n📦 MODUŁY:")
+            print(f"   • Wykryte: {diagnosis['modules_discovered']}")
+            print(f"   • Importowalne: {diagnosis['modules_importable']}")
+        
+        print("="*60)
+    
+    async def _suggest_repairs(self, diagnosis: Dict[str, Any]):
+        """Sugeruje naprawy na podstawie diagnozy"""
+        if not diagnosis.get('repair_suggestions'):
+            return
+            
+        print("\n🔧 SUGESTIE NAPRAWCZE FEDERY:")
+        print("-" * 40)
+        
+        for i, suggestion in enumerate(diagnosis['repair_suggestions'], 1):
+            print(f"{i}. {suggestion}")
+        
+        # Specjalne sugestie dla typowych problemów
+        if 'Database Manager nie jest uruchomiony' in diagnosis.get('issues', []):
+            print("\n💡 AUTOMATYCZNA NAPRAWA:")
+            print("   Federa może spróbować uruchomić Database Manager automatycznie")
+            print("   gdy kernel będzie gotowy.")
+        
+        if diagnosis.get('module_import_errors'):
+            print("\n💡 ROZWIĄZYWANIE PROBLEMÓW Z MODUŁAMI:")
+            print("   • Sprawdź czy wszystkie pliki modułów istnieją")
+            print("   • Upewnij się że nie ma błędów składni")
+            print("   • Sprawdź dependencies w manifeście")
+        
+        print("-" * 40)
+    
+    async def _diagnose_monitoring_error(self, error: Exception):
+        """Diagnozuje błędy monitorowania"""
+        print(f"\n🚨 FEDERA - DIAGNOSTYKA BŁĘDU MONITOROWANIA:")
+        print(f"   Typ błędu: {type(error).__name__}")
+        print(f"   Opis: {str(error)}")
+        
+        # Analiza typowych błędów
+        if isinstance(error, asyncio.TimeoutError):
+            print("   💡 Sugestia: Problem z komunikacją - sprawdź czy moduły odpowiadają")
+        elif isinstance(error, KeyError):
+            print("   💡 Sugestia: Brakujący klucz w konfiguracji - sprawdź manifest")
+        elif isinstance(error, ImportError):
+            print("   💡 Sugestia: Problem z importem modułu - sprawdź ścieżki")
+        elif isinstance(error, ConnectionError):
+            print("   💡 Sugestia: Problem z połączeniem - sprawdź bus komunikacyjny")
+        else:
+            print("   💡 Sugestia: Nieznany błąd - sprawdź logi systemu")
+        
+        print("   🔄 Federa będzie kontynuować monitorowanie...")
 
     async def shutdown(self) -> bool:
         """Wyłącza moduł Brain"""
