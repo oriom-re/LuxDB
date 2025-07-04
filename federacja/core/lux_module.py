@@ -205,6 +205,58 @@ class LuxModule(LuxBase):
             self.record_error(f"Initialization failed: {str(e)}")
             return False
     
+    async def start(self) -> bool:
+        """Uruchamia moduł - wywoływane przez kernel"""
+        try:
+            if not self.is_initialized:
+                await self.initialize()
+            
+            self.is_active = True
+            
+            self.add_mutation('module_started', {
+                'success': True,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            return True
+            
+        except Exception as e:
+            self.record_error(f"Start failed: {str(e)}")
+            return False
+    
+    async def stop(self) -> bool:
+        """Zatrzymuje moduł - wywoływane przez kernel"""
+        return await self.shutdown()
+    
+    async def heartbeat(self) -> bool:
+        """Wspólny puls życia - wywoływany regularnie przez kernel"""
+        try:
+            # Override w klasach potomnych dla custom logic
+            if self.is_active:
+                self.operations_count += 1
+                return True
+            return False
+            
+        except Exception as e:
+            self.record_error(f"Heartbeat failed: {str(e)}")
+            return False
+    
+    async def health_check(self) -> bool:
+        """Sprawdza zdrowie modułu"""
+        try:
+            # Podstawowy health check
+            if not self.is_active or not self.is_initialized:
+                return False
+                
+            # Sprawdź czy nie przekroczył limitu błędów
+            if self.error_count >= self.max_errors:
+                return False
+                
+            return True
+            
+        except Exception:
+            return False
+    
     async def shutdown(self) -> bool:
         """Wyłącza moduł - override w klasach potomnych"""
         try:

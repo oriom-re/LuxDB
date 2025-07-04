@@ -17,7 +17,9 @@ from ..core.lux_module import LuxModule, ModuleType, ModuleVersion, ModuleStabil
 
 class BrainModule(LuxModule):
     """
-    Moduł Brain - inteligentny koordynator całej federacji
+    🧠 Brain - Inteligentny Koordynator Federacji
+
+    Decyduje jakie moduły uruchomić i jak nimi zarządzać
     """
 
     def __init__(self, config: Dict[str, Any], bus: FederationBus):
@@ -51,6 +53,40 @@ class BrainModule(LuxModule):
 
         # Rejestracja w bus'ie
         self.bus.register_module(self.module_id, self)
+
+        # Słownik modulemetadata manager
+        self.metadata_manager = None
+
+        print("🧠 Brain Module initialized")
+
+    async def start(self) -> bool:
+        """Uruchamia Brain Module"""
+        if not await super().start():
+            return False
+
+        print("🧠 Brain Module started - analyzing system...")
+        return True
+
+    async def heartbeat(self) -> bool:
+        """Puls życia Brain Module"""
+        if not await super().heartbeat():
+            return False
+
+        # Brain może tutaj wykonywać analizę systemu
+        await self._analyze_system_health()
+        return True
+
+    async def _analyze_system_health(self):
+        """Analizuje zdrowie systemu"""
+        try:
+            # Sprawdź obciążenie
+            await self._check_system_load()
+
+            # Adaptacyjne skalowanie
+            await self._adaptive_scaling()
+
+        except Exception as e:
+            self.record_error(f"System analysis failed: {str(e)}")
 
     async def initialize(self) -> bool:
         """Inicjalizuje moduł Brain"""

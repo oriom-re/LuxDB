@@ -141,19 +141,42 @@ class FederationKernel:
     
     async def _main_loop(self):
         """Główna pętla kernela"""
+        heartbeat_interval = 2  # 2 sekundy
+        health_check_interval = 10  # 10 sekund
+        last_health_check = 0
+        
         while self.running:
             try:
-                # Sprawdź stan modułów
-                await self._health_check()
+                current_time = asyncio.get_event_loop().time()
+                
+                # Wyślij heartbeat do wszystkich modułów
+                await self._send_heartbeat()
+                
+                # Sprawdź stan modułów co 10 sekund
+                if current_time - last_health_check >= health_check_interval:
+                    await self._health_check()
+                    last_health_check = current_time
                 
                 # Przetwórz wiadomości z bus'a
                 await self.bus.process_messages()
                 
-                await asyncio.sleep(1)
+                await asyncio.sleep(heartbeat_interval)
                 
             except Exception as e:
                 self.logger.error(f"❌ Error in main loop: {e}")
                 await asyncio.sleep(5)
+    
+    async def _send_heartbeat(self):
+        """Wysyła puls życia do wszystkich aktywnych modułów"""
+        for module_name, module in self.modules.items():
+            try:
+                if hasattr(module, 'heartbeat'):
+                    is_alive = await module.heartbeat()
+                    if not is_alive:
+                        self.logger.warning(f"💓 Module {module_name} heartbeat failed")
+                        
+            except Exception as e:
+                self.logger.error(f"❌ Heartbeat error for {module_name}: {e}")
     
     async def _health_check(self):
         """Sprawdza stan wszystkich modułów"""
