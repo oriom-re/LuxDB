@@ -96,7 +96,7 @@ class FederationKernel:
             )
             
             # Dynamiczny import modułu
-            module_path = f"modules.{module_name}"
+            module_path = f"federacja.modules.{module_name}"
             module_class_name = module_config.get('class', f"{module_name.title()}Module")
             
             module_mod = __import__(module_path, fromlist=[module_class_name])
