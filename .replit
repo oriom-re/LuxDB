@@ -16,7 +16,7 @@ run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run LuxCore Service"
+runButton = "Run LuxDB v3 Service"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
@@ -98,6 +98,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python vm_health_check.py"
+
+[[workflows.workflow]]
+name = "Run LuxDB v3 Service"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python luxdb_v3_service.py"
 
 [[ports]]
 localPort = 5000
