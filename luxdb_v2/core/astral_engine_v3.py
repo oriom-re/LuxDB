@@ -335,7 +335,7 @@ class AstralEngineV3:
         """Cykl medytacyjny systemu"""
         while self.running:
             try:
-                await asyncio.sleep(self.config.meditation_interval)
+                await asyncio.sleep(getattr(self.config, 'meditation_interval', 60))
                 if self.running:
                     meditation_result = self.meditate()
 
@@ -350,7 +350,7 @@ class AstralEngineV3:
         """Cykl harmonizacji systemu"""
         while self.running:
             try:
-                await asyncio.sleep(self.config.harmony_check_interval)
+                await asyncio.sleep(getattr(self.config, 'harmony_check_interval', 30))
                 if self.running and self.harmony:
                     self.harmony.balance()
 
@@ -379,6 +379,14 @@ class AstralEngineV3:
                 else:
                     modules_status[name] = {'active': True}
 
+            # Status flows - kompatybilność z v2
+            flows_status = {}
+            for flow_name, flow in self.flows.items():
+                if hasattr(flow, 'get_status'):
+                    flows_status[flow_name] = flow.get_status()
+                else:
+                    flows_status[flow_name] = {'active': True, 'type': f'{flow_name}_flow'}
+
             meditation_time = time.time() - meditation_start
 
             return {
@@ -387,8 +395,10 @@ class AstralEngineV3:
                 'engine_id': self.engine_id,
                 'luxbus_status': luxbus_status,
                 'modules_status': modules_status,
+                'flows_status': flows_status,
                 'insights': insights,
-                'uptime': str(datetime.now() - self.awakened_at) if self.awakened_at else '0:00:00'
+                'uptime': str(datetime.now() - self.awakened_at) if self.awakened_at else '0:00:00',
+                'harmony_score': 100.0  # Domyślna wartość harmonii
             }
 
         except Exception as e:
@@ -454,6 +464,36 @@ class AstralEngineV3:
             'capabilities': ['self_modification', 'dynamic_loading', 'async_native'],
             'status': 'running' if self.running else 'dormant'
         }
+    
+    def list_realms(self) -> List[str]:
+        """Zwraca listę wszystkich wymiarów"""
+        return list(self.realms.keys())
+    
+    def get_realm(self, name: str):
+        """Pobiera wymiar po nazwie"""
+        if name not in self.realms:
+            raise ValueError(f"Wymiar '{name}' nie istnieje")
+        return self.realms[name]
+    
+    def create_realm(self, name: str, config: str):
+        """Tworzy nowy wymiar danych"""
+        if name in self.realms:
+            raise ValueError(f"Wymiar '{name}' już istnieje")
+        
+        # Użyj async load_realm_module w sync context
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Jeśli loop już działa, użyj create_task
+                task = loop.create_task(self.load_realm_module(name, config))
+                return task
+            else:
+                # Jeśli nie ma loopu, uruchom synchronicznie
+                return asyncio.run(self.load_realm_module(name, config))
+        except RuntimeError:
+            # Fallback - uruchom bezpośrednio load_realm_module
+            return asyncio.create_task(self.load_realm_module(name, config))
 
 
 # Funkcje pomocnicze
