@@ -72,6 +72,14 @@ modules:
     config:
       meditation_interval: 60
 
+  module_metadata_manager:
+    enabled: true
+    class: ModuleMetadataManager
+    description: "Module metadata storage and search"
+    dependencies: []
+    config:
+      db_path: "db/module_metadata.db"
+
 federation:
   name: "LuxDB Federation"
   version: "1.0.0"
@@ -95,6 +103,12 @@ config:
     intelligent_routing: true
     monitoring_interval: 10
     max_decision_history: 100
+
+  # Module metadata configuration
+  metadata:
+    db_path: "db/module_metadata.db"
+    cleanup_interval_hours: 24
+    max_module_age_days: 30
 
   # Database configuration
   database:
