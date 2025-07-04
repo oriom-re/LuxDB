@@ -16,7 +16,7 @@ run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run LuxDB v3 Service"
+runButton = "Start Federation Kernel"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
@@ -107,6 +107,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python luxdb_v3_service.py"
+
+[[workflows.workflow]]
+name = "Start Federation Kernel"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_kernel.py"
 
 [[ports]]
 localPort = 5000
