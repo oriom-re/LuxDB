@@ -16,7 +16,7 @@ from .realm_sqlite import SQLiteRealmModule
 from .realm_memory import MemoryRealmModule
 
 
-class DatabaseManager(LuxModule):
+class DatabaseManagerModule(LuxModule):
     """
     Główny menedżer bazy danych - koordynuje wszystkie realms
     """

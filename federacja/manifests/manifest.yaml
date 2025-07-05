@@ -15,8 +15,16 @@ modules:
     config:
       max_entities: 10000
 
-  thought_flow:
+  realm_knowledge:
     enabled: true
+    static_startup: true
+    class: KnowledgeRealmModule
+    name: "knowledge_realm"
+    config:
+      max_entities: 10000
+
+  thought_flow:
+    enabled: false
     static_startup: true
     class: ThoughtFlowModule
     config:

@@ -15,7 +15,7 @@ class MemoryRealmModule(BaseRealmModule):
     Moduł wymiaru danych w pamięci - najszybszy dostęp, ale dane nietrwałe
     """
     
-    def __init__(self, name: str, config: Dict[str, Any], bus):
+    def __init__(self, config: Dict[str, Any], bus, name: str = "main"):
         super().__init__(name, config, bus)
         
         # Przechowywanie danych w pamięci
