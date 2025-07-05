@@ -1,59 +1,34 @@
 modules:
-  federa:
-    enabled: true
-    class: BrainModule
-    path: modules/brain.py
-    auto_scaling: true
-    intelligent_routing: true
-    dependencies: []
-    personality: "Mądra, cierpliwa koordynatorka federacji"
-
+  # Moduły statyczne - ładowane przez Kernel
   database_manager:
-    enabled: true  # Włączony - startuje niezależnie
-    class: DatabaseManager
-    path: modules/database_manager.py
-    dependencies: []
-    static_startup: true  # Statyczny start bez nadzoru Federy
-
-  realm_sqlite:
-    enabled: false  # Tymczasowo wyłączony - zależy od database_manager
-    class: RealmSqliteModule  
-    path: modules/realm_sqlite.py
-    dependencies: [database_manager]
+    enabled: true
+    static_startup: true
+    class: DatabaseManagerModule
+    config:
+      default_realm_type: "memory"
 
   realm_memory:
-    enabled: true  # Włączony - podstawowy realm
-    class: MemoryRealmModule
-    path: modules/realm_memory.py
-    dependencies: [database_manager]
-    static_startup: true  # Statyczny start z database_manager
-
-  consciousness:
-    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
-    class: ConsciousnessModule
-    path: modules/consciousness.py
-    dependencies: [brain]
-
-  harmony:
-    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
-    class: HarmonyModule
-    path: modules/harmony.py
-    dependencies: [consciousness]
-
-  astral_containers:
-    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
-    class: AstralContainersModule
-    path: modules/astral_containers.py
-    dependencies: [database_manager]
-
-  websocket_flow:
-    enabled: false  # Tymczasowo wyłączony - wymaga naprawy konstruktora
-    class: WebSocketFlowModule
-    path: modules/websocket_flow.py
-    dependencies: [brain]
-
-  module_metadata_manager:
     enabled: true
-    class: ModuleMetadataManagerModule
-    path: modules/module_metadata_manager.py
-    dependencies: []
+    static_startup: true
+    class: MemoryRealmModule
+    name: "memory_realm"
+    config:
+      max_entities: 10000
+
+  thought_flow:
+    enabled: true
+    static_startup: true
+    class: ThoughtFlowModule
+    config:
+      max_circulating: 50
+      check_interval: 10
+
+  # Moduły zarządzane przez Federę
+  federa:
+    enabled: true
+    static_startup: false  # Zarządzany przez Federę
+    class: FederaModule
+    config:
+      personality: "empathetic_coordinator"
+      decision_making: "collaborative"
+      memory_retention: "high"

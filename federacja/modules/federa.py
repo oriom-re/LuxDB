@@ -120,25 +120,25 @@ class BrainModule(LuxModule):
             self.is_active = True
             asyncio.create_task(self._passive_monitoring())
             return True
-    
+
     async def _can_start_management(self) -> bool:
         """Sprawdza czy Brain może rozpocząć aktywne zarządzanie"""
         # Sprawdź czy Database Manager jest dostępny
         database_available = await self._check_database_availability()
-        
+
         # Sprawdź czy GPT jest skonfigurowany (opcjonalnie)
         gpt_configured = await self._check_gpt_configuration()
-        
+
         # Brain może działać jeśli ma bazę danych
         can_manage = database_available
-        
+
         print(f"🔍 Federa analizuje gotowość systemu:")
         print(f"   📊 Database Manager: {'✅' if database_available else '❌'}")
         print(f"   🤖 GPT Flow: {'✅' if gpt_configured else '⚠️ opcjonalny'}")
         print(f"   🧠 Federa może zarządzać: {'✅' if can_manage else '❌'}")
-        
+
         return can_manage
-    
+
     async def _check_database_availability(self) -> bool:
         """Sprawdza czy Database Manager jest dostępny"""
         try:
@@ -152,27 +152,27 @@ class BrainModule(LuxModule):
                     data={},
                     timestamp=datetime.now().timestamp()
                 )
-                
+
                 response = await self.bus.send_message(message, timeout=2)
                 if response.get('active', False):
                     return True
             except Exception:
                 pass
-            
+
             # Sprawdź czy database_manager jest w dostępnych modułach
             if 'database_manager' in self.available_modules:
                 return True
-            
+
             # Sprawdź czy można go załadować
             try:
                 from .database_manager import DatabaseManager
                 return True
             except ImportError:
                 return False
-                
+
         except Exception:
             return False
-    
+
     async def _check_gpt_configuration(self) -> bool:
         """Sprawdza czy GPT Flow jest skonfigurowany"""
         try:
@@ -180,11 +180,11 @@ class BrainModule(LuxModule):
             return os.getenv('OPENAI_API_KEY') is not None
         except Exception:
             return False
-    
+
     async def _full_initialization(self) -> bool:
         """Pełna inicjalizacja z aktywnym zarządzaniem"""
         print("🚀 Brain - pełna inicjalizacja z zarządzaniem modułami")
-        
+
         # Podejmij decyzje o uruchomieniu
         startup_plan = await self._create_startup_plan()
 
@@ -199,23 +199,23 @@ class BrainModule(LuxModule):
 
         print(f"🧠 Brain aktywny - zarządza {len(self.active_modules)} modułami")
         return success
-    
+
     async def _passive_monitoring(self):
         """Pasywne monitorowanie - czeka na gotowość do zarządzania"""
         print("👁️ Federa w trybie obserwacji - cierpliwie czeka na gotowość systemu")
-        
+
         while self.is_active:
             try:
                 # Przeprowadź pełną diagnostykę systemu
                 diagnostic_report = await self._perform_system_diagnosis()
-                
+
                 # Wyświetl raport diagnostyczny
                 await self._display_diagnostic_report(diagnostic_report)
-                
+
                 # Wyświetl raport monitorowania jeśli są dane
                 if self.initialization_results:
                     await self.display_monitoring_report()
-                
+
                 # Sprawdź czy można przejść do aktywnego zarządzania
                 if diagnostic_report['can_manage']:
                     print("🔄 Federa wykryła gotowość systemu - przejmuje kontrolę!")
@@ -227,20 +227,20 @@ class BrainModule(LuxModule):
                 else:
                     # Zaproponuj naprawę
                     await self._suggest_repairs(diagnostic_report)
-                
+
                 # Co 30 sekund powtarzaj diagnostykę
                 await asyncio.sleep(30)
-                    
+
             except Exception as e:
                 print(f"⚠️ Błąd w pasywnym monitorowaniu: {e}")
                 # Nawet przy błędzie, spróbuj zdiagnozować problem
                 await self._diagnose_monitoring_error(e)
                 await asyncio.sleep(5)
-    
+
     async def _active_monitoring(self):
         """Aktywne monitorowanie systemu"""
         print("🔍 Federa - aktywne monitorowanie systemu")
-        
+
         while self.is_active:
             try:
                 # Sprawdź zdrowie modułów
@@ -272,38 +272,38 @@ class BrainModule(LuxModule):
             'missing_components': [],
             'repair_suggestions': []
         }
-        
+
         # 1. Sprawdź Database Manager
         db_status = await self._diagnose_database_manager()
         diagnosis.update(db_status)
-        
+
         # 2. Sprawdź dostępne moduły
         modules_status = await self._diagnose_available_modules()
         diagnosis.update(modules_status)
-        
+
         # 3. Sprawdź bus komunikacyjny
         bus_status = await self._diagnose_federation_bus()
         diagnosis.update(bus_status)
-        
+
         # 4. Sprawdź konfigurację
         config_status = await self._diagnose_configuration()
         diagnosis.update(config_status)
-        
+
         # 5. Określ czy można zarządzać
         diagnosis['can_manage'] = (
             db_status.get('database_available', False) and
             len(diagnosis['issues']) == 0
         )
-        
+
         return diagnosis
-    
+
     async def _diagnose_database_manager(self) -> Dict[str, Any]:
         """Diagnozuje stan Database Manager"""
         result = {
             'database_available': False,
             'database_status': 'unknown'
         }
-        
+
         try:
             # Sprawdź czy Database Manager jest w bus'ie
             if 'database_manager' in self.bus.subscribers:
@@ -316,14 +316,14 @@ class BrainModule(LuxModule):
                     data={},
                     timestamp=datetime.now().timestamp()
                 )
-                
+
                 response = await self.bus.send_message(message, timeout=3)
                 if response and response.get('active', False):
                     result['database_available'] = True
                     result['database_status'] = 'active'
                     result['working_components'] = ['database_manager']
                     return result
-            
+
             # Sprawdź czy można zaimportować
             try:
                 from .database_manager import DatabaseManager
@@ -334,16 +334,16 @@ class BrainModule(LuxModule):
                 result['database_status'] = 'import_error'
                 result['issues'] = [f'Błąd importu Database Manager: {e}']
                 result['repair_suggestions'] = ['Sprawdź ścieżkę do modułu database_manager.py']
-                
+
         except Exception as e:
             result['database_status'] = 'error'
             result['issues'] = [f'Błąd diagnostyki Database Manager: {e}']
-        
+
         if not result['database_available']:
             result['missing_components'] = ['database_manager']
-            
+
         return result
-    
+
     async def _diagnose_available_modules(self) -> Dict[str, Any]:
         """Diagnozuje dostępne moduły"""
         result = {
@@ -351,49 +351,49 @@ class BrainModule(LuxModule):
             'modules_importable': 0,
             'module_import_errors': []
         }
-        
+
         manifest = self.config.get('modules', {})
         importable_modules = []
-        
+
         for module_name, module_config in manifest.items():
             if not module_config.get('enabled', True):
                 continue
-                
+
             # Nie sprawdzaj modułów statycznych - są zarządzane przez kernel
             if module_config.get('static_startup', False):
                 continue
-                
+
             result['modules_discovered'] += 1
-            
+
             try:
                 # Spróbuj zaimportować
                 module_path = f"federacja.modules.{module_name}"
                 module_class_name = module_config.get('class', f"{module_name.title()}Module")
-                
+
                 module_mod = __import__(module_path, fromlist=[module_class_name])
                 module_class = getattr(module_mod, module_class_name)
-                
+
                 result['modules_importable'] += 1
                 importable_modules.append(module_name)
-                
+
             except Exception as e:
                 result['module_import_errors'].append(f"{module_name}: {e}")
-        
+
         result['importable_modules'] = importable_modules
-        
+
         if result['module_import_errors']:
             result['issues'] = result['module_import_errors']
             result['repair_suggestions'] = [
                 'Sprawdź ścieżki do modułów',
                 'Upewnij się że wszystkie zależności są zainstalowane'
             ]
-        
+
         return result
-    
+
     async def _diagnose_federation_bus(self) -> Dict[str, Any]:
         """Diagnozuje stan bus'a federacji"""
         result = {}
-        
+
         try:
             if self.bus and hasattr(self.bus, 'running') and self.bus.running:
                 result['bus_status'] = 'running'
@@ -403,17 +403,17 @@ class BrainModule(LuxModule):
                 result['bus_status'] = 'not_running'
                 result['issues'] = result.get('issues', []) + ['Federation Bus nie działa']
                 result['missing_components'] = result.get('missing_components', []) + ['federation_bus']
-                
+
         except Exception as e:
             result['bus_status'] = 'error'
             result['issues'] = result.get('issues', []) + [f'Błąd diagnostyki bus\'a: {e}']
-            
+
         return result
-    
+
     async def _diagnose_configuration(self) -> Dict[str, Any]:
         """Diagnozuje konfigurację systemu"""
         result = {}
-        
+
         try:
             # Sprawdź manifest
             manifest = self.config.get('modules', {})
@@ -424,12 +424,12 @@ class BrainModule(LuxModule):
                 enabled_modules = [name for name, config in manifest.items() if config.get('enabled', True)]
                 result['enabled_modules_count'] = len(enabled_modules)
                 result['working_components'] = result.get('working_components', []) + ['configuration']
-                
+
         except Exception as e:
             result['issues'] = result.get('issues', []) + [f'Błąd odczytu konfiguracji: {e}']
-            
+
         return result
-    
+
     async def _display_diagnostic_report(self, diagnosis: Dict[str, Any]):
         """Wyświetla raport diagnostyczny"""
         print("\n" + "="*60)
@@ -437,68 +437,68 @@ class BrainModule(LuxModule):
         print("="*60)
         print(f"⏰ Czas: {diagnosis['timestamp']}")
         print(f"🎯 Stan systemu: {'✅ Gotowy' if diagnosis['can_manage'] else '⚠️ Wymaga naprawy'}")
-        
+
         # Działające komponenty
         if diagnosis.get('working_components'):
             print(f"\n✅ DZIAŁAJĄCE KOMPONENTY ({len(diagnosis['working_components'])}):")
             for component in diagnosis['working_components']:
                 print(f"   • {component}")
-        
+
         # Brakujące komponenty
         if diagnosis.get('missing_components'):
             print(f"\n❌ BRAKUJĄCE KOMPONENTY ({len(diagnosis['missing_components'])}):")
             for component in diagnosis['missing_components']:
                 print(f"   • {component}")
-        
+
         # Problemy
         if diagnosis.get('issues'):
             print(f"\n⚠️ WYKRYTE PROBLEMY ({len(diagnosis['issues'])}):")
             for i, issue in enumerate(diagnosis['issues'], 1):
                 print(f"   {i}. {issue}")
-        
+
         # Status bazy danych
         if 'database_status' in diagnosis:
             print(f"\n📊 STATUS BAZY DANYCH: {diagnosis['database_status']}")
-        
+
         # Moduły
         if 'modules_discovered' in diagnosis:
             print(f"\n📦 MODUŁY:")
             print(f"   • Wykryte: {diagnosis['modules_discovered']}")
             print(f"   • Importowalne: {diagnosis['modules_importable']}")
-        
+
         print("="*60)
-    
+
     async def _suggest_repairs(self, diagnosis: Dict[str, Any]):
         """Sugeruje naprawy na podstawie diagnozy"""
         if not diagnosis.get('repair_suggestions'):
             return
-            
+
         print("\n🔧 SUGESTIE NAPRAWCZE FEDERY:")
         print("-" * 40)
-        
+
         for i, suggestion in enumerate(diagnosis['repair_suggestions'], 1):
             print(f"{i}. {suggestion}")
-        
+
         # Specjalne sugestie dla typowych problemów
         if 'Database Manager nie jest uruchomiony' in diagnosis.get('issues', []):
             print("\n💡 AUTOMATYCZNA NAPRAWA:")
             print("   Federa może spróbować uruchomić Database Manager automatycznie")
             print("   gdy kernel będzie gotowy.")
-        
+
         if diagnosis.get('module_import_errors'):
             print("\n💡 ROZWIĄZYWANIE PROBLEMÓW Z MODUŁAMI:")
             print("   • Sprawdź czy wszystkie pliki modułów istnieją")
             print("   • Upewnij się że nie ma błędów składni")
             print("   • Sprawdź dependencies w manifeście")
-        
+
         print("-" * 40)
-    
+
     async def _diagnose_monitoring_error(self, error: Exception):
         """Diagnozuje błędy monitorowania"""
         print(f"\n🚨 FEDERA - DIAGNOSTYKA BŁĘDU MONITOROWANIA:")
         print(f"   Typ błędu: {type(error).__name__}")
         print(f"   Opis: {str(error)}")
-        
+
         # Analiza typowych błędów
         if isinstance(error, asyncio.TimeoutError):
             print("   💡 Sugestia: Problem z komunikacją - sprawdź czy moduły odpowiadają")
@@ -510,7 +510,7 @@ class BrainModule(LuxModule):
             print("   💡 Sugestia: Problem z połączeniem - sprawdź bus komunikacyjny")
         else:
             print("   💡 Sugestia: Nieznany błąd - sprawdź logi systemu")
-        
+
         print("   🔄 Federa będzie kontynuować monitorowanie...")
 
     async def shutdown(self) -> bool:
@@ -540,11 +540,11 @@ class BrainModule(LuxModule):
             if module_config.get('enabled', True):
                 # Federa zarządza tylko modułami niestatycznymi
                 is_static = module_config.get('static_startup', False)
-                
+
                 if is_static:
                     print(f"📋 Moduł {module_name} - statyczny, pomijany przez Federę")
                     continue
-                
+
                 dependencies = module_config.get('dependencies', [])
                 self.module_dependencies[module_name] = dependencies
                 self.module_health[module_name] = False  # Domyślnie nieaktywne
@@ -818,7 +818,7 @@ class BrainModule(LuxModule):
     async def _start_module(self, module_name: str) -> bool:
         """Uruchamia pojedynczy moduł z pełnym nadzorem"""
         start_time = datetime.now()
-        
+
         # Inicjalizuj struktury nadzoru
         self.module_logs[module_name] = []
         self.initialization_results[module_name] = {
@@ -826,27 +826,27 @@ class BrainModule(LuxModule):
             'status': 'initializing',
             'steps': []
         }
-        
+
         try:
             self._log_module_event(module_name, 'info', 'Rozpoczęcie inicjalizacji modułu')
-            
+
             # Pobierz konfigurację modułu
             module_config = self.config.get('modules', {}).get(module_name, {})
             self._log_module_event(module_name, 'info', f'Konfiguracja załadowana: {len(module_config)} parametrów')
-            
+
             # Sprawdź czy to moduł statyczny
             if module_config.get('static_startup', False):
                 self._log_module_event(module_name, 'info', 'Moduł statyczny - już uruchomiony przez kernel')
                 self._finalize_module_monitoring(module_name, True, 'Static module - already running')
                 return True
-            
+
             # Krok 1: Import modułu
             self._add_initialization_step(module_name, 'import', 'starting')
             module_path = f"federacja.modules.{module_name}"
             module_class_name = module_config.get('class', f"{module_name.title()}Module")
-            
+
             self._log_module_event(module_name, 'debug', f'Importowanie: {module_path}.{module_class_name}')
-            
+
             try:
                 module_mod = __import__(module_path, fromlist=[module_class_name])
                 module_class = getattr(module_mod, module_class_name)
@@ -855,11 +855,11 @@ class BrainModule(LuxModule):
             except Exception as import_error:
                 self._add_initialization_step(module_name, 'import', 'failed', str(import_error))
                 raise import_error
-            
+
             # Krok 2: Tworzenie instancji
             self._add_initialization_step(module_name, 'instantiation', 'starting')
             self._log_module_event(module_name, 'debug', 'Tworzenie instancji modułu')
-            
+
             try:
                 module_instance = module_class(
                     config=module_config,
@@ -870,18 +870,18 @@ class BrainModule(LuxModule):
             except Exception as instance_error:
                 self._add_initialization_step(module_name, 'instantiation', 'failed', str(instance_error))
                 raise instance_error
-            
+
             # Krok 3: Inicjalizacja/Start
             init_method = 'initialize' if hasattr(module_instance, 'initialize') else 'start'
             self._add_initialization_step(module_name, init_method, 'starting')
             self._log_module_event(module_name, 'debug', f'Wywoływanie metody {init_method}')
-            
+
             try:
                 if init_method == 'initialize':
                     success = await module_instance.initialize()
                 else:
                     success = await module_instance.start()
-                
+
                 if success:
                     self._add_initialization_step(module_name, init_method, 'success')
                     self._log_module_event(module_name, 'info', f'Metoda {init_method} zakończona pomyślnie')
@@ -892,7 +892,7 @@ class BrainModule(LuxModule):
                     self._log_module_event(module_name, 'error', f'Metoda {init_method} zwróciła False')
                     self._finalize_module_monitoring(module_name, False, 'Initialization method returned False')
                     return False
-                    
+
             except Exception as init_error:
                 self._add_initialization_step(module_name, init_method, 'failed', str(init_error))
                 raise init_error
@@ -978,7 +978,7 @@ class BrainModule(LuxModule):
         for cmd_name, cmd_func in commands.items():
             await self.bus.register_command(f"{self.module_id}.{cmd_name}", cmd_func)
 
-    
+
 
     async def _check_module_health(self):
         """Sprawdza zdrowie wszystkich modułów"""
@@ -1042,7 +1042,7 @@ class BrainModule(LuxModule):
     async def get_status(self) -> Dict[str, Any]:
         """Zwraca status Brain"""
         monitoring_summary = await self.get_monitoring_summary()
-        
+
         return {
             'module_id': self.module_id,
             'personality_name': self.personality_name,
@@ -1114,7 +1114,7 @@ class BrainModule(LuxModule):
             # Logika wyłączania zbędnych modułów
 
         return True
-    
+
     def _log_module_event(self, module_name: str, level: str, message: str):
         """Loguje wydarzenie związane z modułem"""
         event = {
@@ -1123,12 +1123,12 @@ class BrainModule(LuxModule):
             'message': message,
             'federa_monitoring': True
         }
-        
+
         if module_name not in self.module_logs:
             self.module_logs[module_name] = []
-        
+
         self.module_logs[module_name].append(event)
-        
+
         # Wyświetl w konsoli z prefiksem Federy
         level_emoji = {
             'debug': '🔍',
@@ -1136,10 +1136,10 @@ class BrainModule(LuxModule):
             'warning': '⚠️',
             'error': '❌'
         }
-        
+
         emoji = level_emoji.get(level, 'ℹ️')
         print(f"🧠 Federa [{module_name}] {emoji} {message}")
-    
+
     def _add_initialization_step(self, module_name: str, step_name: str, status: str, error_message: str = None):
         """Dodaje krok inicjalizacji do monitorowania"""
         step = {
@@ -1148,17 +1148,17 @@ class BrainModule(LuxModule):
             'timestamp': datetime.now().isoformat(),
             'error': error_message
         }
-        
+
         if module_name in self.initialization_results:
             self.initialization_results[module_name]['steps'].append(step)
-    
+
     def _finalize_module_monitoring(self, module_name: str, success: bool, final_message: str):
         """Finalizuje monitorowanie modułu"""
         end_time = datetime.now()
         start_time_str = self.initialization_results[module_name]['start_time']
         start_time = datetime.fromisoformat(start_time_str)
         duration = (end_time - start_time).total_seconds()
-        
+
         self.initialization_results[module_name].update({
             'end_time': end_time.isoformat(),
             'duration_seconds': duration,
@@ -1166,7 +1166,7 @@ class BrainModule(LuxModule):
             'final_message': final_message,
             'logs_count': len(self.module_logs.get(module_name, []))
         })
-        
+
         # Zapisz metryki wydajności
         self.module_performance[module_name] = {
             'initialization_duration': duration,
@@ -1174,11 +1174,11 @@ class BrainModule(LuxModule):
             'success': success,
             'timestamp': end_time.isoformat()
         }
-        
+
         # Wyświetl podsumowanie
         status_emoji = '✅' if success else '❌'
         print(f"🧠 Federa [{module_name}] {status_emoji} Inicjalizacja zakończona w {duration:.2f}s - {final_message}")
-    
+
     async def get_module_logs(self, module_name: str = None) -> Dict[str, Any]:
         """Zwraca logi modułów"""
         if module_name:
@@ -1193,7 +1193,7 @@ class BrainModule(LuxModule):
                 'all_initialization_results': self.initialization_results,
                 'all_performance': self.module_performance
             }
-    
+
     async def get_monitoring_summary(self) -> Dict[str, Any]:
         """Zwraca podsumowanie monitorowania"""
         total_modules = len(self.initialization_results)
@@ -1201,13 +1201,13 @@ class BrainModule(LuxModule):
                                if result.get('status') == 'success')
         failed_modules = sum(1 for result in self.initialization_results.values() 
                            if result.get('status') == 'failed')
-        
+
         avg_duration = 0
         if self.module_performance:
             total_duration = sum(perf.get('initialization_duration', 0) 
                                for perf in self.module_performance.values())
             avg_duration = total_duration / len(self.module_performance)
-        
+
         return {
             'summary': {
                 'total_modules_monitored': total_modules,
@@ -1230,7 +1230,7 @@ class BrainModule(LuxModule):
                 if result.get('status') == 'failed'
             ][-5:]  # Ostatnie 5 błędów
         }
-    
+
     async def clear_module_logs(self, module_name: str = None) -> Dict[str, Any]:
         """Czyści logi modułów"""
         if module_name:
@@ -1252,18 +1252,18 @@ class BrainModule(LuxModule):
                 'cleared_logs': total_cleared,
                 'modules_cleared': len(self.module_logs)
             }
-    
+
     async def get_failed_modules_diagnostics(self) -> Dict[str, Any]:
         """Zwraca szczegółową diagnostykę modułów, które nie udało się uruchomić"""
         failed_modules = {}
-        
+
         for module_name, result in self.initialization_results.items():
             if result.get('status') == 'failed':
                 failed_steps = [
                     step for step in result.get('steps', [])
                     if step.get('status') == 'failed'
                 ]
-                
+
                 failed_modules[module_name] = {
                     'final_error': result.get('final_message'),
                     'duration': result.get('duration_seconds', 0),
@@ -1271,13 +1271,13 @@ class BrainModule(LuxModule):
                     'all_steps': result.get('steps', []),
                     'logs': self.module_logs.get(module_name, [])
                 }
-        
+
         return {
             'failed_modules_count': len(failed_modules),
             'diagnostics': failed_modules,
             'common_failure_patterns': self._analyze_failure_patterns(failed_modules)
         }
-    
+
     def _analyze_failure_patterns(self, failed_modules: Dict[str, Any]) -> Dict[str, Any]:
         """Analizuje wzorce błędów w modułach"""
         patterns = {
@@ -1286,7 +1286,7 @@ class BrainModule(LuxModule):
             'initialization_errors': 0,
             'common_error_keywords': {}
         }
-        
+
         for module_name, diagnostics in failed_modules.items():
             for step in diagnostics.get('failed_steps', []):
                 step_name = step.get('name', '')
@@ -1296,23 +1296,23 @@ class BrainModule(LuxModule):
                     patterns['instantiation_errors'] += 1
                 elif step_name in ['initialize', 'start']:
                     patterns['initialization_errors'] += 1
-                
+
                 # Analizuj słowa kluczowe w błędach
                 error_msg = step.get('error', '').lower()
                 for keyword in ['missing', 'not found', 'import', 'module', 'attribute']:
                     if keyword in error_msg:
                         patterns['common_error_keywords'][keyword] = patterns['common_error_keywords'].get(keyword, 0) + 1
-        
+
         return patterns
-    
+
     async def display_monitoring_report(self):
         """Wyświetla szczegółowy raport monitorowania"""
         print("\n" + "="*80)
         print("🧠 FEDERA - RAPORT MONITOROWANIA MODUŁÓW")
         print("="*80)
-        
+
         summary = await self.get_monitoring_summary()
-        
+
         # Podsumowanie ogólne
         print(f"\n📊 PODSUMOWANIE OGÓLNE:")
         print(f"   • Monitorowanych modułów: {summary['summary']['total_modules_monitored']}")
@@ -1320,36 +1320,36 @@ class BrainModule(LuxModule):
         print(f"   • Nieudanych inicjalizacji: {summary['summary']['failed_initializations']}")
         print(f"   • Wskaźnik sukcesu: {summary['summary']['success_rate']:.1f}%")
         print(f"   • Średni czas inicjalizacji: {summary['summary']['average_initialization_time']:.2f}s")
-        
+
         # Status modułów
         print(f"\n📦 STATUS MODUŁÓW:")
         for module_name, status in summary['module_statuses'].items():
             status_emoji = '✅' if status == 'success' else '❌' if status == 'failed' else '⏳'
             duration = self.module_performance.get(module_name, {}).get('initialization_duration', 0)
             print(f"   {status_emoji} {module_name}: {status} ({duration:.2f}s)")
-        
+
         # Ostatnie błędy
         if summary['recent_failures']:
             print(f"\n⚠️ OSTATNIE BŁĘDY ({len(summary['recent_failures'])}):")
             for failure in summary['recent_failures']:
                 print(f"   • {failure['module']}: {failure['error']}")
                 print(f"     ⏰ {failure['timestamp']}")
-        
+
         # Diagnostyka błędów
         if summary['summary']['failed_initializations'] > 0:
             diagnostics = await self.get_failed_modules_diagnostics()
             patterns = diagnostics['common_failure_patterns']
-            
+
             print(f"\n🔍 ANALIZA WZORCÓW BŁĘDÓW:")
             print(f"   • Błędy importu: {patterns['import_errors']}")
             print(f"   • Błędy tworzenia instancji: {patterns['instantiation_errors']}")
             print(f"   • Błędy inicjalizacji: {patterns['initialization_errors']}")
-            
+
             if patterns['common_error_keywords']:
                 print(f"   • Najczęstsze słowa kluczowe w błędach:")
                 for keyword, count in patterns['common_error_keywords'].items():
                     print(f"     - '{keyword}': {count} wystąpień")
-        
+
         print("="*80)
 
     async def search_modules(self, criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
