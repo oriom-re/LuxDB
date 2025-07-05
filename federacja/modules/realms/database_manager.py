@@ -343,21 +343,27 @@ class DatabaseManager(LuxModule):
 
     async def handle_message(self, message: FederationMessage) -> Any:
         """Obsługuje wiadomości z bus'a"""
-        command = message.message_type
-        data = message.data
+        try:
+            command = message.message_type
+            data = message.data if hasattr(message, 'data') else {}
 
-        if command == 'create_database':
-            return await self._handle_create_database(data)
-        elif command == 'get_database':
-            return await self._handle_get_database(data)
-        elif command == 'list_databases':
-            return await self._handle_list_databases(data)
-        elif command == 'execute_query':
-            return await self._handle_execute_query(data)
-        elif command == 'get_status':
-            return await self._handle_get_status(data)
-        else:
-            return {'error': f'Nieznana komenda: {command}'}
+            if command == 'create_database':
+                return await self._handle_create_database(data)
+            elif command == 'get_database':
+                return await self._handle_get_database(data)
+            elif command == 'list_databases':
+                return await self._handle_list_databases(data)
+            elif command == 'execute_query':
+                return await self._handle_execute_query(data)
+            elif command == 'get_status':
+                return await self._handle_get_status(data)
+            elif command == 'health_check':
+                return await self.health_check()
+            else:
+                return {'error': f'Nieznana komenda: {command}'}
+        except Exception as e:
+            print(f"❌ DatabaseManager.handle_message error: {e}")
+            return {'error': f'Handler error: {str(e)}'}
 
     async def get_status(self) -> Dict[str, Any]:
         """Zwraca status Database Manager"""

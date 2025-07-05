@@ -1,4 +1,3 @@
-
 """
 🌌 RealmManager - Zarządca Prywatnych Wymiarów Osobowości
 
@@ -31,7 +30,7 @@ class PersonalityRealm:
         self.last_accessed = datetime.now()
         self.query_count = 0
         self.data_size = 0
-        
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'personality_name': self.personality_name,
@@ -48,10 +47,10 @@ class PersonalityRealm:
 class RealmManager(LuxModule):
     """
     Zarządca Prywatnych Wymiarów Osobowości
-    
+
     Zapewnia każdej osobowości własną przestrzeń danych
     """
-    
+
     def __init__(self, name: str, config: Dict[str, Any], bus: FederationBus):
         super().__init__(
             name="realm_manager",
@@ -61,16 +60,16 @@ class RealmManager(LuxModule):
             bus=bus,
             creator_id="federation_system"
         )
-        
+
         # Konfiguracja
         self.realms_folder = config.get('realms_folder', 'db/realms')
         self.max_realms_per_personality = config.get('max_realms_per_personality', 5)
-        
+
         # Stan
         self.personality_realms: Dict[str, PersonalityRealm] = {}
         self.realm_access_log: List[Dict[str, Any]] = []
         self.database_manager: Optional[DatabaseManager] = None
-        
+
         # Predefiniowane konfiguracje osobowości
         self.personality_configs = {
             'federa': {
@@ -102,32 +101,32 @@ class RealmManager(LuxModule):
                 'tables': ['experiments', 'chaos_tests', 'mutations', 'discoveries']
             }
         }
-        
+
         # Upewnij się że folder realms istnieje
         Path(self.realms_folder).mkdir(parents=True, exist_ok=True)
-        
+
         print(f"🌌 RealmManager zainicjalizowany - folder: {self.realms_folder}")
-    
+
     async def initialize(self) -> bool:
         """Inicjalizuje Realm Manager"""
         try:
             # Pobierz referencję do Database Manager
             await self._connect_to_database_manager()
-            
+
             # Rejestruj komendy w bus'ie
             await self._register_commands()
-            
+
             # Utwórz podstawowe wymiary osobowości
             await self._create_personality_realms()
-            
+
             self.is_active = True
             print("🌌 RealmManager zainicjalizowany z sukcesem")
             return True
-            
+
         except Exception as e:
             print(f"❌ Błąd inicjalizacji RealmManager: {e}")
             return False
-    
+
     async def _connect_to_database_manager(self):
         """Łączy się z Database Manager"""
         try:
@@ -140,16 +139,16 @@ class RealmManager(LuxModule):
                 data={},
                 timestamp=datetime.now().timestamp()
             )
-            
+
             response = await self.bus.send_message(message, timeout=5)
             if response.get('active', False):
                 print("🔗 RealmManager połączony z DatabaseManager")
             else:
                 print("⚠️ DatabaseManager nie jest aktywny")
-                
+
         except Exception as e:
             print(f"⚠️ Nie udało się połączyć z DatabaseManager: {e}")
-    
+
     async def _register_commands(self):
         """Rejestruje komendy w bus'ie"""
         commands = {
@@ -161,41 +160,41 @@ class RealmManager(LuxModule):
             'get_realm_stats': self._handle_get_realm_stats,
             'get_status': self._handle_get_status
         }
-        
+
         for cmd_name, cmd_func in commands.items():
             await self.bus.register_command(f"realm_manager.{cmd_name}", cmd_func)
-    
+
     async def _create_personality_realms(self):
         """Tworzy podstawowe wymiary dla predefiniowanych osobowości"""
         for personality_name, config in self.personality_configs.items():
             await self.create_personality_realm(personality_name, config)
-    
+
     async def create_personality_realm(self, personality_name: str, config: Dict[str, Any]) -> bool:
         """Tworzy prywatny wymiar dla osobowości"""
         try:
             if personality_name in self.personality_realms:
                 print(f"🌌 Wymiar dla '{personality_name}' już istnieje")
                 return True
-            
+
             # Utwórz bazy danych dla tej osobowości
             primary_db = config['primary_db']
             memory_db = config['memory_db']
-            
+
             # Utwórz bazy przez Database Manager
             success1 = await self._create_database_via_manager(primary_db)
             success2 = await self._create_database_via_manager(memory_db)
-            
+
             if not (success1 and success2):
                 print(f"❌ Nie udało się utworzyć baz dla '{personality_name}'")
                 return False
-            
+
             # Utwórz tabele specyficzne dla osobowości
             await self._create_personality_tables(personality_name, primary_db, config)
-            
+
             # Zarejestruj wymiar
             realm = PersonalityRealm(personality_name, config)
             self.personality_realms[personality_name] = realm
-            
+
             # Wyślij broadcast o nowym wymiarze
             await self.bus.broadcast(
                 from_module="realm_manager",
@@ -208,14 +207,14 @@ class RealmManager(LuxModule):
                     'created_at': datetime.now().isoformat()
                 }
             )
-            
+
             print(f"✅ Wymiar '{personality_name}' utworzony: {primary_db}, {memory_db}")
             return True
-            
+
         except Exception as e:
             print(f"❌ Błąd tworzenia wymiaru dla '{personality_name}': {e}")
             return False
-    
+
     async def _create_database_via_manager(self, db_name: str) -> bool:
         """Tworzy bazę danych przez Database Manager"""
         try:
@@ -227,29 +226,29 @@ class RealmManager(LuxModule):
                 data={'db_name': db_name},
                 timestamp=datetime.now().timestamp()
             )
-            
+
             response = await self.bus.send_message(message)
             return response.get('success', False)
-            
+
         except Exception as e:
             print(f"❌ Błąd tworzenia bazy '{db_name}': {e}")
             return False
-    
+
     async def _create_personality_tables(self, personality_name: str, db_name: str, config: Dict[str, Any]):
         """Tworzy tabele specyficzne dla osobowości"""
         try:
             tables = config.get('tables', [])
-            
+
             for table_name in tables:
                 sql = self._get_table_sql(personality_name, table_name)
                 if sql:
                     await self._execute_query_via_manager(db_name, sql)
-                    
+
             print(f"📊 Utworzono {len(tables)} tabel dla '{personality_name}'")
-            
+
         except Exception as e:
             print(f"❌ Błąd tworzenia tabel dla '{personality_name}': {e}")
-    
+
     def _get_table_sql(self, personality_name: str, table_name: str) -> str:
         """Zwraca SQL do utworzenia tabeli dla danej osobowości"""
         table_definitions = {
@@ -293,7 +292,7 @@ class RealmManager(LuxModule):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''',
-            
+
             # Tabele Astry
             'wisdom': '''
                 CREATE TABLE IF NOT EXISTS wisdom (
@@ -333,7 +332,7 @@ class RealmManager(LuxModule):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''',
-            
+
             # Tabele Lux
             'operations': '''
                 CREATE TABLE IF NOT EXISTS operations (
@@ -375,7 +374,7 @@ class RealmManager(LuxModule):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''',
-            
+
             # Tabele Orioma
             'experiments': '''
                 CREATE TABLE IF NOT EXISTS experiments (
@@ -421,9 +420,9 @@ class RealmManager(LuxModule):
                 )
             '''
         }
-        
+
         return table_definitions.get(table_name, '')
-    
+
     async def _execute_query_via_manager(self, db_name: str, query: str, params: tuple = ()) -> Any:
         """Wykonuje zapytanie przez Database Manager"""
         try:
@@ -439,14 +438,14 @@ class RealmManager(LuxModule):
                 },
                 timestamp=datetime.now().timestamp()
             )
-            
+
             response = await self.bus.send_message(message)
             return response.get('result', [])
-            
+
         except Exception as e:
             print(f"❌ Błąd wykonania zapytania w '{db_name}': {e}")
             return []
-    
+
     async def query_personality_realm(self, personality_name: str, query: str, 
                                     use_memory_db: bool = False) -> Dict[str, Any]:
         """Wykonuje zapytanie w prywatnym wymiarze osobowości"""
@@ -456,17 +455,17 @@ class RealmManager(LuxModule):
                     'error': f"Wymiar dla '{personality_name}' nie istnieje",
                     'suggestion': f"Może Oriom znowu coś namieszał? 😏"
                 }
-            
+
             realm = self.personality_realms[personality_name]
             db_name = realm.memory_db if use_memory_db else realm.primary_db
-            
+
             # Wykonaj zapytanie
             result = await self._execute_query_via_manager(db_name, query)
-            
+
             # Aktualizuj statystyki
             realm.query_count += 1
             realm.last_accessed = datetime.now()
-            
+
             # Zaloguj dostęp
             self.realm_access_log.append({
                 'personality_name': personality_name,
@@ -475,7 +474,7 @@ class RealmManager(LuxModule):
                 'timestamp': datetime.now().isoformat(),
                 'result_count': len(result) if isinstance(result, list) else 1
             })
-            
+
             return {
                 'success': True,
                 'personality': personality_name,
@@ -483,64 +482,64 @@ class RealmManager(LuxModule):
                 'result': result,
                 'query_count': realm.query_count
             }
-            
+
         except Exception as e:
             return {
                 'error': f"Błąd zapytania w wymiarze '{personality_name}': {e}",
                 'suggestion': "Sprawdź czy Oriom nie zepsuł bazy danych! 🤔"
             }
-    
+
     # === HANDLERY KOMEND ===
-    
+
     async def _handle_create_personality_realm(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler tworzenia wymiaru osobowości"""
         personality_name = data.get('personality_name')
         config = data.get('config', {})
-        
+
         if not personality_name:
             return {'error': 'Brak nazwy osobowości'}
-        
+
         success = await self.create_personality_realm(personality_name, config)
         return {'success': success, 'personality_name': personality_name}
-    
+
     async def _handle_get_personality_realm(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler pobierania informacji o wymiarze"""
         personality_name = data.get('personality_name')
-        
+
         if personality_name not in self.personality_realms:
             return {'error': f"Wymiar dla '{personality_name}' nie istnieje"}
-        
+
         realm = self.personality_realms[personality_name]
         return {'realm': realm.to_dict()}
-    
+
     async def _handle_list_personality_realms(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler listowania wymiarów"""
         realms = {name: realm.to_dict() for name, realm in self.personality_realms.items()}
         return {'realms': realms, 'count': len(realms)}
-    
+
     async def _handle_query_personality_realm(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler zapytania do wymiaru osobowości"""
         personality_name = data.get('personality_name')
         query = data.get('query')
         use_memory_db = data.get('use_memory_db', False)
-        
+
         if not personality_name or not query:
             return {'error': 'Wymagane: personality_name i query'}
-        
+
         return await self.query_personality_realm(personality_name, query, use_memory_db)
-    
+
     async def _handle_delete_personality_realm(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler usuwania wymiaru"""
         personality_name = data.get('personality_name')
-        
+
         if personality_name not in self.personality_realms:
             return {'error': f"Wymiar dla '{personality_name}' nie istnieje"}
-        
+
         # Usuń z rejestru (nie usuwamy fizycznych baz)
         del self.personality_realms[personality_name]
-        
+
         return {'success': True, 'message': f"Wymiar '{personality_name}' usunięty z rejestru"}
-    
+
     async def _handle_get_realm_stats(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler statystyk wymiarów"""
         stats = {
@@ -549,53 +548,60 @@ class RealmManager(LuxModule):
             'recent_accesses': self.realm_access_log[-10:] if self.realm_access_log else [],
             'realm_summary': {}
         }
-        
+
         for name, realm in self.personality_realms.items():
             stats['realm_summary'][name] = {
                 'query_count': realm.query_count,
                 'last_accessed': realm.last_accessed.isoformat(),
                 'access_level': realm.access_level
             }
-        
+
         return stats
-    
+
     async def _handle_get_status(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler statusu"""
         return await self.get_status()
-    
+
     async def handle_message(self, message: FederationMessage) -> Any:
         """Obsługuje wiadomości z bus'a"""
-        command = message.message_type
-        data = message.data
-        
-        handlers = {
-            'create_personality_realm': self._handle_create_personality_realm,
-            'get_personality_realm': self._handle_get_personality_realm,
-            'list_personality_realms': self._handle_list_personality_realms,
-            'query_personality_realm': self._handle_query_personality_realm,
-            'delete_personality_realm': self._handle_delete_personality_realm,
-            'get_realm_stats': self._handle_get_realm_stats,
-            'get_status': self._handle_get_status
-        }
-        
-        handler = handlers.get(command)
-        if handler:
-            return await handler(data)
-        else:
-            return {'error': f'Nieznana komenda: {command}'}
-    
+        try:
+            command = message.message_type
+            data = message.data if hasattr(message, 'data') else {}
+
+            if command == 'get_status':
+                return await self.get_status()
+            elif command == 'health_check':
+                return await self.health_check()
+            elif command == 'create_personality_realm':
+                personality = data.get('personality')
+                if personality:
+                    success = await self.create_personality_realm(personality)
+                    return {'success': success, 'personality': personality}
+                return {'error': 'Brak personality'}
+            else:
+                return {'error': f'Nieznana komenda: {command}'}
+        except Exception as e:
+            print(f"❌ RealmManager.handle_message error: {e}")
+            return {'error': f'Handler error: {str(e)}'}
+
     async def get_status(self) -> Dict[str, Any]:
         """Zwraca status Realm Manager"""
         return {
             'module_id': self.name,
             'active': self.is_active,
-            'total_realms': len(self.personality_realms),
+            'created_realms': len(self.personality_realms),
             'personalities': list(self.personality_realms.keys()),
-            'realms_folder': self.realms_folder,
-            'access_log_entries': len(self.realm_access_log),
             'created_at': self.created_at.isoformat()
         }
-    
+
+    async def health_check(self) -> Dict[str, Any]:
+        """Sprawdza zdrowie Realm Manager"""
+        return {
+            'healthy': self.is_active,
+            'realms_count': len(self.personality_realms),
+            'last_check': datetime.now().isoformat()
+        }
+
     async def shutdown(self) -> bool:
         """Wyłącza Realm Manager"""
         try:
