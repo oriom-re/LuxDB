@@ -1,4 +1,3 @@
-
 """
 🧩 LuxModule - Bazowa klasa wszystkich modułów w Federacji
 
@@ -56,7 +55,7 @@ class ModuleVersion:
     patch: int = 0
     stability: ModuleStability = ModuleStability.STABLE
     build: Optional[str] = None
-    
+
     def __str__(self) -> str:
         version = f"{self.major}.{self.minor}.{self.patch}"
         if self.stability != ModuleStability.STABLE:
@@ -64,7 +63,7 @@ class ModuleVersion:
         if self.build:
             version += f"+{self.build}"
         return version
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'major': self.major,
@@ -73,7 +72,7 @@ class ModuleVersion:
             'stability': self.stability.value,
             'build': self.build
         }
-    
+
     @classmethod
     def from_string(cls, version_str: str) -> 'ModuleVersion':
         """Parsuje wersję z stringa"""
@@ -82,7 +81,7 @@ class ModuleVersion:
         major = int(parts[0]) if len(parts) > 0 else 1
         minor = int(parts[1]) if len(parts) > 1 else 0
         patch = int(parts[2]) if len(parts) > 2 else 0
-        
+
         return cls(major=major, minor=minor, patch=patch)
 
 
@@ -99,7 +98,7 @@ class ModuleManifest:
     config_schema: Optional[Dict[str, Any]] = None
     author: Optional[str] = None
     license: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'name': self.name,
@@ -118,14 +117,14 @@ class ModuleManifest:
 class LuxModule(LuxBase):
     """
     Bazowa klasa wszystkich modułów w Federacji
-    
+
     Rozszerza LuxBase o:
     - Wersjonowanie
     - Typy modułów
     - Zarządzanie stanem
     - Eksperymentalne funkcje
     """
-    
+
     def __init__(self, 
                  name: str,
                  module_type: ModuleType,
@@ -135,9 +134,9 @@ class LuxModule(LuxBase):
                  parent_uuid: Optional[str] = None,
                  creator_id: Optional[str] = None,
                  form_type: ModuleFormType = ModuleFormType.FILE):
-        
+
         super().__init__(parent_uuid=parent_uuid, creator_id=creator_id)
-        
+
         # Podstawowe informacje o module
         self.name = name
         self.module_type = module_type
@@ -145,14 +144,14 @@ class LuxModule(LuxBase):
         self.config = config or {}
         self.bus = bus
         self.form_type = form_type
-        
+
         # Stan modułu
         self.is_active = False
         self.is_initialized = False
         self.is_experimental = self.version.stability == ModuleStability.EXPERIMENTAL
         self.error_count = 0
         self.max_errors = self.config.get('max_errors', 5)
-        
+
         # Manifest
         self.manifest = ModuleManifest(
             name=self.name,
@@ -165,69 +164,69 @@ class LuxModule(LuxBase):
             author=self.config.get('author'),
             license=self.config.get('license')
         )
-        
+
         # Statystyki
         self.start_time: Optional[datetime] = None
         self.last_error: Optional[str] = None
         self.operations_count = 0
-        
+
         # Lifecycle management dla modułów binarnych
         self.last_used: Optional[datetime] = None
         self.usage_count = 0
         self.auto_remove_after_seconds = config.get('auto_remove_after_seconds', 3600)  # 1 godzina domyślnie
         self.memory_lifecycle_active = False
-        
+
         # Dodaj mutację o stworzeniu modułu
         self.add_mutation('module_created', {
             'name': self.name,
             'type': self.module_type.value,
             'version': str(self.version)
         })
-    
+
     async def initialize(self) -> bool:
         """Inicjalizuje moduł - override w klasach potomnych"""
         try:
             self.is_initialized = True
             self.start_time = datetime.now()
-            
+
             # Rejestruj w bus'ie jeśli dostępny
             if self.bus:
                 self.bus.register_module(f"{self.name}_{self.uuid[:8]}", self)
-            
+
             self.add_mutation('module_initialized', {
                 'success': True,
                 'timestamp': datetime.now().isoformat()
             })
-            
+
             return True
-            
+
         except Exception as e:
             self.record_error(f"Initialization failed: {str(e)}")
             return False
-    
+
     async def start(self) -> bool:
         """Uruchamia moduł - wywoływane przez kernel"""
         try:
             if not self.is_initialized:
                 await self.initialize()
-            
+
             self.is_active = True
-            
+
             self.add_mutation('module_started', {
                 'success': True,
                 'timestamp': datetime.now().isoformat()
             })
-            
+
             return True
-            
+
         except Exception as e:
             self.record_error(f"Start failed: {str(e)}")
             return False
-    
+
     async def stop(self) -> bool:
         """Zatrzymuje moduł - wywoływane przez kernel"""
         return await self.shutdown()
-    
+
     async def heartbeat(self) -> bool:
         """Wspólny puls życia - wywoływany regularnie przez kernel"""
         try:
@@ -236,56 +235,56 @@ class LuxModule(LuxBase):
                 self.operations_count += 1
                 return True
             return False
-            
+
         except Exception as e:
             self.record_error(f"Heartbeat failed: {str(e)}")
             return False
-    
+
     async def health_check(self) -> bool:
         """Sprawdza zdrowie modułu"""
         try:
             # Podstawowy health check
             if not self.is_active or not self.is_initialized:
                 return False
-                
+
             # Sprawdź czy nie przekroczył limitu błędów
             if self.error_count >= self.max_errors:
                 return False
-                
+
             return True
-            
+
         except Exception:
             return False
-    
+
     async def shutdown(self) -> bool:
         """Wyłącza moduł - override w klasach potomnych"""
         try:
             self.is_active = False
             self.is_initialized = False
-            
+
             self.add_mutation('module_shutdown', {
                 'success': True,
                 'timestamp': datetime.now().isoformat(),
                 'uptime': self.get_uptime()
             })
-            
+
             return True
-            
+
         except Exception as e:
             self.record_error(f"Shutdown failed: {str(e)}")
             return False
-    
+
     def record_error(self, error: str) -> None:
         """Zapisuje błąd modułu"""
         self.error_count += 1
         self.last_error = error
-        
+
         self.add_mutation('module_error', {
             'error': error,
             'error_count': self.error_count,
             'timestamp': datetime.now().isoformat()
         })
-        
+
         # Jeśli to moduł eksperymentalny i przekroczył limit błędów
         if self.is_experimental and self.error_count >= self.max_errors:
             self.add_mutation('experimental_fallback', {
@@ -293,61 +292,61 @@ class LuxModule(LuxBase):
                 'error_count': self.error_count,
                 'max_errors': self.max_errors
             })
-    
+
     def mark_used(self) -> None:
         """Oznacza moduł jako używany - przedłuża lifecycle"""
         self.last_used = datetime.now()
         self.usage_count += 1
-        
+
         # Dodaj mutację o użyciu
         self.add_mutation('module_used', {
             'usage_count': self.usage_count,
             'timestamp': self.last_used.isoformat()
         })
-    
+
     def should_be_removed(self) -> bool:
         """Sprawdza czy moduł binarny powinien zostać usunięty z pamięci"""
         if self.form_type != ModuleFormType.BINARY:
             return False
-            
+
         if not self.last_used:
             return False
-            
+
         seconds_since_last_use = (datetime.now() - self.last_used).total_seconds()
         return seconds_since_last_use > self.auto_remove_after_seconds
-    
+
     def extend_lifecycle(self, additional_seconds: int = 3600) -> None:
         """Przedłuża lifecycle modułu binarnego"""
         if self.form_type == ModuleFormType.BINARY and self.last_used:
             # Symuluje użycie aby przedłużyć lifecycle
             self.mark_used()
-            
+
             self.add_mutation('lifecycle_extended', {
                 'additional_seconds': additional_seconds,
                 'new_expiry': (datetime.now() + timedelta(seconds=additional_seconds)).isoformat()
             })
-    
+
     def start_memory_lifecycle(self) -> None:
         """Uruchamia lifecycle management w pamięci"""
         if self.form_type == ModuleFormType.BINARY:
             self.memory_lifecycle_active = True
             self.last_used = datetime.now()
-            
+
             self.add_mutation('memory_lifecycle_started', {
                 'auto_remove_after_seconds': self.auto_remove_after_seconds,
                 'started_at': self.last_used.isoformat()
             })
-    
+
     def should_fallback_to_stable(self) -> bool:
         """Sprawdza czy moduł eksperymentalny powinien ustąpić stabilnemu"""
         return self.is_experimental and self.error_count >= self.max_errors
-    
+
     def get_uptime(self) -> Optional[float]:
         """Zwraca czas działania modułu w sekundach"""
         if not self.start_time:
             return None
         return (datetime.now() - self.start_time).total_seconds()
-    
+
     def get_status(self) -> Dict[str, Any]:
         """Zwraca pełny status modułu"""
         status = {
@@ -367,7 +366,7 @@ class LuxModule(LuxBase):
             'genetic_info': self.get_creation_info(),
             'usage_count': self.usage_count
         }
-        
+
         # Dodaj lifecycle info dla modułów binarnych
         if self.form_type == ModuleFormType.BINARY:
             status.update({
@@ -377,22 +376,22 @@ class LuxModule(LuxBase):
                 'should_be_removed': self.should_be_removed(),
                 'seconds_until_removal': self.get_seconds_until_removal()
             })
-        
+
         return status
-    
+
     def get_seconds_until_removal(self) -> Optional[int]:
         """Zwraca liczbę sekund do usunięcia z pamięci"""
         if self.form_type != ModuleFormType.BINARY or not self.last_used:
             return None
-            
+
         seconds_since_last_use = (datetime.now() - self.last_used).total_seconds()
         remaining = self.auto_remove_after_seconds - seconds_since_last_use
         return max(0, int(remaining))
-    
+
     def get_manifest(self) -> ModuleManifest:
         """Zwraca manifest modułu"""
         return self.manifest
-    
+
     def serialize_to_binary(self) -> str:
         """Serializuje moduł do formatu binarnego (base64)"""
         module_data = {
@@ -409,11 +408,11 @@ class LuxModule(LuxBase):
             'form_type': self.form_type.value,
             'auto_remove_after_seconds': self.auto_remove_after_seconds
         }
-        
+
         # Serializuj do pickle, potem base64
         pickled = pickle.dumps(module_data)
         return base64.b64encode(pickled).decode('utf-8')
-    
+
     @classmethod
     def deserialize_from_binary(cls, binary_data: str, bus: Optional[FederationBus] = None) -> 'LuxModule':
         """Deserializuje moduł z formatu binarnego"""
@@ -421,12 +420,12 @@ class LuxModule(LuxBase):
             # Dekoduj base64, potem pickle
             pickled = base64.b64decode(binary_data.encode('utf-8'))
             module_data = pickle.loads(pickled)
-            
+
             # Odtwórz moduł
             version = ModuleVersion(**module_data['version'])
             module_type = ModuleType(module_data['module_type'])
             form_type = ModuleFormType(module_data.get('form_type', ModuleFormType.BINARY.value))
-            
+
             # Utwórz instancję
             module = cls(
                 name=module_data['name'],
@@ -436,23 +435,23 @@ class LuxModule(LuxBase):
                 bus=bus,
                 form_type=form_type
             )
-            
+
             # Przywróć UUID i dane genetyczne
             module.uuid = module_data['uuid']
             module.created_at = datetime.fromisoformat(module_data['created_at'])
-            
+
             # Przywróć lifecycle settings
             module.auto_remove_after_seconds = module_data.get('auto_remove_after_seconds', 3600)
-            
+
             # Uruchom lifecycle dla modułów binarnych
             if form_type == ModuleFormType.BINARY:
                 module.start_memory_lifecycle()
-            
+
             return module
-            
+
         except Exception as e:
             raise ValueError(f"Failed to deserialize module: {str(e)}")
-    
+
     def get_type_info(self) -> Dict[str, Any]:
         """Zwraca informacje o typie modułu dla Brain"""
         return {
@@ -469,9 +468,30 @@ class LuxModule(LuxBase):
             'base_class': 'LuxModule',
             'inheritance_chain': [cls.__name__ for cls in self.__class__.__mro__]
         }
-    
+
     def __str__(self) -> str:
         return f"LuxModule({self.name} v{self.version})"
-    
+
     def __repr__(self) -> str:
         return f"LuxModule(name='{self.name}', type={self.module_type.value}, version='{self.version}', uuid='{self.uuid}')"
+"""
+🧬 LuxModule - Bazowa klasa wszystkich modułów w federacji
+
+Każdy moduł dziedziczy po LuxBase i ma dodatkowe funkcjonalności modułowe
+"""
+
+from typing import Dict, Any, Optional
+from datetime import datetime
+from dataclasses import dataclass
+from enum import Enum
+
+from .lux_base import LuxBase
+from .bus import FederationBus
+
+
+class ModuleType(Enum):
+    """Typy modułów w federacji"""
+    CORE = "core"
+    SERVICE = "service"
+    UTILITY = "utility"
+    PERSONALITY = "personality"

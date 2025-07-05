@@ -127,7 +127,7 @@ class FederationKernel:
             
             # Dynamiczny import modułu (obsługa zagnieżdżonych pakietów)
             module_path = f"federacja.modules.{module_name}"
-            module_class_name = module_config.get('class', f"{module_name.split('.')[-1].title()}Module")
+            module_class_name = module_config.get('class', f"{module_name.split('.')[-1].title()}")
             
             module_mod = __import__(module_path, fromlist=[module_class_name])
             module_class = getattr(module_mod, module_class_name)
