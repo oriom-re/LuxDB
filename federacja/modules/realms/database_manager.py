@@ -94,7 +94,9 @@ class DatabaseManager(LuxModule):
             'list_databases': self._handle_list_databases,
             'execute_query': self._handle_execute_query,
             'get_connection': self._handle_get_connection,
-            'get_status': self._handle_get_status
+            'get_status': self._handle_get_status,
+            'subscribe_to_database': self._handle_subscribe_to_database,
+            'get_available_databases': self._handle_get_available_databases
         }
         
         for cmd_name, cmd_func in commands.items():
@@ -135,7 +137,10 @@ class DatabaseManager(LuxModule):
             # Utwórz podstawowe tabele systemowe
             await self._create_system_tables(connection, db_name)
             
-            print(f"✅ Baza '{db_name}' utworzona: {db_path}")
+            # 🚀 PUBLIKUJ BAZĘ W BUS'IE
+            await self._publish_database_to_bus(db_name, db_path)
+            
+            print(f"✅ Baza '{db_name}' utworzona i opublikowana: {db_path}")
             return True
             
         except Exception as e:
@@ -192,6 +197,37 @@ class DatabaseManager(LuxModule):
             ''')
         
         connection.commit()
+    
+    async def _publish_database_to_bus(self, db_name: str, db_path: str):
+        """Publikuje bazę danych w bus'ie dla innych modułów"""
+        try:
+            # Wyślij broadcast że baza jest dostępna
+            await self.bus.broadcast(
+                from_module="database_manager",
+                message_type="database_available",
+                data={
+                    'db_name': db_name,
+                    'db_path': db_path,
+                    'manager': 'database_manager',
+                    'operations': ['query', 'insert', 'update', 'delete'],
+                    'tables': await self._get_database_tables(db_name),
+                    'published_at': datetime.now().isoformat()
+                }
+            )
+            
+            print(f"📡 Baza '{db_name}' opublikowana w bus'ie")
+            
+        except Exception as e:
+            print(f"⚠️ Nie udało się opublikować bazy '{db_name}': {e}")
+    
+    async def _get_database_tables(self, db_name: str) -> List[str]:
+        """Pobiera listę tabel z bazy danych"""
+        try:
+            query = "SELECT name FROM sqlite_master WHERE type='table'"
+            result = await self.execute_query(db_name, query)
+            return [row['name'] for row in result]
+        except Exception:
+            return []
     
     async def get_database(self, db_name: str) -> Optional[sqlite3.Connection]:
         """Zwraca połączenie z bazą danych"""
@@ -261,6 +297,50 @@ class DatabaseManager(LuxModule):
     async def _handle_get_status(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Handler statusu"""
         return await self.get_status()
+    
+    async def _handle_subscribe_to_database(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handler subskrypcji bazy danych"""
+        module_name = data.get('module_name')
+        db_name = data.get('db_name')
+        
+        if not module_name or not db_name:
+            return {'error': 'Wymagane: module_name i db_name'}
+        
+        if db_name not in self.databases:
+            return {'error': f'Baza {db_name} nie istnieje'}
+        
+        # Wyślij informacje o bazie do subskrybenta
+        await self.bus.send_simple(
+            from_module="database_manager",
+            to_module=module_name,
+            message_type="database_access_granted",
+            data={
+                'db_name': db_name,
+                'tables': await self._get_database_tables(db_name),
+                'access_level': 'full',
+                'operations': ['query', 'insert', 'update', 'delete']
+            }
+        )
+        
+        return {'success': True, 'message': f'Dostęp do bazy {db_name} udzielony'}
+    
+    async def _handle_get_available_databases(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handler listowania dostępnych baz"""
+        available_dbs = []
+        
+        for db_name in self.databases.keys():
+            tables = await self._get_database_tables(db_name)
+            available_dbs.append({
+                'name': db_name,
+                'tables': tables,
+                'table_count': len(tables),
+                'path': os.path.join(self.db_folder, db_name)
+            })
+        
+        return {
+            'available_databases': available_dbs,
+            'total_count': len(available_dbs)
+        }
     
     async def handle_message(self, message: FederationMessage) -> Any:
         """Obsługuje wiadomości z bus'a"""
