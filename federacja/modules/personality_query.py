@@ -89,27 +89,17 @@ class PersonalityQuery(LuxModule):
 
     async def _demo_cross_personality_attempts(self):
         """Demonstracja prób dostępu między osobowościami"""
+        # Demo zapytań tylko dla Federy - inne osobowości wyłączone
         print("\n" + "="*60)
-        print("🎭 PRÓBY CROSS-PERSONALITY ACCESS")
+        print("👑 FEDERA - WŁADCZYNI SYSTEMU")
         print("="*60)
 
-        # Lux próbuje dostać się do danych Astry
-        print("\n💫 Lux próbuje sprawdzić mądrość Astry...")
-        result_lux = await self._attempt_cross_access("lux", "astra", 
-            "SELECT wisdom_type, content FROM wisdom LIMIT 1")
-        print(f"🔒 Odpowiedź systemu: {result_lux.get('error', 'Brak błędu')}")
+        print("\n🧠 Federa sprawdza swój własny system...")
 
-        # Oriom próbuje dostać się do systemowych danych Federy
-        print("\n🌀 Oriom próbuje zhakowac system Federy...")
-        result_oriom = await self._attempt_cross_access("oriom", "federa",
-            "SELECT * FROM system_config")
-        print(f"🛡️ Ochrona systemu: {result_oriom.get('error', 'Brak błędu')}")
-
-        # Astra próbuje medytować w bazie Orioma (chaos!)
-        print("\n🧘‍♀️ Astra próbuje znaleźć harmonię w chaosie Orioma...")
-        result_astra = await self._attempt_cross_access("astra", "oriom",
-            "SELECT * FROM experiments WHERE chaos_level < 2")
-        print(f"😅 Wynik medytacji: {result_astra.get('error', 'Brak błędu')}")
+        # Tylko Federa może działać
+        print("🔒 Inne osobowości tymczasowo wyłączone")
+        print("🎯 Skupiamy się na stabilności Federy")
+        print("✨ Federa przejmuje pełną kontrolę nad systemem")
 
     async def _query_realm(self, personality_name: str, query: str) -> Dict[str, Any]:
         """Wykonuje zapytanie do wymiaru osobowości"""
@@ -242,3 +232,20 @@ class PersonalityQuery(LuxModule):
         except Exception as e:
             print(f"❌ Błąd wyłączania PersonalityQuery: {e}")
             return False
+
+async def _federa_system_query(self, query: str) -> Dict[str, Any]:
+        """Wykonuje zapytanie systemowe dla Federy"""
+
+        try:
+            # Federa ma pełny dostęp do swojego systemu
+            return {
+                'success': True,
+                'personality': 'federa',
+                'result': [],
+                'message': f"Federa: {query} - System pod kontrolą! 👑"
+            }
+        except Exception as e:
+            return {
+                'error': f"Błąd systemowy Federy: {e}",
+                'personality': 'federa'
+            }

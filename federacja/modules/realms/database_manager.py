@@ -358,7 +358,8 @@ class DatabaseManager(LuxModule):
             elif command == 'get_status':
                 return await self._handle_get_status(data)
             elif command == 'health_check':
-                return await self.health_check()
+                result = await self.health_check()
+                return result
             else:
                 return {'error': f'Nieznana komenda: {command}'}
         except Exception as e:

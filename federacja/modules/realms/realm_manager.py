@@ -569,13 +569,15 @@ class RealmManager(LuxModule):
             data = message.data if hasattr(message, 'data') else {}
 
             if command == 'get_status':
-                return await self.get_status()
+                result = await self.get_status()
+                return result
             elif command == 'health_check':
-                return await self.health_check()
+                result = await self.health_check()
+                return result
             elif command == 'create_personality_realm':
                 personality = data.get('personality')
                 if personality:
-                    success = await self.create_personality_realm(personality)
+                    success = await self.create_personality_realm(personality, {})
                     return {'success': success, 'personality': personality}
                 return {'error': 'Brak personality'}
             else:
