@@ -1,0 +1,499 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Database Management Dashboard - Federacja</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            padding: 30px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .database-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .database-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #27ae60;
+        }
+        
+        .database-card.sqlite {
+            border-left-color: #e74c3c;
+        }
+        
+        .database-card.memory {
+            border-left-color: #f39c12;
+        }
+        
+        .database-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .database-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .database-type {
+            background: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+        
+        .database-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+        
+        .health-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        .health-indicator.warning {
+            background: #f39c12;
+        }
+        
+        .health-indicator.error {
+            background: #e74c3c;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background: #219a52;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+        }
+        
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .last-update {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+        
+        .create-db-form {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Database Management Dashboard</h1>
+            <p>Zarządzanie bazami danych w Federacji</p>
+        </div>
+        
+        <div class="dashboard">
+            <!-- Metryki systemu -->
+            <div class="metrics-grid" id="metrics-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie metryk...</p>
+                </div>
+            </div>
+            
+            <!-- Formularz tworzenia bazy -->
+            <div class="create-db-form">
+                <h3>🏗️ Utwórz nową bazę danych</h3>
+                <form id="create-db-form">
+                    <div class="form-group">
+                        <label for="db-name">Nazwa bazy:</label>
+                        <input type="text" id="db-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="db-type">Typ bazy:</label>
+                        <select id="db-type" name="type">
+                            <option value="sqlite">SQLite</option>
+                            <option value="memory">Memory</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="db-description">Opis:</label>
+                        <input type="text" id="db-description" name="description">
+                    </div>
+                    <button type="submit" class="btn btn-success">Utwórz bazę</button>
+                </form>
+            </div>
+            
+            <!-- Bazy danych -->
+            <div class="database-grid" id="database-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie baz danych...</p>
+                </div>
+            </div>
+            
+            <!-- Kontrolki -->
+            <div class="controls">
+                <button class="btn" onclick="refreshData()">🔄 Odśwież dane</button>
+                <button class="btn btn-success" onclick="exportData()">💾 Eksportuj dane</button>
+                <button class="btn btn-warning" onclick="showSystemConfig()">⚙️ Konfiguracja systemu</button>
+            </div>
+            
+            <div class="last-update" id="last-update"></div>
+        </div>
+    </div>
+    
+    <script>
+        let lastUpdateTime = null;
+        
+        async function loadDashboardData() {
+            try {
+                // Załaduj metryki
+                const metricsResponse = await fetch('/api/metrics');
+                const metrics = await metricsResponse.json();
+                renderMetrics(metrics);
+                
+                // Załaduj status baz
+                const statusResponse = await fetch('/api/status');
+                const status = await statusResponse.json();
+                renderDatabases(status);
+                
+                lastUpdateTime = new Date().toLocaleString('pl-PL');
+                document.getElementById('last-update').textContent = `Ostatnia aktualizacja: ${lastUpdateTime}`;
+                
+            } catch (error) {
+                console.error('Błąd ładowania danych:', error);
+                showError('Błąd ładowania danych dashboard');
+            }
+        }
+        
+        function renderMetrics(metrics) {
+            const metricsGrid = document.getElementById('metrics-grid');
+            metricsGrid.innerHTML = `
+                <div class="metric-card">
+                    <h3>🖥️ Użycie CPU</h3>
+                    <div class="metric-value">${metrics.cpu_usage}%</div>
+                    <div class="metric-label">Procesor</div>
+                </div>
+                <div class="metric-card">
+                    <h3>🧠 Użycie RAM</h3>
+                    <div class="metric-value">${metrics.memory_usage}%</div>
+                    <div class="metric-label">Pamięć</div>
+                </div>
+                <div class="metric-card">
+                    <h3>💾 Użycie dysku</h3>
+                    <div class="metric-value">${metrics.disk_usage}%</div>
+                    <div class="metric-label">Dysk</div>
+                </div>
+                <div class="metric-card">
+                    <h3>🔗 Połączenia</h3>
+                    <div class="metric-value">${metrics.active_connections}</div>
+                    <div class="metric-label">Aktywne</div>
+                </div>
+                <div class="metric-card">
+                    <h3>📊 Zapytania/s</h3>
+                    <div class="metric-value">${metrics.queries_per_second}</div>
+                    <div class="metric-label">QPS</div>
+                </div>
+                <div class="metric-card">
+                    <h3>⏱️ Uptime</h3>
+                    <div class="metric-value">${metrics.uptime}</div>
+                    <div class="metric-label">Czas działania</div>
+                </div>
+            `;
+        }
+        
+        function renderDatabases(status) {
+            const databaseGrid = document.getElementById('database-grid');
+            
+            if (status.error) {
+                databaseGrid.innerHTML = `<div class="loading">❌ Błąd: ${status.error}</div>`;
+                return;
+            }
+            
+            databaseGrid.innerHTML = status.databases.map(db => `
+                <div class="database-card ${db.type}">
+                    <div class="database-header">
+                        <div class="database-name">${db.name}</div>
+                        <div class="database-type">${db.type}</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span>Status: ${db.status}</span>
+                        <div class="health-indicator ${db.health}"></div>
+                    </div>
+                    <div class="database-stats">
+                        <div class="stat">
+                            <div class="stat-value">${db.size}</div>
+                            <div class="stat-label">Rozmiar</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${db.records}</div>
+                            <div class="stat-label">Rekordów</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${db.status}</div>
+                            <div class="stat-label">Status</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showError(message) {
+            const metricsGrid = document.getElementById('metrics-grid');
+            const databaseGrid = document.getElementById('database-grid');
+            
+            const errorHtml = `<div class="loading">❌ ${message}</div>`;
+            metricsGrid.innerHTML = errorHtml;
+            databaseGrid.innerHTML = errorHtml;
+        }
+        
+        function refreshData() {
+            loadDashboardData();
+        }
+        
+        function exportData() {
+            // Symulacja eksportu danych
+            const data = {
+                timestamp: new Date().toISOString(),
+                system: 'Database Management Dashboard',
+                exported_by: 'user'
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `database_report_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        async function showSystemConfig() {
+            try {
+                const response = await fetch('/api/system_config');
+                const config = await response.json();
+                
+                alert(`Konfiguracja systemu:\n${JSON.stringify(config, null, 2)}`);
+            } catch (error) {
+                alert('Błąd pobierania konfiguracji systemu');
+            }
+        }
+        
+        // Obsługa formularza tworzenia bazy
+        document.getElementById('create-db-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/create_database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ ${result.message}`);
+                    e.target.reset();
+                    loadDashboardData(); // Odśwież dane
+                } else {
+                    alert(`❌ ${result.error}`);
+                }
+            } catch (error) {
+                alert('❌ Błąd tworzenia bazy danych');
+            }
+        });
+        
+        // Automatyczne odświeżanie co 30 sekund
+        setInterval(loadDashboardData, 30000);
+        
+        // Załaduj dane przy starcie
+        loadDashboardData();
+    </script>
+</body>
+</html>

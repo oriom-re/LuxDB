@@ -126,6 +126,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python start_kernel.py"
 
+[[workflows.workflow]]
+name = "Start Database Visual Report"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python database_visual_report.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
