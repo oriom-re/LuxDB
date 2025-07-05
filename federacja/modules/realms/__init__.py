@@ -1,32 +1,23 @@
-
 """
-🌍 Realms Package - Wszystkie Moduły Wymiarów w Jednym Miejscu
+🌟 Pakiet Realms - Zarządzanie Wymiarami w Federacji
 
-Struktura:
-- BaseRealmModule: Abstrakcyjna klasa bazowa
-- MemoryRealmModule: Wymiar pamięci
-- SQLiteRealmModule: Wymiar SQLite
-- DynamicRealmLoader: Loader i manager cyklu życia
+Zawiera wszystkie klasy i funkcje związane z wymiarami (realms)
 """
 
-from .base_realm import BaseRealmModule, TaskType, RealmTask, RealmTaskManager
-from .memory_realm import MemoryRealmModule
+from .base_realm import BaseRealmModule
+from .memory_realm import MemoryRealmModule  
 from .sqlite_realm import SQLiteRealmModule
-from .dynamic_loader import DynamicRealmLoader
-
-# Registry typów realms
-REALM_TYPES = {
-    'memory': MemoryRealmModule,
-    'sqlite': SQLiteRealmModule
-}
 
 __all__ = [
     'BaseRealmModule',
-    'TaskType', 
-    'RealmTask',
-    'RealmTaskManager',
-    'MemoryRealmModule',
-    'SQLiteRealmModule',
-    'DynamicRealmLoader',
-    'REALM_TYPES'
+    'MemoryRealmModule', 
+    'SQLiteRealmModule'
 ]
+
+# Registry dostępnych typów realms (tworzone dynamicznie)
+def get_realm_types():
+    """Zwraca mapę dostępnych typów realms"""
+    return {
+        'memory': MemoryRealmModule,
+        'sqlite': SQLiteRealmModule
+    }

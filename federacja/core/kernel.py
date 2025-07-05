@@ -70,22 +70,39 @@ class FederationKernel:
         self.logger.info("✅ Federation Kernel stopped")
     
     async def _load_modules_from_manifest(self):
-        """Ładuje moduły z manifestu"""
-        manifest_path = self.config.manifest_path
-        
+        """Ładuje moduły z SystemState (zastępuje YAML)"""
         try:
-            import yaml
-            with open(manifest_path, 'r') as f:
-                manifest = yaml.safe_load(f)
-            
-            modules_config = manifest.get('modules', {})
-            
-            for module_name, module_config in modules_config.items():
-                if module_config.get('enabled', True):
-                    await self._load_module(module_name, module_config)
+            # Najpierw spróbuj SystemState
+            try:
+                from system_state_manager import SystemStateManager
+                state_manager = SystemStateManager()
+                
+                # Ładuj moduły z bazy system_state
+                modules = await state_manager.get_modules()
+                self.logger.info(f"📊 Załadowano {len(modules)} modułów z SystemState")
+                
+                for module in modules:
+                    if module.status == 'active':
+                        await self._load_module(module.name, module.config)
+                        
+            except Exception as state_error:
+                self.logger.warning(f"⚠️ SystemState niedostępny: {state_error}")
+                
+                # Fallback do YAML jako backup
+                manifest_path = self.config.manifest_path
+                import yaml
+                with open(manifest_path, 'r') as f:
+                    manifest = yaml.safe_load(f)
+                
+                modules_config = manifest.get('modules', {})
+                self.logger.info(f"📋 Fallback do YAML: {len(modules_config)} modułów")
+                
+                for module_name, module_config in modules_config.items():
+                    if module_config.get('enabled', True):
+                        await self._load_module(module_name, module_config)
                     
         except Exception as e:
-            self.logger.error(f"❌ Error loading manifest: {e}")
+            self.logger.error(f"❌ Error loading modules: {e}")
     
     async def _load_module(self, module_name: str, module_config: Dict[str, Any]):
         """Ładuje pojedynczy moduł"""
