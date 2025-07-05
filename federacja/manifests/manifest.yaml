@@ -1,45 +1,37 @@
-
 modules:
-  # Moduły statyczne - ładowane przez Kernel
-  database_manager:
+  realms.database_manager:
     enabled: true
     static_startup: true
-    class: DatabaseManagerModule
+    class: "DatabaseManager"
     config:
-      default_realm_type: "memory"
+      max_connections: 100
+      pool_size: 10
+      db_folder: "db"
+      log_level: "INFO"
 
-  dynamic_realm_loader:
+  realms.dynamic_loader:
     enabled: true
     static_startup: true
-    class: DynamicRealmLoader
+    class: "DynamicRealmLoader"
     config:
-      check_interval: 10
       auto_healing: true
+      max_realms: 50
       realms:
-        main_memory:
+        federation_memory:
           enabled: true
           type: "memory"
-          max_beings: 10000
-        main_sqlite:
+          max_beings: 1000
+
+        federation_storage:
           enabled: true
           type: "sqlite"
-          db_path: "db/main_sqlite.db"
+          db_path: "db/federation_storage.db"
           table_name: "beings"
 
-  thought_flow:
-    enabled: false
-    static_startup: true
-    class: ThoughtFlowModule
-    config:
-      max_circulating: 50
-      check_interval: 10
-
-  # Moduły zarządzane przez Federę
   federa:
     enabled: true
-    static_startup: false  # Zarządzany przez Federę
-    class: FederaModule
+    static_startup: false
+    class: "Federa"
     config:
-      personality: "empathetic_coordinator"
-      decision_making: "collaborative"
-      memory_retention: 1000
+      monitoring_enabled: true
+      analysis_depth: "basic"
