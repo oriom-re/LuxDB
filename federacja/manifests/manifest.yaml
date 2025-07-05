@@ -23,6 +23,14 @@ modules:
     config:
       max_entities: 10000
 
+  dynamic_realm_loader:
+    enabled: true
+    static_startup: true
+    class: DynamicRealmLoader
+    config:
+      check_interval: 5
+      auto_healing: true
+
   thought_flow:
     enabled: false
     static_startup: true

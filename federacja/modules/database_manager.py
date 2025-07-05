@@ -28,9 +28,9 @@ class DatabaseManagerModule(LuxModule):
         # Tutaj będziemy dodawać kolejne typy realms
     }
     
-    def __init__(self, config: Dict[str, Any], bus: FederationBus):
+    def __init__(self, config: Dict[str, Any], bus: FederationBus, name: str = "database_manager"):
         super().__init__(
-            name="database_manager",
+            name=name,
             module_type=ModuleType.CORE,
             version=ModuleVersion(1, 0, 0),
             config=config,
