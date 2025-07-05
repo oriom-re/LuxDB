@@ -118,7 +118,8 @@ class FederationKernel:
             # Inicjalizuj moduł statyczny
             module_instance = module_class(
                 config=module_config, 
-                bus=self.bus
+                bus=self.bus,
+                name=module_name
             )
             
             # Uruchom moduł
@@ -221,3 +222,15 @@ class FederationKernel:
             'modules': {name: status.__dict__ for name, status in self.module_statuses.items()},
             'bus_status': self.bus.get_status()
         }
+code = """
+try:
+    import math
+except ImportError:
+    print("Brak modułu math")
+def calc():
+    return math.sqrt(16)
+result = calc()
+"""
+
+async def tasks():
+    task = asyncio.get

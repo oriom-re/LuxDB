@@ -2,7 +2,6 @@
 """
 ⚡ MemoryRealm - Szybki Wymiar Pamięci
 
-Wymiar danych przechowywanych w pamięci - najszybszy, ale nietrwały
 """
 
 import time

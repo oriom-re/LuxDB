@@ -15,11 +15,11 @@ modules:
     config:
       max_entities: 10000
 
-  realm_knowledge:
+  realm_sqlite:
     enabled: true
     static_startup: true
-    class: KnowledgeRealmModule
-    name: "knowledge_realm"
+    class: SQLiteRealmModule
+    name: "realm_sqlite"
     config:
       max_entities: 10000
 
