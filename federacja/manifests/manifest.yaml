@@ -9,6 +9,14 @@ modules:
       db_folder: "db"
       log_level: "INFO"
 
+  realms.realm_manager:
+    enabled: true
+    static_startup: true
+    class: "RealmManager"
+    config:
+      realms_folder: "db/realms"
+      max_realms_per_personality: 5
+
   realms.dynamic_loader:
     enabled: true
     static_startup: true
@@ -27,6 +35,13 @@ modules:
           type: "sqlite"
           db_path: "db/federation_storage.db"
           table_name: "beings"
+
+  personality_query:
+    enabled: true
+    static_startup: true
+    class: "PersonalityQuery"
+    config:
+      demo_mode: true
 
   federa:
     enabled: true
