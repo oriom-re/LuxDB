@@ -1,3 +1,4 @@
+
 modules:
   # Moduły statyczne - ładowane przez Kernel
   database_manager:
@@ -7,29 +8,23 @@ modules:
     config:
       default_realm_type: "memory"
 
-  realm_memory:
-    enabled: true
-    static_startup: true
-    class: MemoryRealmModule
-    name: "memory_realm"
-    config:
-      max_entities: 10000
-
-  realm_sqlite:
-    enabled: true
-    static_startup: true
-    class: SQLiteRealmModule
-    name: "realm_sqlite"
-    config:
-      max_entities: 10000
-
   dynamic_realm_loader:
     enabled: true
     static_startup: true
     class: DynamicRealmLoader
     config:
-      check_interval: 5
+      check_interval: 10
       auto_healing: true
+      realms:
+        main_memory:
+          enabled: true
+          type: "memory"
+          max_beings: 10000
+        main_sqlite:
+          enabled: true
+          type: "sqlite"
+          db_path: "db/main_sqlite.db"
+          table_name: "beings"
 
   thought_flow:
     enabled: false
@@ -47,4 +42,4 @@ modules:
     config:
       personality: "empathetic_coordinator"
       decision_making: "collaborative"
-      memory_retention: "high"
+      memory_retention: 1000
