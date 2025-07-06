@@ -9,6 +9,7 @@ Zapobiega przeciążeniom i zarządza wielordzeniowością
 import asyncio
 import psutil
 import threading
+import time
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 
@@ -48,6 +49,12 @@ class ResourceGovernor:
         self.cpu_warning = False
         self.memory_warning = False
         self.thread_warning = False
+        
+        # Mechanizm tłumienia ostrzeżeń
+        self.warning_cooldown = 30  # sekundy
+        self.last_cpu_warning = 0
+        self.last_memory_warning = 0
+        self.last_thread_warning = 0
         
         self.logger.debug("⚖️ Resource Governor initialized")
     
@@ -107,25 +114,28 @@ class ResourceGovernor:
         """Sprawdza czy zasoby przekraczają limity"""
         warnings = []
         critical = False
+        current_time = time.time()
         
         # CPU
         if cpu_percent > self.cpu_limit:
-            if not self.cpu_warning:
+            if not self.cpu_warning or (current_time - self.last_cpu_warning) > self.warning_cooldown:
                 self.logger.warning(f"⚠️ CPU usage high: {cpu_percent:.1f}%")
                 self.cpu_warning = True
+                self.last_cpu_warning = current_time
                 self.stats['warnings_issued'] += 1
             warnings.append(f"CPU: {cpu_percent:.1f}%")
             
-            if cpu_percent > 95:
+            if cpu_percent > 98:  # Zwiększony próg krytyczny
                 critical = True
         else:
             self.cpu_warning = False
         
         # Pamięć
         if memory_percent > self.memory_limit:
-            if not self.memory_warning:
+            if not self.memory_warning or (current_time - self.last_memory_warning) > self.warning_cooldown:
                 self.logger.warning(f"⚠️ Memory usage high: {memory_percent:.1f}%")
                 self.memory_warning = True
+                self.last_memory_warning = current_time
                 self.stats['warnings_issued'] += 1
             warnings.append(f"Memory: {memory_percent:.1f}%")
             
@@ -136,9 +146,10 @@ class ResourceGovernor:
         
         # Wątki
         if thread_count > self.thread_limit:
-            if not self.thread_warning:
+            if not self.thread_warning or (current_time - self.last_thread_warning) > self.warning_cooldown:
                 self.logger.warning(f"⚠️ Thread count high: {thread_count}")
                 self.thread_warning = True
+                self.last_thread_warning = current_time
                 self.stats['warnings_issued'] += 1
             warnings.append(f"Threads: {thread_count}")
         else:
@@ -154,11 +165,11 @@ class ResourceGovernor:
         while self.running:
             try:
                 await self.check_resources()
-                await asyncio.sleep(5)  # Sprawdzaj co 5 sekund
+                await asyncio.sleep(10)  # Sprawdzaj co 10 sekund
                 
             except Exception as e:
                 self.logger.error(f"❌ Monitoring loop error: {e}")
-                await asyncio.sleep(10)
+                await asyncio.sleep(15)
     
     def optimize_for_cpu_cores(self) -> Dict[str, Any]:
         """Optymalizuje ustawienia dla dostępnych rdzeni CPU"""

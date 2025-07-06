@@ -11,10 +11,10 @@ memory:
   compression_enabled: true
   max_context_size: 10000
 resources:
-  cpu_limit: 80
-  memory_limit: 80
-  monitoring_interval: 5
-  thread_limit: 100
+  cpu_limit: 95
+  memory_limit: 85
+  monitoring_interval: 10
+  thread_limit: 150
 safe_mode:
   auto_activate: true
   min_functionality: true
