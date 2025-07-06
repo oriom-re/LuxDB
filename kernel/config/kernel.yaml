@@ -11,10 +11,14 @@ memory:
   compression_enabled: true
   max_context_size: 10000
 resources:
-  cpu_limit: 95
-  memory_limit: 85
-  monitoring_interval: 10
-  thread_limit: 150
+  cpu_limit: 50  # Realistyczny limit dla 4 rdzenie
+  memory_limit: 70  # Realistyczny limit dla 8GB RAM
+  monitoring_interval: 15  # Rzadziej sprawdzaj
+  thread_limit: 20  # Mniej wątków dla 4 rdzenie
+  real_specs:
+    cores: 4
+    memory_gb: 8
+    platform: "Replit"
 safe_mode:
   auto_activate: true
   min_functionality: true
