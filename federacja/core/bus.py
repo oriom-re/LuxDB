@@ -34,6 +34,10 @@ class FederationMessage:
     
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+    
+    def get(self, key: str, default=None):
+        """Kompatybilność z dict.get() dla starych modułów"""
+        return getattr(self, key, default)
 
 
 class FederationBus:
