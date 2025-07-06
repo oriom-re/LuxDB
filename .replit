@@ -135,6 +135,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python database_visual_report.py"
 
+[[workflows.workflow]]
+name = "Kernel"
+mode = "sequential"
+author = 43346420
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python kernel/manifest.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
