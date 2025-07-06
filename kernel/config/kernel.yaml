@@ -1,0 +1,31 @@
+cache:
+  cleanup_interval: 300
+  max_size: 1000
+  ttl_seconds: 3600
+logging:
+  file: kernel/logs/kernel.log
+  format: console
+  level: INFO
+memory:
+  cleanup_threshold: 8000
+  compression_enabled: true
+  max_context_size: 10000
+resources:
+  cpu_limit: 80
+  memory_limit: 80
+  monitoring_interval: 5
+  thread_limit: 100
+safe_mode:
+  auto_activate: true
+  min_functionality: true
+  recovery_timeout: 60
+updates:
+  auto_check: true
+  backup_enabled: true
+  check_interval: 3600
+  rollback_enabled: true
+watchdog:
+  check_interval: 10
+  component_timeout: 30
+  mode: passive
+  restart_threshold: 3
