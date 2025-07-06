@@ -77,23 +77,16 @@ class ResourceGovernor:
     async def check_resources(self) -> Dict[str, Any]:
         """Sprawdza aktualne wykorzystanie zasobów"""
         try:
-            # CPU - użyj load average zamiast psutil.cpu_percent
-            try:
-                # Preferuj load average (bardziej wiarygodny)
-                load_avg = psutil.getloadavg()
-                # Przelicz na procenty na podstawie rzeczywistej liczby rdzeni
-                cpu_cores = psutil.cpu_count()
-                cpu_percent = min(100.0, (load_avg[0] / cpu_cores) * 100)
-            except (AttributeError, OSError):
-                # Fallback do psutil z dłuższym intervalem
-                if self._first_cpu_read:
-                    psutil.cpu_percent()  # Pierwszy pomiar - odrzuć
-                    await asyncio.sleep(1.0)
-                    self._first_cpu_read = False
-                
-                cpu_percent = psutil.cpu_percent(interval=None)  # Nie blokuj
-                if cpu_percent == 0.0:  # Jeśli brak danych
-                    cpu_percent = 1.0  # Realistyczna wartość dla bezczynności
+            # CPU - pierwsze wywołanie bez interval, potem z intervalem
+            if self._first_cpu_read:
+                # Pierwsze wywołanie - odrzuć wynik
+                psutil.cpu_percent()
+                await asyncio.sleep(0.5)
+                cpu_percent = psutil.cpu_percent(interval=1.0)
+                self._first_cpu_read = False
+            else:
+                # Normalne wywołanie z krótkim intervalem
+                cpu_percent = psutil.cpu_percent(interval=0.5)
             
             # Pamięć
             memory = psutil.virtual_memory()
@@ -194,20 +187,14 @@ class ResourceGovernor:
         cpu_count = psutil.cpu_count(logical=False)  # Fizyczne rdzenie
         cpu_logical = psutil.cpu_count(logical=True)  # Logiczne rdzenie
         
-        # Rzeczywiste specyfikacje środowiska Replit
-        real_cores = 4  # Rzeczywista liczba rdzeni w Replit
-        real_memory_gb = 8  # Rzeczywista pamięć w GB
-        
         recommendations = {
-            'detected_physical_cores': cpu_count,
-            'detected_logical_cores': cpu_logical,
-            'real_cores': real_cores,
-            'real_memory_gb': real_memory_gb,
-            'recommended_workers': min(real_cores, 4),
-            'recommended_thread_limit': real_cores * 5
+            'physical_cores': cpu_count,
+            'logical_cores': cpu_logical,
+            'recommended_workers': min(cpu_count * 2, 8),
+            'recommended_thread_limit': cpu_logical * 10
         }
         
-        self.logger.info(f"🔧 CPU optimization (real specs): {recommendations}")
+        self.logger.info(f"🔧 CPU optimization: {recommendations}")
         return recommendations
     
     def get_memory_info(self) -> Dict[str, Any]:
@@ -252,23 +239,14 @@ class ResourceGovernor:
         """Debuguje pomiary CPU"""
         measurements = {
             'instant_no_interval': psutil.cpu_percent(),
-            'per_cpu_instant': psutil.cpu_percent(percpu=True),
-            'load_avg': psutil.getloadavg() if hasattr(psutil, 'getloadavg') else 'Not available',
-            'process_count': len(psutil.pids()),
-            'boot_time': psutil.boot_time(),
-            'real_environment': {
-                'cores': 4,
-                'memory_gb': 8,
-                'platform': 'Replit'
-            }
+            'interval_01': psutil.cpu_percent(interval=0.1),
+            'interval_05': psutil.cpu_percent(interval=0.5),
+            'interval_1': psutil.cpu_percent(interval=1.0),
+            'per_cpu': psutil.cpu_percent(percpu=True),
+            'load_avg': psutil.getloadavg() if hasattr(psutil, 'getloadavg') else 'Not available'
         }
         
-        # Dodaj load average jako procent jeśli dostępny
-        if hasattr(psutil, 'getloadavg'):
-            load_avg = psutil.getloadavg()
-            measurements['load_as_percent'] = (load_avg[0] / 4) * 100  # 4 rzeczywiste rdzenie
-        
-        self.logger.info(f"🔍 CPU Debug measurements (improved): {measurements}")
+        self.logger.info(f"🔍 CPU Debug measurements: {measurements}")
         return measurements
     
     def get_status(self) -> Dict[str, Any]:
