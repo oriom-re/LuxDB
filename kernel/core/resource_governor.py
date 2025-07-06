@@ -56,6 +56,9 @@ class ResourceGovernor:
         self.last_memory_warning = 0
         self.last_thread_warning = 0
         
+        # Inicjalizuj pierwszy pomiar CPU
+        self._first_cpu_read = True
+        
         self.logger.debug("⚖️ Resource Governor initialized")
     
     async def start(self):
@@ -74,8 +77,16 @@ class ResourceGovernor:
     async def check_resources(self) -> Dict[str, Any]:
         """Sprawdza aktualne wykorzystanie zasobów"""
         try:
-            # CPU
-            cpu_percent = psutil.cpu_percent(interval=0.1)
+            # CPU - pierwsze wywołanie bez interval, potem z intervalem
+            if self._first_cpu_read:
+                # Pierwsze wywołanie - odrzuć wynik
+                psutil.cpu_percent()
+                await asyncio.sleep(0.5)
+                cpu_percent = psutil.cpu_percent(interval=1.0)
+                self._first_cpu_read = False
+            else:
+                # Normalne wywołanie z krótkim intervalem
+                cpu_percent = psutil.cpu_percent(interval=0.5)
             
             # Pamięć
             memory = psutil.virtual_memory()
@@ -223,6 +234,20 @@ class ResourceGovernor:
         await self.stop()
         await asyncio.sleep(0.5)
         await self.start()
+    
+    async def debug_cpu_measurement(self) -> Dict[str, Any]:
+        """Debuguje pomiary CPU"""
+        measurements = {
+            'instant_no_interval': psutil.cpu_percent(),
+            'interval_01': psutil.cpu_percent(interval=0.1),
+            'interval_05': psutil.cpu_percent(interval=0.5),
+            'interval_1': psutil.cpu_percent(interval=1.0),
+            'per_cpu': psutil.cpu_percent(percpu=True),
+            'load_avg': psutil.getloadavg() if hasattr(psutil, 'getloadavg') else 'Not available'
+        }
+        
+        self.logger.info(f"🔍 CPU Debug measurements: {measurements}")
+        return measurements
     
     def get_status(self) -> Dict[str, Any]:
         """Zwraca status Resource Governor"""
