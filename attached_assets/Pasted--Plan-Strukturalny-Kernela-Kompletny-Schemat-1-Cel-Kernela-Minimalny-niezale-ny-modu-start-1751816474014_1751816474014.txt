@@ -1,0 +1,109 @@
+🧠 Plan Strukturalny Kernela — Kompletny Schemat
+1. 🎯 Cel Kernela
+Minimalny, niezależny moduł startowy systemu
+
+Inicjuje system i krytyczne moduły
+
+Izolowany od zewnętrznych zależności (bazy, sieć, UI)
+
+Pasywny i odporny na awarie
+
+Zarządza zasobami, aktualizacjami i naprawą systemu
+
+2. 📁 Struktura katalogów i plików
+graphql
+Kopiuj
+Edytuj
+Kernel/
+│
+├── manifest.py             # Inicjacja rdzenia i komponentów
+├── core/
+│   ├── event_bus.py        # Wewnętrzny, izolowany EventBus Kernela
+│   ├── function_cache.py   # Cache dla dynamicznych funkcji (exec/marshal)
+│   ├── resource_governor.py# Monitor i zarządca zasobów (CPU, RAM)
+│   ├── passive_update.py   # Obsługa aktualizacji i fallback
+│   ├── logger.py           # Logowanie krytycznych zdarzeń
+│   └── watchdog.py         # Nadzór nad stabilnością systemu
+│
+├── memory/
+│   └── context_memory.py   # Szybka, tymczasowa pamięć kontekstowa
+├── config/
+│   └── kernel.yaml         # Minimalna konfiguracja Kernela
+└── fallback/
+    └── safe_mode.py        # Tryb awaryjny przy krytycznych błędach
+3. ⚙️ Główne moduły i ich role
+Moduł	Funkcja	Uwagi
+EventBus	Komunikacja wewnętrzna Kernela	Izolowany, nie dostępny dla użytkownika
+FunctionCache	Cache kompilowanych funkcji (exec, marshal)	LRU + timeout czyszczenia
+ResourceGovernor	Zarządzanie zasobami CPU, RAM i kolejek eventów	Kontrola przeciążeń, wielordzeniowość
+Watchdog	Nadzór, detekcja awarii, restart komponentów	Tryby: passive, active, strict
+PassiveUpdate	Zarządzanie aktualizacjami i fallback	Podwójne wersje modułów, testy integralności
+Logger	Logowanie krytycznych i awaryjnych zdarzeń	
+ContextMemory	Przechowywanie dynamicznego kontekstu i zmiennych	
+SafeMode	Tryb awaryjny z minimalnym zestawem funkcji	Wznowienie po krytycznych błędach
+
+4. 🔒 Bezpieczeństwo i odseparowanie
+Kernel nie udostępnia EventBus na zewnątrz
+
+Moduły użytkownika mają osobny event_bus_user
+
+Kernel kontroluje i blokuje nieautoryzowane akcje
+
+Dynamiczny exec jest filtrowany i sandboxowany przed wykonaniem
+
+Aktualizacje tylko lokalne i pod ścisłą kontrolą
+
+Fallback i rollback w przypadku błędów aktualizacji
+
+5. 🔄 Proces startowy
+Uruchomienie Kernela → ładowanie konfiguracji
+
+Tworzenie izolowanego EventBus Kernela
+
+Inicjacja modułów bazowych (bazy danych, resource governor, watchdog)
+
+Uruchomienie event_bus_user i przekazanie sterowania do warstwy użytkownika
+
+Monitorowanie i reagowanie na błędy w trybie pasywnym lub aktywnym
+
+6. 🌐 Komunikacja
+Kernel komunikuje się wyłącznie przez terminal lub lokalne kanały (np. sockety)
+
+Żadne byty z zewnątrz nie inicjują Kernela
+
+Federacja jako osobny byt zarządza warstwami wyższymi i interakcją sieciową
+
+Kernel zarządza lokalnymi zasobami i bezpieczeństwem
+
+7. 🚧 Zarządzanie środowiskami (User Zones)
+Dwa strefy użytkownika: stable i sandbox
+
+Kernel zarządza ich stanem, włącza i restartuje sandbox w razie awarii
+
+Zasoby (CPU, RAM) przydzielane z ogólnej puli Kernela, ale zarządzane lokalnie
+
+Federacja i towarzysze zarządzają polityką i uczą sandbox
+
+8. 📈 Aktualizacje i fallback
+Podwójne wersje modułów: active, fallback, next_stable
+
+Aktualizacja wymaga:
+
+weryfikacji sygnatury i integralności
+
+testu wykonania (dry-run)
+
+dopiero potem commit do next_stable
+
+W razie awarii przejście do fallback i rollback
+
+9. 🧩 Co wymaga dalszego rozeznania
+Temat	Status	Uwagi
+Kompilacja exec vs marshal	W toku	Optymalizacja i zabezpieczenia
+Sandbox i security exec	Do dogłębienia	Analiza i implementacja izolacji
+Multi-core i performance	Do wdrożenia	Zarządzanie procesami i obciążeniem
+Komunikacja z Federacją	Projekt	Implementacja RPC / socketów
+Snapshot pamięci	Opcjonalne	Zapisywanie stanu pamięci kontekstowej
+
+Podsumowanie
+Kernel to niezależny, bezpieczny i wytrzymały fundament systemu, który nigdy nie traci kontroli, chroni system przed awariami, zarządza zasobami i aktualizacjami oraz odseparowuje warstwę użytkownika.
