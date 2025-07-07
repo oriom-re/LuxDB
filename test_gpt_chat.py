@@ -9,11 +9,17 @@ import time
 
 def test_server_availability(url_base):
     """Sprawdza czy serwer jest dostępny"""
-    try:
-        response = requests.get(f"{url_base}/astral/status", timeout=5)
-        return response.status_code == 200
-    except:
-        return False
+    # Próbuj różne endpointy
+    endpoints_to_try = ["/astral/status", "/realms", "/"]
+    
+    for endpoint in endpoints_to_try:
+        try:
+            response = requests.get(f"{url_base}{endpoint}", timeout=10)
+            if response.status_code in [200, 404]:  # 404 też oznacza że serwer działa
+                return True
+        except:
+            continue
+    return False
 
 def test_gpt_chat():
     """Testuje komunikację z Astrą przez GPT"""
@@ -32,14 +38,25 @@ def test_gpt_chat():
 
     # Sprawdź który URL działa
     print("🔍 Sprawdzanie dostępności serwera...")
-    for test_url in possible_urls:
-        print(f"   Próbuję: {test_url}")
-        if test_server_availability(test_url):
-            url_base = test_url
-            print(f"✅ Serwer dostępny na: {url_base}")
+    print("⏳ Astra może potrzebować chwili na pełne uruchomienie REST API...")
+    
+    for attempt in range(3):  # 3 próby z pauzami
+        print(f"\n🔄 Próba {attempt + 1}/3:")
+        for test_url in possible_urls:
+            print(f"   Próbuję: {test_url}")
+            if test_server_availability(test_url):
+                url_base = test_url
+                print(f"✅ Serwer dostępny na: {url_base}")
+                break
+            else:
+                print(f"   ❌ Niedostępny")
+        
+        if url_base:
             break
-        else:
-            print(f"   ❌ Niedostępny")
+            
+        if attempt < 2:  # Nie czekaj po ostatniej próbie
+            print("⏱️ Czekam 5 sekund i próbuję ponownie...")
+            time.sleep(5)
 
     if not url_base:
         print("❌ Serwer nie jest dostępny na żadnym z portów")
