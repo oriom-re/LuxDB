@@ -613,6 +613,13 @@ class AstralEngineV3:
             self.logger.warning("StatefulTaskFlow niedostępny")
             return None
 
+    @property
+    def stateful_task_flow(self):
+        """Property dla dostępu do StatefulTaskFlow"""
+        if not hasattr(self, '_stateful_task_flow_instance'):
+            self._stateful_task_flow_instance = self._init_stateful_task_flow()
+        return self._stateful_task_flow_instance
+
 
 # Funkcje pomocnicze
 def create_astral_engine_v3(config: AstralConfig = None, luxbus_core: LuxBusCore = None) -> AstralEngineV3:
