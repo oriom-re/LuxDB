@@ -333,19 +333,11 @@ class AstralEngineV3:
 
     async def _meditation_cycle(self):
         """Cykl medytacyjny systemu"""
-        backup_counter = 0
         while self.running:
             try:
                 await asyncio.sleep(getattr(self.config, 'meditation_interval', 60))
                 if self.running:
                     meditation_result = self.meditate()
-
-                    # Co 5 medytacji - auto-backup intencji
-                    backup_counter += 1
-                    if backup_counter >= 5:
-                        backup_counter = 0
-                        backup_result = self.backup_intentions()
-                        self.logger.info(f"💾 Auto-backup: {backup_result['total_intentions_backed_up']} intencji")
 
                     # Wyślij event medytacji
                     self.luxbus.send_event("meditation_completed", meditation_result)
@@ -547,46 +539,6 @@ class AstralEngineV3:
         if self.container_manager:
             return self.container_manager.get_container(container_id)
         return None
-    
-    def backup_intentions(self) -> Dict[str, Any]:
-        """
-        Backup wszystkich intencji na wypadek blackout'u 🔋
-        
-        Returns:
-            Status backup'u dla każdego realm'u
-        """
-        backup_results = {}
-        intentions_count = 0
-        
-        for realm_name, realm in self.realms.items():
-            if hasattr(realm, 'force_save'):
-                try:
-                    realm.force_save()
-                    backup_results[realm_name] = {
-                        'success': True,
-                        'intentions_count': len(getattr(realm, 'active_intentions', {})),
-                        'persistence_info': realm.get_persistence_info() if hasattr(realm, 'get_persistence_info') else None
-                    }
-                    intentions_count += len(getattr(realm, 'active_intentions', {}))
-                except Exception as e:
-                    backup_results[realm_name] = {
-                        'success': False,
-                        'error': str(e)
-                    }
-                    self.logger.error(f"❌ Błąd backup'u realm'u {realm_name}: {e}")
-            else:
-                backup_results[realm_name] = {
-                    'success': False,
-                    'error': 'Realm nie obsługuje persystencji'
-                }
-        
-        self.logger.info(f"💾 Backup zakończony - zapisano {intentions_count} intencji")
-        
-        return {
-            'backup_timestamp': datetime.now().isoformat(),
-            'total_intentions_backed_up': intentions_count,
-            'realms': backup_results
-        }
 
 
 # Funkcje pomocnicze
