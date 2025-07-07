@@ -182,14 +182,25 @@ class AstralEngineV3:
         self.logger.info("⚖️ Harmony v3 zainicjalizowana")
 
     async def _load_configured_modules(self):
-        """Ładuje moduły z konfiguracji"""
+        """Ładuje moduły z konfiguracji - TYLKO statyczne flows"""
         # Załaduj realms
         for realm_name, realm_config in self.config.realms.items():
             await self.load_realm_module(realm_name, realm_config)
 
-        # Załaduj flows
-        for flow_name, flow_config in self.config.flows.items():
-            await self.load_flow_module(flow_name, flow_config)
+        # Załaduj TYLKO podstawowe flows (statyczne)
+        basic_flows = {
+            'rest': self.config.flows.get('rest'),
+            'callback': self.config.flows.get('callback'),
+            'self_healing': self.config.flows.get('self_healing'),
+            'cloud_flow_executor': self.config.flows.get('cloud_flow_executor'),
+            'repair_flow': self.config.flows.get('repair_flow')
+        }
+
+        for flow_name, flow_config in basic_flows.items():
+            if flow_config is not None:
+                await self.load_flow_module(flow_name, flow_config)
+
+        self.logger.info("📦 Załadowano tylko statyczne flows - prototypy zarządzane przez Astrę")
 
     async def load_realm_module(self, name: str, config: str):
         """Dynamicznie ładuje moduł realm"""
