@@ -37,10 +37,19 @@ class RestFlow:
 
         self.request_count = 0
         self.start_time: Optional[datetime] = None
+        print("🌐 RestFlow zainicjalizowany ========================")
 
     def _setup_routes(self):
         """Konfiguruje wszystkie endpointy REST API"""
 
+        @self.app.route('/')
+        def home():
+            """Health check endpoint"""
+            return jsonify({
+                'status': 'Astra is alive and transcending',
+                'message': '🔮 Welcome to the Astral Dimension'
+            })
+            
         @self.app.route('/astral/status', methods=['GET'])
         def get_status():
             """Status systemu astralnego"""
