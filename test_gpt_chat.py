@@ -11,7 +11,7 @@ import time
 def test_server_availability(url_base):
     """Sprawdza czy serwer jest dostępny"""
     try:
-        response = requests.get(f"{url_base}/status", timeout=5)
+        response = requests.get(f"{url_base}/astral/status", timeout=5)
         return response.status_code == 200
     except:
         return False
