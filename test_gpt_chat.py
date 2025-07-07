@@ -73,6 +73,7 @@ def test_gpt_chat():
             }, timeout=30)
 
             if response.status_code == 200:
+                print(f"✅ Sukces: {response}")
                 data = response.json()
                 if data.get('success', False):
                     print(f"✨ Astra odpowiada: {data.get('astra_response', 'Brak odpowiedzi')[:200]}...")
