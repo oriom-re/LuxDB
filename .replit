@@ -52,6 +52,24 @@ mode = "sequential"
 task = "shell.exec"
 args = "python -m http.server 8000"
 
+[[workflows.workflow]]
+name = "Uruchom Wszystkie Testy"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_runner.py"
+
+[[workflows.workflow]]
+name = "Prosty Test"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python simple_test.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
