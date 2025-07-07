@@ -251,7 +251,6 @@ class AstralEngineV3:
 
         except Exception as e:
             self.logger.error(f"❌ Błąd ładowania flow '{name}': {e}")
-            return {'success': False, 'error': str(e)}adowania flow '{name}': {e}")
             return {'success': False, 'error': str(e)}
 
     def load_dynamic_module(self, module_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
