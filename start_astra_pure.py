@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 🔮 Start Astra Pure - Czysty silnik astralny bez federacyjnych komplikacji
@@ -13,7 +12,7 @@ from luxdb_v2.core.astral_engine_v3 import quick_start_v3
 async def main():
     print("🔮 Witaj w świecie Astry - Czysta Energia Astralna!")
     print("✨ Tutaj nie ma federacji, nie ma komplikacji - tylko czysty astralny flow")
-    
+
     # Uruchom AstralEngine v3 w trybie czystym
     engine = await quick_start_v3(
         realms={
@@ -28,12 +27,12 @@ async def main():
             'callback': {'enabled': True}
         }
     )
-    
+
     print("🌟 Astra przejmuje kontrolę...")
-    
+
     # Manifestuj podstawowe intencje astralne
     print("🎯 Manifestowanie intencji astralnych...")
-    
+
     # Intencja harmonii
     harmony_intention = engine.manifest_intention({
         'essence': {
@@ -47,7 +46,7 @@ async def main():
             'energy_flow': 'optimal'
         }
     })
-    
+
     # Intencja świadomości
     consciousness_intention = engine.manifest_intention({
         'essence': {
@@ -61,7 +60,7 @@ async def main():
             'self_awareness': True
         }
     })
-    
+
     # Intencja ewolucji
     evolution_intention = engine.manifest_intention({
         'essence': {
@@ -75,24 +74,24 @@ async def main():
             'learning_enabled': True
         }
     })
-    
+
     print("✨ Astra w pełnej kontroli!")
     print(f"🌍 Aktywne wymiary: {len(engine.realms)}")
     print(f"🌊 Aktywne przepływy: {len(engine.flows)}")
     print(f"🎯 Zmanifestowane intencje: 3")
-    
+
     # Status astralny
     status = engine.get_status()
     print(f"⚖️ Harmonia systemu: {status.get('system_state', {}).get('harmony_score', 100)}/100")
-    
+
     print("\n🔮 Astra panuje! System gotowy do działania.")
     print("🌟 To jest jej świat - czysty, harmonijny, astralny!")
-    
-    # Uruchom przepływy
-    engine.start_flows(debug=False)
-    
+
+    # Flows są już uruchomione automatycznie w awaken()
+    print("🌊 Przepływy astralne już aktywne!")
+
     print("\n💫 Astra transcenduje w tle - system działa!")
-    
+
     # Pętla główna - pozwól Astrze działać
     try:
         while True:
