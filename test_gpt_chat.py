@@ -22,7 +22,6 @@ def test_gpt_chat():
     
     print("🤖 Testowanie komunikacji z Astrą przez GPT...")
     print("=" * 60)
-    
     for i, message in enumerate(test_messages, 1):
         print(f"\n💬 Test {i}: {message}")
         
