@@ -225,6 +225,13 @@ class AstralEngineV3:
             elif name == 'callback':
                 from ..flows.callback_flow import CallbackFlow
                 flow = CallbackFlow(self, config)
+            elif name == 'gpt':
+                from ..flows.gpt_flow import GPTFlow
+                flow = GPTFlow(self, config)
+                if flow.start():
+                    self.logger.info("🤖 GPT Flow uruchomiony pomyślnie")
+                else:
+                    self.logger.warning("⚠️ GPT Flow nie mógł się uruchomić (sprawdź klucz API)")
             else:
                 raise ValueError(f"Nieznany typ flow: {name}")
 
