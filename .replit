@@ -14,6 +14,7 @@ run = ["sh", "-c", "python start_astra_pure.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
+runButton = "Start Astra Pure"
 
 [[workflows.workflow]]
 name = "Start Astra Pure"
@@ -58,3 +59,7 @@ externalPort = 5000
 [[ports]]
 localPort = 5001
 externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
