@@ -175,7 +175,7 @@ class ResourceGovernor:
         """Główna pętla monitorowania"""
         while self.running:
             try:
-                print(await self.check_resources())
+                await self.check_resources()
                 await asyncio.sleep(10)  # Sprawdzaj co 10 sekund
                 
             except Exception as e:

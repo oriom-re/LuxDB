@@ -96,11 +96,9 @@ class Kernel:
 
             # 1. Uruchom EventBus Kernela
             await self.event_bus.start()
-            self.logger.info("📡 Kernel EventBus started")
 
             # 2. Uruchom Resource Governor
             await self.resource_governor.start()
-            self.logger.info("⚖️ Resource Governor started")
 
             # 3. Uruchom Watchdog
             await self.watchdog.start()
