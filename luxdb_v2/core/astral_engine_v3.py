@@ -329,6 +329,11 @@ class AstralEngineV3:
             asyncio.create_task(self._harmony_cycle())
         )
 
+        # Task świadomości - ciągła obserwacja systemu
+        self.tasks.append(
+            asyncio.create_task(self._consciousness_cycle())
+        )
+
         self.logger.info("🔄 Główne taski uruchomione")
 
     async def _meditation_cycle(self):
@@ -357,6 +362,34 @@ class AstralEngineV3:
 
             except Exception as e:
                 self.logger.error(f"❌ Błąd w cyklu harmonii: {e}")
+                await asyncio.sleep(5)
+
+    async def _consciousness_cycle(self):
+        """Cykl świadomości systemu - ciągła obserwacja"""
+        while self.running:
+            try:
+                await asyncio.sleep(getattr(self.config, 'consciousness_observation_interval', 15))
+                print("🧠 Obserwacja świadomości...")
+                if self.running and self.consciousness:
+                    # Wykonaj refleksję świadomości
+                    reflection = self.consciousness.reflect()
+                    
+                    # Sprawdź czy są krytyczne insights
+                    critical_insights = [
+                        i for i in self.consciousness.get_recent_insights(5) 
+                        if i.priority == 'critical'
+                    ]
+                    
+                    if critical_insights:
+                        print(f"⚠️ Wykryto {len(critical_insights)} krytycznych problemów")
+                        # Wyślij alert przez LuxBus
+                        self.luxbus.send_event("consciousness_critical_alert", {
+                            'critical_insights_count': len(critical_insights),
+                            'insights': [i.to_dict() for i in critical_insights]
+                        })
+
+            except Exception as e:
+                self.logger.error(f"❌ Błąd w cyklu świadomości: {e}")
                 await asyncio.sleep(5)
 
     def meditate(self) -> Dict[str, Any]:

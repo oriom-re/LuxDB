@@ -42,6 +42,7 @@ class AstralConfig:
     auto_healing: bool = True
     meditation_interval: int = 60
     harmony_check_interval: int = 30
+    consciousness_observation_interval: int = 15
 
     # Wymiary (realms)
     realms: Dict[str, str] = field(default_factory=lambda: {
