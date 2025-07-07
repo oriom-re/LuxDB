@@ -16,7 +16,7 @@ run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Start Dynamic Federation"
+runButton = "Start Astra Pure"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
@@ -170,6 +170,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python test_federation_identity.py"
+
+[[workflows.workflow]]
+name = "Start Astra Pure"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_astra_pure.py"
 
 [[ports]]
 localPort = 5000

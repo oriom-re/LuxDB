@@ -496,6 +496,50 @@ class AstralEngineV3:
             # Fallback - uruchom bezpośrednio load_realm_module
             return asyncio.create_task(self.load_realm_module(name, config))
 
+    def manifest_intention(self, intention_data: Dict[str, Any], realm_name: str = "intentions") -> Any:
+        """
+        Manifestuje nową intencję w systemie astralnym
+
+        Args:
+            intention_data: Dane intencji z warstwami duchową i materialną
+            realm_name: Nazwa wymiaru dla intencji
+
+        Returns:
+            Zmanifestowana intencja
+        """
+        try:
+            # Pobierz wymiar intencji
+            if realm_name not in self.realms:
+                self.logger.warning(f"⚠️ Wymiar '{realm_name}' nie istnieje - używam dostępnego")
+                # Użyj pierwszego dostępnego wymiaru
+                available_realms = list(self.realms.keys())
+                if available_realms:
+                    realm_name = available_realms[0]
+                else:
+                    self.logger.error("❌ Brak dostępnych wymiarów dla manifestacji intencji")
+                    return None
+
+            realm = self.realms[realm_name]
+
+            # Manifestuj intencję w wymiarze
+            if hasattr(realm, 'manifest'):
+                intention = realm.manifest(intention_data)
+                self.logger.info(f"🎯 Intencja zmanifestowana w wymiarze '{realm_name}'")
+                return intention
+            else:
+                self.logger.error(f"❌ Wymiar '{realm_name}' nie obsługuje manifestacji")
+                return None
+
+        except Exception as e:
+            self.logger.error(f"❌ Błąd manifestacji intencji: {e}")
+            return None
+
+    def get_astral_container(self, container_id: str) -> Any:
+        """Pobiera kontener astralny po ID"""
+        if self.container_manager:
+            return self.container_manager.get_container(container_id)
+        return None
+
 
 # Funkcje pomocnicze
 def create_astral_engine_v3(config: AstralConfig = None, luxbus_core: LuxBusCore = None) -> AstralEngineV3:

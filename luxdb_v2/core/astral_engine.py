@@ -97,6 +97,9 @@ class AstralEngine:
         self.consciousness = Consciousness(self)
         self.harmony = Harmony(self)
         self.logger = AstralLogger(self.config.wisdom.get('logging_level', 'INFO'))
+        
+        # LuxBus dla kompatybilności z v3 (placeholder)
+        self.luxbus = None
 
         # Wymiary (realms)
         self.realms: Dict[str, BaseRealm] = {}
