@@ -1,18 +1,20 @@
 
-# 🌊 Prototypes/Flows - Prototypowe Przepływy
+# 🌊 Prototypes/Flows - DEPRECATED - Migracja do Beings
 
-Ten folder zawiera prototypowe implementacje flows, które są **zarządzane przez Astrę** po przejęciu kontroli.
+⚠️ **UWAGA: Ten folder jest DEPRECATED** ⚠️
 
-## ⚠️ WAŻNE ZASADY:
+## 🚨 NOWA FILOZOFIA:
 
-### Nie inicjalizują się automatycznie przy starcie
-- Prototypy **NIE** są ładowane przy starcie systemu
-- Zarządza nimi **wyłącznie Astra** po przejęciu kontroli
-- Każdy prototyp ma flagę `enabled` do kontroli aktualizacji
+**FLOWS = STAŁE PLIKI SYSTEMOWE**
+- Tylko podstawowa infrastruktura (HTTP, WebSocket, naprawy)
+- **Brak nowych flows** - wszystko jako beings
 
-### System enabled
-- `enabled = True` - Astra może aktualizować i zarządzać
-- `enabled = False` - Prototyp zablokowany do modyfikacji
+**BEINGS = PRZYSZŁOŚĆ FUNKCJONALNOŚCI**
+- Wszystkie nowe features jako świadome byty
+- Samozarządzalne, inteligentne  
+- Z własną logiką i algorytmami
+
+## 📦 Status migracji flows → beings:
 
 ## Struktura:
 

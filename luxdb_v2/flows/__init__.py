@@ -1,27 +1,29 @@
 
 """
-🌊 LuxDB v2 Flows - Podstawowe Przepływy Astralnej Energii
+🌊 LuxDB v2 Flows - TYLKO Stałe Przepływy Systemowe
 
-Tylko najważniejsze flows potrzebne do uruchomienia systemu.
-Pozostałe flows są w prototypes/flows/ i wczytywane dynamicznie.
+FLOWS = STAŁE PLIKI SYSTEMOWE (niezmienne)
+- Podstawowa infrastruktura
+- Komunikacja HTTP/WebSocket  
+- Naprawy i stabilność systemu
+
+Wszystkie NOWE funkcjonalności powstają jako BEINGS w prototypes/beings/
+- Świadome, inteligentne byty
+- Samomodyfikujące się
+- Z własną logią i algorytmami
 """
 
 from .rest_flow import RestFlow
 from .callback_flow import CallbackFlow
+from .self_healing_flow import SelfHealingFlow
+from .repair_flow import RepairFlow
+from .cloud_flow_executor import CloudFlowExecutor
 
-# Flows załadowane przez CloudFlowExecutor z prototypów
-# - WebSocketFlow (prototypes/flows/ws_flow.py)
-# - GPTFlow (prototypes/flows/gpt_flow.py)
-# - HybridGPTFlow (prototypes/flows/hybrid_gpt_flow.py)
-# - SelfHealingFlow (prototypes/flows/self_healing_flow.py)
-# - SelfImprovementFlow (prototypes/flows/self_improvement_flow.py)
-# - AutomatedTestingFlow (prototypes/flows/automated_testing_flow.py)
-# - IntentionFlow (prototypes/flows/intention_flow.py)
-# - SecureCodeFlow (prototypes/flows/secure_code_flow.py)
-# - StatefulTaskFlow (prototypes/flows/stateful_task_flow.py)
-# - FederationFlow (prototypes/flows/federation_flow.py)
-# - OriomFlow (prototypes/flows/oriom_flow.py)
-# - PDFGeneratorFlow (prototypes/flows/pdf_generator_flow.py)
-# - LuxBusWSFlow (prototypes/flows/luxbus_ws_flow.py)
+# BEINGS zastępują flows - nowe funkcjonalności tylko jako świadome byty:
+# - GPTBeing (prototypes/beings/) - zastępuje gpt_flow
+# - WebSocketBeing (prototypes/beings/) - zastępuje ws_flow  
+# - FederationBeing (prototypes/beings/) - zastępuje federation_flow
+# - PDFGeneratorBeing (prototypes/beings/) - zastępuje pdf_generator_flow
+# - AutomatedTestingBeing (prototypes/beings/) - zastępuje automated_testing_flow
 
 __all__ = ['RestFlow', 'CallbackFlow']

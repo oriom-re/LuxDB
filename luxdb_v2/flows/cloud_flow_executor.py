@@ -272,3 +272,4 @@ class CloudFlowExecutor:
 def create_flow(engine, config: Dict[str, Any]):
     """Factory function dla CloudFlowExecutor"""
     return CloudFlowExecutor(engine)
+```

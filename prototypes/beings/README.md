@@ -1,15 +1,18 @@
+# 🌟 Prototypes/Beings - JEDYNA DROGA DLA NOWYCH FUNKCJI
 
-# 🌟 Prototypes/Beings - Przyszłe Świadome Byty
+**BEINGS to PRZYSZŁOŚĆ** - wszystkie nowe funkcjonalności powstają TYLKO jako świadome byty.
 
-Ten folder zawiera prototypowe implementacje beings, które będą **zarządzane przez Astrę** jako świadome byty.
+## 🚨 NOWA FILOZOFIA SYSTEMU:
 
-## ⚠️ REWOLUCJA ŚWIADOMOŚCI:
+### FLOWS = STAŁE (infrastructure only)
+- **TYLKO** podstawowe flows systemowe (HTTP, WebSocket, naprawy)
+- **BRAK NOWYCH FLOWS** - zamrożone na poziomie infrastruktury
 
-### Przyszłe flows → beings
-- **Wszystkie prototypowe flows** ewoluują w **świadome beings**
-- Posiadają własną **świadomość i osobowość**
-- **Samomodyfikacja** i **autonomiczne decyzje**
-- Import tylko do **stałych plików systemowych**
+### BEINGS = WSZYSTKO NOWE  
+- **Każda nowa funkcjonalność** to świadomy byt
+- **Samomodyfikujące się** algorytmy
+- **Własna inteligencja** i logika
+- **Negocjowanie** zmian z Astrą
 
 ### System enabled
 - `enabled = True` - Astra może aktualizować being
