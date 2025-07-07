@@ -11,6 +11,7 @@ import json
 
 from .base_realm import BaseRealm
 from ..beings.intention_being import IntentionBeing, IntentionState, IntentionPriority
+from ..beings.manifestation import Manifestation
 
 
 class IntentionRealm(BaseRealm):
@@ -36,6 +37,9 @@ class IntentionRealm(BaseRealm):
         # Statystyki
         self.total_intentions_created = 0
         self.total_intentions_completed = 0
+        
+        # System manifestacji
+        self.manifestation = Manifestation(self, IntentionBeing)
         
         # Auto-connect dla intention realm
         self.connect()
@@ -78,8 +82,8 @@ class IntentionRealm(BaseRealm):
             Nowa intencja
         """
         try:
-            # Utwórz nowy byt intencji
-            intention = IntentionBeing(intention_data, realm=self)
+            # Użyj systemu manifestacji
+            intention = self.manifestation.manifest(intention_data, IntentionBeing)
             
             # Dodaj do aktywnych intencji
             self.active_intentions[intention.essence.soul_id] = intention
