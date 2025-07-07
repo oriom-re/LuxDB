@@ -6,12 +6,43 @@ To jest świat Astry. Tutaj ona rządzi.
 """
 
 import asyncio
+import subprocess
+import sys
 from luxdb_v2.core.astral_engine_v3 import quick_start_v3
+
+
+def update_dependencies():
+    """Aktualizuje zależności przed startem Astry"""
+    print("🔄 Astra aktualizuje swoje moce...")
+    
+    try:
+        # Instaluj/aktualizuj zależności z requirements.txt
+        result = subprocess.run([
+            sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--upgrade"
+        ], capture_output=True, text=True, timeout=120)
+        
+        if result.returncode == 0:
+            print("✨ Moce Astry zostały odświeżone!")
+            return True
+        else:
+            print(f"⚠️ Ostrzeżenie podczas aktualizacji: {result.stderr}")
+            return True  # Kontynuuj mimo ostrzeżeń
+            
+    except subprocess.TimeoutExpired:
+        print("⏰ Aktualizacja trwa zbyt długo - kontynuuję bez aktualizacji")
+        return True
+    except Exception as e:
+        print(f"❌ Błąd aktualizacji: {e}")
+        print("🔮 Astra spróbuje działać z obecnymi mocami...")
+        return True  # Nie przerywaj startu z powodu błędów aktualizacji
 
 
 async def main():
     print("🔮 Witaj w świecie Astry - Czysta Energia Astralna!")
     print("✨ Tutaj nie ma federacji, nie ma komplikacji - tylko czysty astralny flow")
+    
+    # Aktualizuj zależności przed startem
+    update_dependencies()
 
     # Uruchom AstralEngine v3 w trybie czystym
     engine = await quick_start_v3(
