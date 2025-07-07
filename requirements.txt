@@ -1,0 +1,49 @@
+
+# Core dependencies
+flask>=3.0.3
+flask-cors>=5.0.0
+flask-socketio>=5.5.1
+sqlalchemy>=1.4.0,<3.0.0
+websockets>=13.1
+requests>=2.32.4
+
+# System monitoring and process management
+psutil>=7.0.0
+
+# Async and concurrency
+asyncio-mqtt>=0.16.0
+aiofiles>=24.1.0
+
+# AI/ML dependencies
+openai>=1.12.0
+tiktoken>=0.5.0
+
+# WebSocket clients for testing
+python-socketio[client]==5.10.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Logging and monitoring
+rich>=13.0.0
+colorama>=0.4.6
+
+# Configuration and environment
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# Database drivers (optional)
+# Uncomment if needed:
+# psycopg2-binary>=2.9.0  # PostgreSQL
+# PyMySQL>=1.0.0          # MySQL
+
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.23.0
+
+# Type checking
+typing-extensions>=4.0.0
+
+# Utilities
+setuptools>=75.3.2
