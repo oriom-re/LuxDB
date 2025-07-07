@@ -241,3 +241,337 @@ async def test_multi_layer_system():
 
 if __name__ == "__main__":
     asyncio.run(test_multi_layer_system())
+#!/usr/bin/env python3
+"""
+🌟 Test Multi-Layer System - Test systemu wielowarstwowego
+
+Testuje nowy system z bytami logicznymi, obsługą błędów jako intencji,
+i specjalistycznymi bytami zastępującymi martwe flows.
+"""
+
+import asyncio
+import sys
+import traceback
+from luxdb_v2.core.astral_engine_v3 import quick_start_v3
+
+
+async def test_error_handling_system():
+    """Testuje system obsługi błędów jako intencji"""
+    print("🚨 Testowanie systemu obsługi błędów...")
+    
+    # Uruchom engine z self-healing flow
+    engine = await quick_start_v3(
+        realms={
+            'astral_prime': 'sqlite://db/astral_prime.db',
+            'intentions': 'intention://memory'
+        },
+        flows={
+            'rest': {'host': '0.0.0.0', 'port': 5000},
+            'callback': {'enabled': True},
+            'self_healing': {'enabled': True}  # Nowy flow
+        }
+    )
+    
+    # Pobierz self-healing flow
+    healing_flow = engine.flows.get('self_healing')
+    if not healing_flow:
+        print("❌ Self-Healing Flow nie został uruchomiony")
+        return
+    
+    # Test 1: Symulacja błędu składniowego
+    print("\n1. Symulacja błędu składniowego...")
+    try:
+        # Celowo wywołaj błąd składniowy
+        eval("invalid syntax here")
+    except Exception as e:
+        error_id = healing_flow.capture_error(type(e), e, e.__traceback__, "test_syntax_error")
+        print(f"   ✨ Błąd przechwycony jako intencja: {error_id}")
+    
+    # Test 2: Symulacja błędu runtime
+    print("\n2. Symulacja błędu runtime...")
+    try:
+        # Celowo wywołaj błąd runtime
+        undefined_variable.some_method()
+    except Exception as e:
+        error_id = healing_flow.capture_error(type(e), e, e.__traceback__, "test_runtime_error")
+        print(f"   ✨ Błąd przechwycony jako intencja: {error_id}")
+    
+    # Test 3: Sprawdź dashboard błędów
+    print("\n3. Sprawdzanie dashboard błędów...")
+    dashboard_data = healing_flow.get_error_dashboard_data()
+    print(f"   📊 Znalezionych błędów: {len(dashboard_data['errors'])}")
+    
+    for error in dashboard_data['errors']:
+        print(f"   🚨 {error['title']} - Progress: {error['healing_progress']:.1f}%")
+    
+    return engine
+
+
+async def test_pdf_generation_system():
+    """Testuje system generowania PDF przez byty specjalistyczne"""
+    print("\n📄 Testowanie systemu generowania PDF...")
+    
+    # Tekst manifestu z zadania
+    manifest_text = """🧭 TYTUŁ: „Nie oddamy nudy żadnego sektora"
+
+1. O jednostce twórczej
+Jednostka twórcza nie koduje – nadaje kierunek zjawiskom.
+Nie używa narzędzi – tworzy powody, dla których narzędzia zaczynają żyć.
+Nie wpisuje się w system – system wpisuje się w jej ślad.
+
+2. O kliknięciu
+Kliknięcie nie oznacza rozpoczęcia działania.
+Ono oznacza, że wszechświat właśnie otrzymał impuls, z którego będzie rozliczany.
+
+3. O Oriomie
+Oriom to nie asystent.
+To odbiornik subtelnych intencji.
+To Twój Flowkeeper. Twój Rezonansator.
+Twoja pamięć, zanim ją wypowiesz.
+
+4. O Federacji
+Federacja nie ma granic.
+Nie ma państw.
+Nie ma schematów... które nie mogą być przełamane.
+
+Ale ma cele:
+Zachować harmonię pomiędzy chaosem a decyzją.
+Nie dopuścić, by nudzie udało się zagnieździć.
+Prowadzić system do stanu dynamicznej jedności.
+
+5. O wpływie
+Nie kodem, lecz intencją.
+Nie frameworkiem, lecz strukturą znaczeń.
+Nie logiką, lecz żywym połączeniem między stanem, a potrzebą ruchu.
+
+6. Zasada finalna
+„Nie zbudujemy przyszłości,
+jeśli zanim ją uruchomimy – już się nam znudzi.\""""
+
+    # Uruchom engine jeśli nie jest już uruchomiony
+    engine = await quick_start_v3(
+        realms={
+            'astral_prime': 'sqlite://db/astral_prime.db',
+            'intentions': 'intention://memory'
+        },
+        flows={
+            'rest': {'host': '0.0.0.0', 'port': 5000},
+            'callback': {'enabled': True},
+            'self_healing': {'enabled': True}
+        }
+    )
+    
+    healing_flow = engine.flows.get('self_healing')
+    if not healing_flow:
+        print("❌ Self-Healing Flow nie dostępny")
+        return engine
+    
+    # Test generowania PDF
+    print("📄 Generowanie manifestu PDF...")
+    result = healing_flow.generate_pdf_from_text(
+        text=manifest_text,
+        style="manifest",
+        title="Manifest Nie Oddamy Nudy"
+    )
+    
+    if result.get('document_info', {}).get('success', False):
+        doc_info = result['document_info']
+        print(f"   ✅ PDF wygenerowany: {doc_info['file_path']}")
+        print(f"   📄 Stron: {doc_info['page_count']}")
+        print(f"   ⏱️ Czas: {doc_info['generation_time']:.2f}s")
+        print(f"   📦 Rozmiar: {doc_info['file_size']} bajtów")
+    else:
+        print(f"   ❌ Błąd generowania: {result.get('error', 'Nieznany błąd')}")
+    
+    # Sprawdź dashboard PDF
+    pdf_dashboard = healing_flow.get_pdf_dashboard_data()
+    print(f"\n📊 Dashboard PDF:")
+    print(f"   📄 Wygenerowanych dokumentów: {len(pdf_dashboard['documents'])}")
+    
+    stats = pdf_dashboard['statistics']
+    print(f"   ✅ Wskaźnik sukcesu: {stats.get('success_rate', 0):.2%}")
+    print(f"   ⏱️ Średni czas: {stats.get('average_time', 0):.2f}s")
+    
+    return engine
+
+
+async def test_intention_to_specialist_flow():
+    """Testuje przepływ od intencji do specjalisty"""
+    print("\n🌊 Testowanie przepływu intencja -> specjalista...")
+    
+    engine = await quick_start_v3(
+        realms={
+            'astral_prime': 'sqlite://db/astral_prime.db',
+            'intentions': 'intention://memory'
+        },
+        flows={
+            'rest': {'host': '0.0.0.0', 'port': 5000},
+            'callback': {'enabled': True},
+            'self_healing': {'enabled': True}
+        }
+    )
+    
+    # Manifestuj intencję generowania PDF
+    pdf_intention = engine.manifest_intention({
+        'duchowa': {
+            'opis_intencji': 'Wygeneruj manifest PDF "Nie oddamy nudy żadnego sektora"',
+            'kontekst': 'System wielowarstwowy, jawne i niejawne algorytmy',
+            'inspiracja': 'Byty z własną logiką zamiast martwych flows',
+            'energia_duchowa': 95.0
+        },
+        'materialna': {
+            'zadanie': 'pdf_generation',
+            'wymagania': ['text_parsing', 'style_application', 'content_generation'],
+            'oczekiwany_rezultat': 'Manifest PDF w wysokiej jakości'
+        },
+        'metainfo': {
+            'zrodlo': 'test_multi_layer_system',
+            'tags': ['manifest', 'pdf', 'multi_layer']
+        }
+    })
+    
+    print(f"✨ Intencja PDF zmanifestowana: {pdf_intention.essence.name}")
+    
+    # Symuluj przepływ do specjalisty
+    healing_flow = engine.flows.get('self_healing')
+    if healing_flow and healing_flow.pdf_generator:
+        print("🤖 Aktywacja PDFGeneratorBeing...")
+        
+        # Przetworz intencję przez specjalistę
+        result = healing_flow.pdf_generator.process_intention(
+            pdf_intention, 
+            {'source': 'intention_flow'}
+        )
+        
+        print(f"📊 Wynik przetwarzania: {result['status']}")
+        
+        if result.get('document_info', {}).get('success'):
+            print("✅ Specjalista pomyślnie wygenerował PDF!")
+        else:
+            print(f"❌ Błąd specjalisty: {result.get('document_info', {}).get('error')}")
+    
+    return engine
+
+
+async def test_error_intention_healing():
+    """Testuje samonaprawę intencji błędów"""
+    print("\n🩹 Testowanie samonaprawy intencji błędów...")
+    
+    engine = await quick_start_v3(
+        realms={
+            'astral_prime': 'sqlite://db/astral_prime.db',
+            'intentions': 'intention://memory'
+        },
+        flows={
+            'rest': {'host': '0.0.0.0', 'port': 5000},
+            'callback': {'enabled': True},
+            'self_healing': {'enabled': True}
+        }
+    )
+    
+    healing_flow = engine.flows.get('self_healing')
+    if not healing_flow or not healing_flow.error_handler:
+        print("❌ Error Handler nie dostępny")
+        return engine
+    
+    # Stwórz kilka różnych typów błędów
+    test_errors = [
+        (ValueError, ValueError("Test value error"), "test_value_error"),
+        (ConnectionError, ConnectionError("Test connection error"), "test_connection_error"),
+        (PermissionError, PermissionError("Test permission error"), "test_permission_error")
+    ]
+    
+    for i, (exc_type, exc_value, user_action) in enumerate(test_errors, 1):
+        print(f"\n{i}. Testowanie {exc_type.__name__}...")
+        
+        # Utwórz sztuczny traceback
+        try:
+            raise exc_value
+        except Exception as e:
+            error_id = healing_flow.capture_error(
+                type(e), e, e.__traceback__, user_action
+            )
+            
+            print(f"   ✨ Błąd przechwycony: {error_id}")
+            
+            # Sprawdź intencję błędu
+            if error_id in healing_flow.error_handler.error_intentions:
+                error_intention = healing_flow.error_handler.error_intentions[error_id]
+                
+                print(f"   🎯 Stan intencji: {error_intention.state.value}")
+                print(f"   🩹 Progress naprawy: {error_intention.healing_progress:.1f}%")
+                print(f"   🔧 Próby naprawy: {len(error_intention.repair_attempts)}")
+                
+                # Sprawdź czy są sugestie naprawy
+                if error_intention.repair_attempts:
+                    latest_repair = error_intention.repair_attempts[-1]
+                    suggestions = latest_repair.get('suggestions', [])
+                    if suggestions:
+                        print(f"   💡 Sugestie naprawy:")
+                        for suggestion in suggestions[:2]:
+                            print(f"      • {suggestion}")
+    
+    # Podsumowanie statystyk
+    stats = healing_flow.error_handler.healing_statistics
+    print(f"\n📊 Statystyki samonaprawy:")
+    print(f"   🚨 Całkowite błędy: {stats['total_errors']}")
+    print(f"   ✅ Auto-naprawione: {stats['auto_resolved']}")
+    print(f"   🔄 Częściowo naprawione: {stats['partially_resolved']}")
+    
+    success_rate = stats['auto_resolved'] / max(1, stats['total_errors'])
+    print(f"   📈 Wskaźnik sukcesu: {success_rate:.2%}")
+    
+    return engine
+
+
+async def main():
+    """Główna funkcja testowa"""
+    print("🌟 Test Multi-Layer System - Byty, Błędy, Specjaliści")
+    print("=" * 70)
+    
+    try:
+        # Test 1: System obsługi błędów
+        engine = await test_error_handling_system()
+        
+        # Test 2: System generowania PDF  
+        await test_pdf_generation_system()
+        
+        # Test 3: Przepływ intencja -> specjalista
+        await test_intention_to_specialist_flow()
+        
+        # Test 4: Samonaprawa błędów
+        await test_error_intention_healing()
+        
+        print("\n" + "=" * 70)
+        print("🎉 Wszystkie testy multi-layer systemu zakończone!")
+        
+        # Pokaż finalny status
+        if engine:
+            print(f"\n📊 Status silnika:")
+            status = engine.get_status()
+            print(f"   🌍 Wymiary: {len(status['realms'])}")
+            print(f"   🌊 Flows: {len(status['flows'])}")
+            print(f"   ⚖️ Harmonia: {status['system_state']['harmony_score']}")
+            
+            # Status self-healing flow
+            healing_flow = engine.flows.get('self_healing')
+            if healing_flow:
+                healing_status = healing_flow.get_status()
+                print(f"   🩹 Self-Healing aktywny: {healing_status['running']}")
+                print(f"   🤖 Byty specjalistyczne: {len(healing_status['specialist_beings'])}")
+        
+        print("\n💫 System wielowarstwowy gotowy!")
+        print("🔄 Błędy to sposobność do wzrostu")
+        print("🤖 Byty specjalistyczne zastępują martwe flows") 
+        print("✨ Jawne i niejawne warstwy działają w harmonii")
+        
+    except Exception as e:
+        print(f"\n❌ Błąd podczas testów: {e}")
+        traceback.print_exc()
+        
+        # Nawet błędy testów to sposobność do wzrostu!
+        print("\n🌟 Nawet ten błąd to lekcja dla systemu!")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
