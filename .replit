@@ -1,175 +1,16 @@
+run = "python start_astra_pure.py"
 entrypoint = "main.py"
-modules = ["python-3.11"]
+modules = ["python-3.12"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["nedit"]
-
-[unitTest]
-language = "python3"
 
 [gitHubImport]
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["sh", "-c", "python deploy_vm.py"]
+run = ["sh", "-c", "python start_astra_pure.py"]
 deploymentTarget = "cloudrun"
-
-[workflows]
-runButton = "Start Astra Pure"
-
-[[workflows.workflow]]
-name = "Run LuxDB"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Run LuxDB Server"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python server.py"
-
-[[workflows.workflow]]
-name = "Initialize Database"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python luxdb/init_db.py"
-
-[[workflows.workflow]]
-name = "Run LuxAPI Service"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python service/luxapi_service.py"
-
-[[workflows.workflow]]
-name = "Run LuxWS Service"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python service/luxws_service.py"
-
-[[workflows.workflow]]
-name = "Run LuxCore Service"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python services/luxcore_service.py"
-
-[[workflows.workflow]]
-name = "Run LuxDB v2 Service"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python luxdb_v2_service.py"
-
-[[workflows.workflow]]
-name = "Deploy VM Production"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python deploy_vm.py"
-
-[[workflows.workflow]]
-name = "VM Health Check"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python vm_health_check.py"
-
-[[workflows.workflow]]
-name = "Run LuxDB v3 Service"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python luxdb_v3_service.py"
-
-[[workflows.workflow]]
-name = "Start Federation Kernel"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python start_kernel.py"
-
-[[workflows.workflow]]
-name = "Start Enhanced Federation"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python start_kernel.py"
-
-[[workflows.workflow]]
-name = "Start Database Visual Report"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python database_visual_report.py"
-
-[[workflows.workflow]]
-name = "Kernel"
-mode = "sequential"
-author = 43346420
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python kernel/manifest.py"
-
-[[workflows.workflow]]
-name = "Start AstralKernel"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python start_astral_kernel.py"
-
-[[workflows.workflow]]
-name = "Start Dynamic Federation"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python start_dynamic_federation.py"
-
-[[workflows.workflow]]
-name = "Test Federation Identity"
-author = 43346420
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python test_federation_identity.py"
 
 [[workflows.workflow]]
 name = "Start Astra Pure"
@@ -179,6 +20,33 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python start_astra_pure.py"
+
+[[workflows.workflow]]
+name = "Test GPT Chat"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_gpt_chat.py"
+
+[[workflows.workflow]]
+name = "Test Intentions"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_intentions.py"
+
+[[workflows.workflow]]
+name = "View Dashboard"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m http.server 8000"
 
 [[ports]]
 localPort = 5000
