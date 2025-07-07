@@ -551,6 +551,7 @@ class AstralEngineV3:
     def backup_intentions(self) -> Dict[str, Any]:
         """
         Backup wszystkich intencji na wypadek blackout'u 🔋
+        Zapisuje do dedykowanego realm'u backup'ów
         
         Returns:
             Status backup'u dla każdego realm'u
@@ -558,16 +559,52 @@ class AstralEngineV3:
         backup_results = {}
         intentions_count = 0
         
+        # Utwórz lub pobierz realm dla backup'ów
+        backup_realm_name = "intention_backups"
+        if backup_realm_name not in self.realms:
+            asyncio.create_task(self.load_realm_module(backup_realm_name, "sqlite://db/intention_backups.db"))
+        
         for realm_name, realm in self.realms.items():
-            if hasattr(realm, 'force_save'):
+            if hasattr(realm, 'active_intentions'):
                 try:
-                    realm.force_save()
+                    # Zapisz każdą intencję do backup realm'u
+                    backup_count = 0
+                    for intention_id, intention in getattr(realm, 'active_intentions', {}).items():
+                        backup_data = {
+                            'soul_name': f"backup_{intention_id}_{datetime.now().timestamp()}",
+                            'original_realm': realm_name,
+                            'intention_id': intention_id,
+                            'intention_name': intention.essence.name,
+                            'state': intention.state.value,
+                            'priority': intention.priority.value,
+                            'backup_timestamp': datetime.now().isoformat(),
+                            'duchowa_warstwa': intention.duchowa.to_dict(),
+                            'materialna_warstwa': intention.materialna.to_dict(),
+                            'metainfo': intention.metainfo.to_dict(),
+                            'interactions': getattr(intention, 'interactions', []),
+                            'memory': getattr(intention, 'memory', []),
+                            'energy_level': intention.essence.energy_level,
+                            'consciousness_level': intention.essence.consciousness_level,
+                            'realm_affinity': 'backup_safe'
+                        }
+                        
+                        # Zapisz do backup realm'u
+                        if backup_realm_name in self.realms:
+                            self.realms[backup_realm_name].manifest(backup_data)
+                            backup_count += 1
+                    
+                    # Dodatkowo wywołaj force_save jeśli dostępne
+                    if hasattr(realm, 'force_save'):
+                        realm.force_save()
+                    
                     backup_results[realm_name] = {
                         'success': True,
                         'intentions_count': len(getattr(realm, 'active_intentions', {})),
+                        'backed_up_to_realm': backup_count,
                         'persistence_info': realm.get_persistence_info() if hasattr(realm, 'get_persistence_info') else None
                     }
                     intentions_count += len(getattr(realm, 'active_intentions', {}))
+                    
                 except Exception as e:
                     backup_results[realm_name] = {
                         'success': False,
@@ -577,16 +614,107 @@ class AstralEngineV3:
             else:
                 backup_results[realm_name] = {
                     'success': False,
-                    'error': 'Realm nie obsługuje persystencji'
+                    'error': 'Realm nie obsługuje intencji'
                 }
         
-        self.logger.info(f"💾 Backup zakończony - zapisano {intentions_count} intencji")
+        self.logger.info(f"💾 Backup zakończony - zapisano {intentions_count} intencji do realm'u backup'ów")
         
         return {
             'backup_timestamp': datetime.now().isoformat(),
             'total_intentions_backed_up': intentions_count,
+            'backup_realm': backup_realm_name,
             'realms': backup_results
         }
+    
+    def restore_intentions_from_backup(self, backup_timestamp: str = None) -> Dict[str, Any]:
+        """
+        Przywraca intencje z backup realm'u po blackout'cie 🔋➡️⚡
+        
+        Args:
+            backup_timestamp: Konkretny timestamp do przywrócenia (najnowszy jeśli None)
+            
+        Returns:
+            Status przywracania
+        """
+        backup_realm_name = "intention_backups"
+        
+        if backup_realm_name not in self.realms:
+            return {
+                'success': False,
+                'error': 'Brak realm\'u backup\'ów'
+            }
+        
+        backup_realm = self.realms[backup_realm_name]
+        restore_results = {}
+        
+        try:
+            # Pobierz backup'y
+            conditions = {'order_by': 'manifestation_time', 'realm_affinity': 'backup_safe'}
+            if backup_timestamp:
+                conditions['backup_timestamp'] = backup_timestamp
+            
+            backups = backup_realm.contemplate("restore_intentions", **conditions)
+            
+            # Grupuj według realm'u źródłowego
+            by_realm = {}
+            for backup in backups:
+                original_realm = backup.get('original_realm', 'unknown')
+                if original_realm not in by_realm:
+                    by_realm[original_realm] = []
+                by_realm[original_realm].append(backup)
+            
+            # Przywróć do każdego realm'u
+            for realm_name, realm_backups in by_realm.items():
+                if realm_name in self.realms:
+                    realm = self.realms[realm_name]
+                    restored_count = 0
+                    
+                    for backup in realm_backups:
+                        try:
+                            # Rekonstruuj dane intencji
+                            intention_data = {
+                                'nazwa': backup.get('intention_name'),
+                                'priority': backup.get('priority', 2),
+                                'duchowa': backup.get('duchowa_warstwa', {}),
+                                'materialna': backup.get('materialna_warstwa', {}),
+                                'metainfo': backup.get('metainfo', {})
+                            }
+                            
+                            # Manifestuj w docelowym realm'ie
+                            if hasattr(realm, 'manifest'):
+                                restored_intention = realm.manifest(intention_data)
+                                restored_count += 1
+                                
+                        except Exception as e:
+                            self.logger.error(f"❌ Błąd przywracania intencji z backup'u: {e}")
+                    
+                    restore_results[realm_name] = {
+                        'success': True,
+                        'restored_count': restored_count,
+                        'available_backups': len(realm_backups)
+                    }
+                else:
+                    restore_results[realm_name] = {
+                        'success': False,
+                        'error': f'Realm {realm_name} nie istnieje'
+                    }
+            
+            total_restored = sum(r.get('restored_count', 0) for r in restore_results.values())
+            self.logger.info(f"🔄 Przywrócono {total_restored} intencji z backup'ów")
+            
+            return {
+                'success': True,
+                'restore_timestamp': datetime.now().isoformat(),
+                'total_restored': total_restored,
+                'realms': restore_results
+            }
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd przywracania z backup'u: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
 
 
 # Funkcje pomocnicze
