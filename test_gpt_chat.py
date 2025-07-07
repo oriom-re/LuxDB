@@ -19,7 +19,7 @@ def test_server_availability(url_base):
 def test_gpt_chat():
     """Testuje komunikację z Astrą przez GPT"""
     
-    url_base = "http://localhost:5000"
+    url_base = "http://127.0.0.1:5000"
     gpt_url = f"{url_base}/gpt/chat"
     
     print("🤖 Testowanie komunikacji z Astrą przez GPT...")
