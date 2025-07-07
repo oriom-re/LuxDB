@@ -217,7 +217,7 @@ class AstralEngineV3:
         """Dynamicznie ładuje moduł flow"""
         try:
             flow = None
-            
+
             if name == 'rest':
                 from ..flows.rest_flow import RestFlow
                 flow = RestFlow(self, config)
@@ -388,13 +388,13 @@ class AstralEngineV3:
                 if self.running and self.consciousness:
                     # Wykonaj refleksję świadomości
                     reflection = self.consciousness.reflect()
-                    
+
                     # Sprawdź czy są krytyczne insights
                     critical_insights = [
                         i for i in self.consciousness.get_recent_insights(5) 
                         if i.priority == 'critical'
                     ]
-                    
+
                     if critical_insights:
                         print(f"⚠️ Wykryto {len(critical_insights)} krytycznych problemów")
                         # Wyślij alert przez LuxBus
@@ -598,6 +598,20 @@ class AstralEngineV3:
         """Property dla kompatybilności z v2 - dostęp do Function Generator"""
         # Może być dodane w przyszłości jako osobny flow
         return None
+
+    def _init_callback_flow(self, config: Dict[str, Any]) -> Any:
+        """Inicjalizuje CallbackFlow"""
+        from ..flows.callback_flow import CallbackFlow
+        return CallbackFlow(self, config)
+
+    def _init_stateful_task_flow(self) -> Any:
+        """Inicjalizuje StatefulTaskFlow"""
+        try:
+            from ..flows.stateful_task_flow import StatefulTaskFlow
+            return StatefulTaskFlow(self)
+        except ImportError:
+            self.logger.warning("StatefulTaskFlow niedostępny")
+            return None
 
 
 # Funkcje pomocnicze

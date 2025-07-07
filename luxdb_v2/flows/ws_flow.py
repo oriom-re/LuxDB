@@ -197,13 +197,247 @@ class WebSocketFlow:
                     'message': str(e)
                 })
 
+        async def handle_create_task(websocket, data):
+            """Handler dla tworzenia nowego zadania"""
+            try:
+                client_uid = data.get('client_uid') or f"client_{id(websocket)}"
+                request_data = data.get('request_data', {})
+                
+                # Sprawdź czy StatefulTaskFlow jest dostępny
+                if not hasattr(self.engine, 'stateful_task_flow'):
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'StatefulTaskFlow nie jest dostępny'
+                    })
+                    return
+                
+                # Ustaw UID klienta na websocket
+                websocket.client_uid = client_uid
+                
+                # Utwórz zadanie
+                task = await self.engine.stateful_task_flow.create_task_from_request(
+                    client_uid, request_data
+                )
+                
+                await self._send_message(websocket, {
+                    'type': 'task_created',
+                    'success': True,
+                    'task': task.to_dict(),
+                    'message': 'Zadanie utworzone pomyślnie'
+                })
+                
+            except Exception as e:
+                await self._send_message(websocket, {
+                    'type': 'error',
+                    'message': f'Błąd tworzenia zadania: {str(e)}'
+                })
+
+        async def handle_start_task(websocket, data):
+            """Handler dla rozpoczęcia przetwarzania zadania"""
+            try:
+                task_id = data.get('task_id')
+                if not task_id:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Brak task_id'
+                    })
+                    return
+                
+                if not hasattr(self.engine, 'stateful_task_flow'):
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'StatefulTaskFlow nie jest dostępny'
+                    })
+                    return
+                
+                success = await self.engine.stateful_task_flow.start_task_processing(task_id)
+                
+                await self._send_message(websocket, {
+                    'type': 'task_start_response',
+                    'success': success,
+                    'task_id': task_id,
+                    'message': 'Przetwarzanie rozpoczęte' if success else 'Nie udało się rozpocząć'
+                })
+                
+            except Exception as e:
+                await self._send_message(websocket, {
+                    'type': 'error',
+                    'message': f'Błąd rozpoczęcia zadania: {str(e)}'
+                })
+
+        async def handle_confirm_chunk(websocket, data):
+            """Handler dla potwierdzania odbioru chunka"""
+            try:
+                task_id = data.get('task_id')
+                chunk_id = data.get('chunk_id')
+                client_uid = getattr(websocket, 'client_uid', f"client_{id(websocket)}")
+                
+                if not task_id or not chunk_id:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Brak task_id lub chunk_id'
+                    })
+                    return
+                
+                if not hasattr(self.engine, 'stateful_task_flow'):
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'StatefulTaskFlow nie jest dostępny'
+                    })
+                    return
+                
+                success = await self.engine.stateful_task_flow.confirm_chunk_receipt(
+                    task_id, chunk_id, client_uid
+                )
+                
+                await self._send_message(websocket, {
+                    'type': 'chunk_confirmation_response',
+                    'success': success,
+                    'task_id': task_id,
+                    'chunk_id': chunk_id,
+                    'message': 'Chunk potwierdzony' if success else 'Nie udało się potwierdzić'
+                })
+                
+            except Exception as e:
+                await self._send_message(websocket, {
+                    'type': 'error',
+                    'message': f'Błąd potwierdzania chunka: {str(e)}'
+                })
+
+        async def handle_get_missing_chunks(websocket, data):
+            """Handler dla pobierania brakujących chunków"""
+            try:
+                task_id = data.get('task_id')
+                client_uid = getattr(websocket, 'client_uid', f"client_{id(websocket)}")
+                
+                if not task_id:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Brak task_id'
+                    })
+                    return
+                
+                if not hasattr(self.engine, 'stateful_task_flow'):
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'StatefulTaskFlow nie jest dostępny'
+                    })
+                    return
+                
+                missing_chunks = await self.engine.stateful_task_flow.get_missing_chunks(
+                    task_id, client_uid
+                )
+                
+                if missing_chunks is None:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Zadanie nie znalezione lub brak uprawnień'
+                    })
+                    return
+                
+                await self._send_message(websocket, {
+                    'type': 'missing_chunks_response',
+                    'success': True,
+                    'task_id': task_id,
+                    'missing_chunks': [chunk.to_dict() for chunk in missing_chunks],
+                    'count': len(missing_chunks)
+                })
+                
+            except Exception as e:
+                await self._send_message(websocket, {
+                    'type': 'error',
+                    'message': f'Błąd pobierania chunków: {str(e)}'
+                })
+
+        async def handle_archive_task(websocket, data):
+            """Handler dla archiwizacji zadania"""
+            try:
+                task_id = data.get('task_id')
+                client_uid = getattr(websocket, 'client_uid', f"client_{id(websocket)}")
+                
+                if not task_id:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Brak task_id'
+                    })
+                    return
+                
+                if not hasattr(self.engine, 'stateful_task_flow'):
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'StatefulTaskFlow nie jest dostępny'
+                    })
+                    return
+                
+                success = await self.engine.stateful_task_flow.archive_task(task_id, client_uid)
+                
+                await self._send_message(websocket, {
+                    'type': 'task_archive_response',
+                    'success': success,
+                    'task_id': task_id,
+                    'message': 'Zadanie zarchiwizowane' if success else 'Nie udało się zarchiwizować'
+                })
+                
+            except Exception as e:
+                await self._send_message(websocket, {
+                    'type': 'error',
+                    'message': f'Błąd archiwizacji: {str(e)}'
+                })
+
+        async def handle_get_task_status(websocket, data):
+            """Handler dla pobierania statusu zadania"""
+            try:
+                task_id = data.get('task_id')
+                
+                if not task_id:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Brak task_id'
+                    })
+                    return
+                
+                if not hasattr(self.engine, 'stateful_task_flow'):
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'StatefulTaskFlow nie jest dostępny'
+                    })
+                    return
+                
+                task = self.engine.stateful_task_flow.get_task(task_id)
+                
+                if not task:
+                    await self._send_message(websocket, {
+                        'type': 'error',
+                        'message': 'Zadanie nie znalezione'
+                    })
+                    return
+                
+                await self._send_message(websocket, {
+                    'type': 'task_status_response',
+                    'success': True,
+                    'task': task.to_dict(),
+                    'chunks': [chunk.to_dict() for chunk in task.chunks]
+                })
+                
+            except Exception as e:
+                await self._send_message(websocket, {
+                    'type': 'error',
+                    'message': f'Błąd pobierania statusu: {str(e)}'
+                })
+
         # Rejestruj handlery
         self.message_handlers = {
             'get_status': handle_status,
             'meditate': handle_meditate,
             'subscribe_realm': handle_subscribe_realm,
             'manifest_being': handle_manifest_being,
-            'contemplate': handle_contemplate
+            'contemplate': handle_contemplate,
+            'create_task': handle_create_task,
+            'start_task': handle_start_task,
+            'confirm_chunk': handle_confirm_chunk,
+            'get_missing_chunks': handle_missing_chunks,
+            'archive_task': handle_archive_task,
+            'get_task_status': handle_get_task_status
         }
 
     async def _handle_client(self, websocket, path):
