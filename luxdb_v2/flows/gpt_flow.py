@@ -392,9 +392,8 @@ class GPTFlow:
             openai.api_key = self.api_key
             self.engine.logger.info("🤖 GPT Flow zainicjalizowany z OpenAI API")
         else:
-            
-
             self.engine.logger.warning("⚠️ GPT Flow: Brak klucza OpenAI API")
+            self.engine.logger.warning("⚠️ Ustaw OPENAI_API_KEY w secrets lub config")
     
     def _get_api_key_from_env(self) -> Optional[str]:
         """Pobiera klucz API z zmiennych środowiskowych"""
@@ -489,13 +488,18 @@ class GPTFlow:
             # Utwórz prompt
             messages = self.prompt_engine.create_prompt(user_message, system_status)
             
-            # Wywołaj OpenAI API
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=self.max_tokens,
-                temperature=0.7
-            )
+            # Wywołaj OpenAI API (nowa wersja)
+            try:
+                client = openai.OpenAI(api_key=self.api_key)
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=self.max_tokens,
+                    temperature=0.7
+                )
+            except Exception as api_error:
+                self.engine.logger.error(f"🤖 Błąd OpenAI API: {api_error}")
+                raise
             
             # Pobierz odpowiedź Astry
             astra_response = response.choices[0].message.content
@@ -522,6 +526,15 @@ class GPTFlow:
             
         except Exception as e:
             self.engine.logger.error(f"🤖 Błąd komunikacji z GPT: {e}")
+            
+            # Szczegółowe logowanie błędów
+            if "api_key" in str(e).lower():
+                self.engine.logger.error("🔑 Problem z kluczem OpenAI API")
+            elif "rate_limit" in str(e).lower():
+                self.engine.logger.error("⏰ Przekroczony limit requestów OpenAI")
+            elif "model" in str(e).lower():
+                self.engine.logger.error(f"🤖 Problem z modelem: {self.model}")
+            
             return {
                 'success': False,
                 'error': str(e),
