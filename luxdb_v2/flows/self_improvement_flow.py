@@ -433,7 +433,7 @@ class SelfImprovementFlow:
             'queued_at': datetime.now()
         }
         
-        self.improvement_queue.put((3, datetime.now(), analysis_task))
+        self.improvement_queue.put((3, datetime.now().timestamp(), analysis_task))
     
     def _improvement_worker_loop(self):
         """Pętla workera samodoskonalenia"""
@@ -550,7 +550,7 @@ class SelfImprovementFlow:
             'queued_at': datetime.now()
         }
         
-        self.improvement_queue.put((1, datetime.now(), analysis_task))
+        self.improvement_queue.put((1, datetime.now().timestamp(), analysis_task))
         self.improvement_statistics['errors_prevented'] += 1
     
     def trigger_comprehensive_analysis(self):
@@ -569,7 +569,7 @@ class SelfImprovementFlow:
             'queued_at': datetime.now()
         }
         
-        self.improvement_queue.put((2, datetime.now(), weakness_test_task))
+        self.improvement_queue.put((2, datetime.now().timestamp(), weakness_test_task))
     
     def get_improvement_dashboard_data(self) -> Dict[str, Any]:
         """Zwraca dane dla dashboard samodoskonalenia"""
