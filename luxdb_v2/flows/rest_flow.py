@@ -456,6 +456,7 @@ class RestFlow:
 
             except Exception as e:
                 self.request_count += 1
+                print(f"🤖 Błąd GPT Flow: {e}")
                 return jsonify({
                     'success': False,
                     'error': str(e)
