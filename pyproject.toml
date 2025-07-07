@@ -32,6 +32,7 @@ dependencies = [
     "flask-cors>=5.0.0",
     "flask-socketio>=5.5.1",
     "psutil>=7.0.0",
+    "requests>=2.32.4",
     "setuptools>=75.3.2",
     "sqlalchemy>=1.4.0,<3.0.0",
     "typing-extensions>=4.0.0;python_version<'3.11'",

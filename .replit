@@ -12,6 +12,9 @@ requiredFiles = [".replit", "replit.nix"]
 run = ["sh", "-c", "python start_astra_pure.py"]
 deploymentTarget = "cloudrun"
 
+[workflows]
+runButton = "Start Astra Pure"
+
 [[workflows.workflow]]
 name = "Start Astra Pure"
 author = 43346420
