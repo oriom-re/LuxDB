@@ -14,7 +14,7 @@ run = ["sh", "-c", "python start_astra_pure.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Start Astra Pure"
+runButton = "View Dashboard"
 
 [[workflows.workflow]]
 name = "Start Astra Pure"
