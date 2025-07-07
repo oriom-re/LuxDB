@@ -1,4 +1,3 @@
-
 modules:
   # 🗄️ Podstawowe zarządzanie danymi
   realms.database_manager:
@@ -40,3 +39,12 @@ modules:
       # Uprawnenia władczyni
       system_access: "full"
       other_personalities: false  # Na razie tylko Federa
+
+  self_identity:
+    enabled: true
+    path: "modules/self_identity.py"
+    class: "SelfIdentityModule"
+    dependencies: []
+    config:
+      enable_deep_reflection: true
+      consciousness_evolution: true

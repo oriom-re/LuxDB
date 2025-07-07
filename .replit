@@ -162,6 +162,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python start_dynamic_federation.py"
 
+[[workflows.workflow]]
+name = "Test Federation Identity"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_federation_identity.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
