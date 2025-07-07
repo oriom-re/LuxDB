@@ -588,6 +588,17 @@ class AstralEngineV3:
             return self.container_manager.get_container(container_id)
         return None
 
+    @property
+    def gpt_flow(self):
+        """Property dla kompatybilności z v2 - dostęp do GPT Flow"""
+        return self.flows.get('gpt')
+
+    @property
+    def function_generator(self):
+        """Property dla kompatybilności z v2 - dostęp do Function Generator"""
+        # Może być dodane w przyszłości jako osobny flow
+        return None
+
 
 # Funkcje pomocnicze
 def create_astral_engine_v3(config: AstralConfig = None, luxbus_core: LuxBusCore = None) -> AstralEngineV3:
