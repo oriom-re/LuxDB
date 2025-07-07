@@ -772,4 +772,3 @@ async def quick_start_v3(realms: Dict[str, str] = None, flows: Dict[str, Dict] =
     await engine.awaken()
 
     return engine
-```The code modification adds support for loading `hybrid_gpt` flow modules, alongside existing flow types.
