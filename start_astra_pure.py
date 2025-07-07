@@ -63,7 +63,9 @@ async def main():
             },
             'self_healing': {'enabled': True},
             'self_improvement': {'enabled': True},
-            'automated_testing': {'enabled': True}
+            'automated_testing': {'enabled': True},
+            'cloud_flow_executor': {'enabled': True},
+            'repair_flow': {'enabled': True}
         }
     )
 

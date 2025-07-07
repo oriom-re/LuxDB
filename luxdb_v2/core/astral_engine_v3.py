@@ -242,6 +242,12 @@ class AstralEngineV3:
             elif name == 'automated_testing':
                 from ..flows.automated_testing_flow import AutomatedTestingFlow
                 flow = AutomatedTestingFlow(self)
+            elif name == 'cloud_flow_executor':
+                from ..flows.cloud_flow_executor import CloudFlowExecutor
+                flow = CloudFlowExecutor(self)
+            elif name == 'repair_flow':
+                from ..flows.repair_flow import RepairFlow
+                flow = RepairFlow(self)
             else:
                 raise ValueError(f"Nieznany typ flow: {name}")
 
