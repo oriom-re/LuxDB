@@ -22,7 +22,8 @@ def test_gpt_chat():
     possible_urls = [
         "http://127.0.0.1:5000",
         "http://localhost:5000", 
-        "http://0.0.0.0:5000"
+        "http://0.0.0.0:5000",
+        "https://replit.dev"  # Publiczny URL Replit (automatycznie przekieruje na port 5000)
     ]
 
     url_base = None

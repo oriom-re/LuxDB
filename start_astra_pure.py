@@ -53,8 +53,8 @@ async def main():
             'harmony': 'memory://harmony_cache'
         },
         flows={
-            'rest': {'host': '127.0.0.1', 'port': 5000},
-            'websocket': {'host': '127.0.0.1', 'port': 5001},
+            'rest': {'host': '0.0.0.0', 'port': 5000},
+            'websocket': {'host': '0.0.0.0', 'port': 5001},
             'callback': {'enabled': True},
             'gpt': {
                 'model': 'gpt-4',
