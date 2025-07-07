@@ -70,6 +70,19 @@ mode = "sequential"
 task = "shell.exec"
 args = "python simple_test.py"
 
+[[workflows.workflow]]
+name = "Test GPT - Replit Ready"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_gpt_chat.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000

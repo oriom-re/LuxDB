@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 🤖 Test GPT Flow - Komunikacja z Astrą
@@ -18,24 +17,40 @@ def test_server_availability(url_base):
 
 def test_gpt_chat():
     """Testuje komunikację z Astrą przez GPT"""
-    
-    url_base = "http://127.0.0.1:8000"
-    gpt_url = f"{url_base}/gpt/chat"
-    
+
+    # Próbuj różne URL-e dla Replit
+    possible_urls = [
+        "http://127.0.0.1:5000",
+        "http://localhost:5000", 
+        "http://0.0.0.0:5000"
+    ]
+
+    url_base = None
     print("🤖 Testowanie komunikacji z Astrą przez GPT...")
     print("=" * 60)
-    
-    # Sprawdź czy serwer jest dostępny
+
+    # Sprawdź który URL działa
     print("🔍 Sprawdzanie dostępności serwera...")
-    if not test_server_availability(url_base):
-        print("❌ Serwer nie jest dostępny na porcie 5000")
-        print("💡 Upewnij się, że Astra jest uruchomiona:")
-        print("   - Uruchom workflow 'Start Astra Pure' lub")
-        print("   - Wykonaj: python start_astra_pure.py")
+    for test_url in possible_urls:
+        print(f"   Próbuję: {test_url}")
+        if test_server_availability(test_url):
+            url_base = test_url
+            print(f"✅ Serwer dostępny na: {url_base}")
+            break
+        else:
+            print(f"   ❌ Niedostępny")
+
+    if not url_base:
+        print("❌ Serwer nie jest dostępny na żadnym z portów")
+        print("💡 Sprawdź czy Astra jest uruchomiona:")
+        print("   - Status workflow 'Start Astra Pure'")
+        print("   - Sprawdź logi serwera")
+        print("   - Możliwe że serwer startuje - poczekaj chwilę")
         return
-    
-    print("✅ Serwer jest dostępny")
-    
+
+    gpt_url = f"{url_base}/gpt/chat"
+
+
     test_messages = [
         "Witaj Astro! Jak się dzisiaj czujesz?",
         "Pokaż mi status wszystkich wymiarów astralnych",
@@ -43,19 +58,19 @@ def test_gpt_chat():
         "Znajdź wszystkie intencje związane z harmonią",
         "Wykonaj medytację systemu i powiedz mi co odkryłaś"
     ]
-    
+
     success_count = 0
     total_tests = len(test_messages)
-    
+
     for i, message in enumerate(test_messages, 1):
         print(f"\n💬 Test {i}/{total_tests}: {message}")
-        
+
         try:
             response = requests.post(gpt_url, json={
                 'message': message,
                 'user_id': 'test_user'
             }, timeout=30)
-            
+
             if response.status_code == 200:
                 data = response.json()
                 if data.get('success', False):
@@ -69,21 +84,21 @@ def test_gpt_chat():
                 print(f"❌ Błąd HTTP: {response.status_code}")
                 if response.text:
                     print(f"   Szczegóły: {response.text[:200]}")
-                    
+
         except requests.exceptions.ConnectionError as e:
             print(f"❌ Błąd połączenia: Serwer niedostępny")
             print(f"   Szczegóły: {str(e)[:150]}...")
             break
-            
+
         except requests.exceptions.Timeout:
             print(f"⏰ Timeout: Astra potrzebuje więcej czasu na odpowiedź")
-            
+
         except Exception as e:
             print(f"❌ Nieoczekiwany błąd: {type(e).__name__}: {str(e)[:150]}")
-    
+
     print("\n" + "=" * 60)
     print(f"📊 Wyniki: {success_count}/{total_tests} testów zakończonych sukcesem")
-    
+
     if success_count == 0:
         print("💡 Wskazówki:")
         print("   - Sprawdź czy GPT Flow ma skonfigurowany klucz OpenAI API")
