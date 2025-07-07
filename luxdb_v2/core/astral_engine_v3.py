@@ -61,6 +61,9 @@ class AstralEngineV3:
         self.luxbus.register_module("astral_engine", self)
 
         print(f"🔮 AstralEngine v3 zainicjalizowany: {self.engine_id}")
+        
+        # Lista nieudanych flow, do ponownego uruchomienia
+        self.failed_flows: Dict[str, Any] = {}
 
     def setup_luxbus_handlers(self, luxbus: LuxBusCore):
         """Konfiguruje handlery LuxBus dla silnika"""
@@ -187,7 +190,7 @@ class AstralEngineV3:
         # Załaduj flows
         for flow_name, flow_config in self.config.flows.items():
             await self.load_flow_module(flow_name, flow_config)
-
+            
     async def load_realm_module(self, name: str, config: str):
         """Dynamicznie ładuje moduł realm"""
         try:
@@ -454,32 +457,133 @@ class AstralEngineV3:
             self.logger.error(f"❌ Błąd podczas medytacji: {e}")
             return {'error': str(e), 'timestamp': datetime.now().isoformat()}
 
-    async def transcend(self):
-        """Gracefully zatrzymuje silnik"""
-        self.logger.info("🕊️ Rozpoczynam transcendencję...")
+    def _trigger_await_error_repair(self, flow_id: str, error: Exception):
+        """
+        Automatyczne uruchomienie naprawy błędów await
+        """
+        try:
+            self.logger.info(f"🩹 Uruchamianie automatycznej naprawy await dla flow '{flow_id}'")
 
-        self.running = False
+            # Sprawdź czy self-healing flow jest dostępny
+            healing_flow = self.flows.get('self_healing')
+            if not healing_flow:
+                self.logger.warning("⚠️ Self-healing flow niedostępny")
+                return
 
-        # Zatrzymaj taski
-        for task in self.tasks:
-            task.cancel()
+            # Uruchom naprawę
+            error_context = {
+                'flow_id': flow_id,
+                'error_type': 'await_expression_error',
+                'error_message': str(error),
+                'timestamp': datetime.now().isoformat()
+            }
 
-        # Poczekaj na zakończenie tasków
-        if self.tasks:
-            await asyncio.gather(*self.tasks, return_exceptions=True)
+            repair_result = healing_flow.handle_await_expression_error(error_context)
 
-        # Zatrzymaj flows
-        for flow in self.flows.values():
+            if repair_result.get('status') == 'repaired':
+                self.logger.info(f"✅ Automatyczna naprawa await zakończona dla '{flow_id}'")
+
+                # Spróbuj ponownie załadować flow
+                self._retry_flow_loading(flow_id)
+            else:
+                self.logger.warning(f"⚠️ Automatyczna naprawa await nie powiodła się: {repair_result}")
+
+        except Exception as e:
+            self.logger.error(f"❌ Błąd automatycznej naprawy await: {e}")
+
+    def _retry_flow_loading(self, flow_id: str):
+        """
+        Ponowienie próby załadowania flow po naprawie
+        """
+        try:
+            if flow_id in self.failed_flows:
+                failed_config = self.failed_flows[flow_id]['config']
+
+                # Usuń z listy nieudanych
+                del self.failed_flows[flow_id]
+
+                # Spróbuj ponownie załadować
+                self.logger.info(f"🔄 Ponowienie ładowania flow '{flow_id}' po naprawie")
+                self._load_flow(flow_id, failed_config)
+
+        except Exception as e:
+            self.logger.error(f"❌ Błąd ponownego ładowania flow '{flow_id}': {e}")
+            
+    def _load_flow(self, flow_id: str, flow_config: Dict[str, Any]):
+        """
+        Pomocnicza funkcja do ładowania flow (wykorzystywana przy ponownym uruchomieniu)
+        """
+        try:
+            flow = None
+
+            if flow_id == 'rest':
+                from ..flows.rest_flow import RestFlow
+                flow = RestFlow(self, flow_config)
+            elif flow_id == 'websocket':
+                from ..flows.ws_flow import WebSocketFlow
+                flow = WebSocketFlow(self, flow_config)
+            elif flow_id == 'callback':
+                from ..flows.callback_flow import CallbackFlow
+                flow = CallbackFlow(self, flow_config)
+            elif flow_id == 'gpt':
+                from ..flows.gpt_flow import GPTFlow
+                flow = GPTFlow(self, flow_config)
+            else:
+                raise ValueError(f"Nieznany typ flow: {flow_id}")
+
+            self.flows[flow_id] = flow
+            self.luxbus.register_module(f"flow_{flow_id}", flow)
+
+            # Uruchom flow
+            if hasattr(flow, 'start'):
+                success = flow.start()
+                if success:
+                    self.logger.info(f"🌊 Flow '{flow_id}' uruchomiony pomyślnie")
+                else:
+                    self.logger.warning(f"⚠️ Flow '{flow_id}' nie mógł się uruchomić")
+            else:
+                self.logger.info(f"🌊 Flow '{flow_id}' załadowany (bez metody start)")
+
+            self.logger.info(f"🌊 Flow '{flow_id}' załadowany")
+
+        except Exception as e:
+            self.logger.error(f"❌ Błąd ładowania flow '{flow_id}': {e}")
+
+            # Automatyczna naprawa błędów await
+            if "can't be used in 'await' expression" in str(e):
+                self._trigger_await_error_repair(flow_id, e)
+
+            # Opcjonalnie można dodać flow do listy nieudanych
+            self.failed_flows[flow_id] = {
+                'error': str(e),
+                'timestamp': datetime.now().isoformat(),
+                'config': flow_config
+            }
+            
+    def transcend(self):
+        """🕊️ Transcendencja - zamknięcie silnika"""
+        self.logger.info("🕊️ Rozpoczynanie transcendencji...")
+
+        # Zatrzymaj wszystkie flows
+        for flow_id, flow in list(self.flows.items()):
             if hasattr(flow, 'stop'):
-                flow.stop()
+                try:
+                    flow.stop()
+                    self.logger.info(f"🌊 Flow '{flow_id}' zatrzymany")
+                except Exception as e:
+                    self.logger.error(f"❌ Błąd zatrzymywania flow '{flow_id}': {e}")
 
-        # Zamknij realms
-        for realm in self.realms.values():
-            if hasattr(realm, 'close'):
-                realm.close()
+        # Zatrzymaj consciousness
+        if hasattr(self, 'consciousness') and self.consciousness:
+            self.consciousness.rest()
+
+        # Zatrzymaj harmony 
+        if hasattr(self, 'harmony') and self.harmony:
+            self.harmony.stop_monitoring()
 
         # Zatrzymaj LuxBus
-        self.luxbus.stop()
+        if self.luxbus:
+            self.luxbus.stop()
 
         self.logger.info("✨ Transcendencja zakończona")
 

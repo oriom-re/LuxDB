@@ -482,6 +482,77 @@ class LogicalBeing(BaseBeing):
                     'timestamp': datetime.now().isoformat()
                 })
     
+    def fix_async_calls(self):
+        """
+        Naprawia problematyczne wywołania asynchroniczne w mikro-funkcjach
+        """
+        try:
+            fixed_functions = 0
+            
+            for func_name, micro_func in self.micro_functions.items():
+                # Sprawdź kod funkcji pod kątem problemów z await
+                if 'await' in micro_func.code and micro_func.language == 'python':
+                    # Automatyczne wykrywanie i naprawa
+                    original_code = micro_func.code
+                    fixed_code = self._fix_await_in_code(original_code)
+                    
+                    if fixed_code != original_code:
+                        micro_func.code = fixed_code
+                        fixed_functions += 1
+                        
+                        self.remember('async_fix_applied', {
+                            'function_name': func_name,
+                            'original_code_snippet': original_code[:100],
+                            'fixed_code_snippet': fixed_code[:100],
+                            'timestamp': datetime.now().isoformat()
+                        })
+            
+            if fixed_functions > 0:
+                self.remember('bulk_async_fix', {
+                    'fixed_functions_count': fixed_functions,
+                    'logic_type': self.logic_type.value,
+                    'timestamp': datetime.now().isoformat()
+                })
+            
+            return fixed_functions
+            
+        except Exception as e:
+            self.remember('async_fix_error', {
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            })
+            return 0
+    
+    def _fix_await_in_code(self, code: str) -> str:
+        """
+        Naprawia kod z problemami await na dict
+        """
+        try:
+            # Wzorce do naprawienia
+            fixes = [
+                # Napraw await na dict
+                ('await {', 'await asyncio.create_task(asyncio.coroutine(lambda: {'),
+                ('await [', 'await asyncio.create_task(asyncio.coroutine(lambda: ['),
+                ('await result', 'await asyncio.create_task(asyncio.coroutine(lambda: result))() if not asyncio.iscoroutine(result) else await result'),
+            ]
+            
+            fixed_code = code
+            
+            # Zastosuj naprawy
+            for pattern, replacement in fixes:
+                if pattern in fixed_code:
+                    # Upewnij się że import asyncio jest dostępny
+                    if 'import asyncio' not in fixed_code:
+                        fixed_code = 'import asyncio\n' + fixed_code
+                    
+                    fixed_code = fixed_code.replace(pattern, replacement)
+            
+            return fixed_code
+            
+        except Exception:
+            # Jeśli nie można naprawić, zwróć oryginalny kod
+            return code
+    
     def get_status(self) -> Dict[str, Any]:
         """Zwraca status bytu logicznego"""
         base_status = super().get_status()

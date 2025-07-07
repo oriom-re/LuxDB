@@ -425,3 +425,83 @@ def process_intention(input_data):
             'execution_engine': self.execution_engine.get_status()['logical_being_specific'],
             'total_generated_functions': sum(len(funcs) for funcs in self.dimension_functions.values())
         }
+    
+    def fix_await_expressions_in_dimension_functions(self) -> int:
+        """
+        Naprawia problematyczne wyrażenia await w funkcjach wymiarowych
+        """
+        fixed_count = 0
+        
+        try:
+            for layer_name, functions in self.dimension_functions.items():
+                for func_id, func in functions.items():
+                    if func.language == CodeLanguage.PYTHON and 'await' in func.code:
+                        original_code = func.code
+                        fixed_code = self._repair_await_syntax(original_code)
+                        
+                        if fixed_code != original_code:
+                            # Przeprowadź walidację bezpieczeństwa naprawionego kodu
+                            security_check = self._validate_fixed_code(fixed_code)
+                            
+                            if security_check.get('approved', False):
+                                func.code = fixed_code
+                                fixed_count += 1
+                                
+                                self.engine.logger.info(f"🔧 Naprawiono await w funkcji {func.name}")
+            
+            if fixed_count > 0:
+                self.engine.logger.info(f"🩹 Naprawiono {fixed_count} funkcji z problemami await")
+            
+            return fixed_count
+            
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd naprawy await expressions: {e}")
+            return 0
+    
+    def _repair_await_syntax(self, code: str) -> str:
+        """Naprawia składnię await w kodzie"""
+        try:
+            # Lista wzorców do naprawienia
+            repairs = [
+                # Napraw await na dict/list literals
+                (r'await\s*\{([^}]*)\}', r'await asyncio.create_task(asyncio.coroutine(lambda: {\1})())'),
+                (r'await\s*\[([^\]]*)\]', r'await asyncio.create_task(asyncio.coroutine(lambda: [\1])())'),
+                
+                # Napraw await na zmienne które mogą być dict
+                (r'await\s+(\w+)(?!\()', r'await asyncio.create_task(asyncio.coroutine(lambda: \1)()) if not asyncio.iscoroutine(\1) else await \1'),
+            ]
+            
+            import re
+            fixed_code = code
+            
+            # Dodaj import asyncio jeśli potrzebny
+            if any(pattern for pattern, _ in repairs if re.search(pattern, code)):
+                if 'import asyncio' not in fixed_code:
+                    fixed_code = 'import asyncio\n' + fixed_code
+            
+            # Aplikuj naprawy
+            for pattern, replacement in repairs:
+                fixed_code = re.sub(pattern, replacement, fixed_code)
+            
+            return fixed_code
+            
+        except Exception:
+            return code
+    
+    def _validate_fixed_code(self, code: str) -> Dict[str, Any]:
+        """Waliduje naprawiony kod pod kątem bezpieczeństwa"""
+        try:
+            # Sprawdź czy naprawiony kod nie zawiera zabronionych wzorców
+            for pattern in self.malicious_patterns:
+                if pattern in code:
+                    return {'approved': False, 'reason': f'Forbidden pattern: {pattern}'}
+            
+            # Podstawowa walidacja składni
+            try:
+                compile(code, '<string>', 'exec')
+                return {'approved': True, 'validation': 'syntax_ok'}
+            except SyntaxError as e:
+                return {'approved': False, 'reason': f'Syntax error: {e}'}
+            
+        except Exception as e:
+            return {'approved': False, 'reason': f'Validation error: {e}'}

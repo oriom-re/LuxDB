@@ -444,3 +444,73 @@ class SelfHealingFlow:
             self.notification_queue.join()
 
         self.engine.logger.info("🩹 SelfHealingFlow zatrzymany")
+
+    def handle_await_expression_error(self, error_context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Specjalizowana obsługa błędu 'dict can't be used in await expression'
+        """
+        try:
+            # Identyfikuj lokalizację błędu
+            error_location = error_context.get('traceback', '')
+            function_name = error_context.get('function_name', 'unknown')
+
+            # Wygeneruj intencję naprawy
+            repair_intention = self.engine.manifest_intention({
+                'duchowa': {
+                    'opis_intencji': f'Napraw błąd await na dict w funkcji {function_name}',
+                    'kontekst': 'TypeError: object dict can\'t be used in \'await\' expression',
+                    'inspiracja': 'Przekształć synchroniczne wywołania w asynchroniczne',
+                    'energia_duchowa': 90.0
+                },
+                'materialna': {
+                    'zadanie': 'async_await_correction',
+                    'wymagania': ['detect_sync_calls', 'wrap_in_coroutine', 'preserve_functionality'],
+                    'oczekiwany_rezultat': 'Poprawne działanie asynchronicznej funkcji'
+                },
+                'metainfo': {
+                    'zrodlo': 'self_healing_await_error',
+                    'tags': ['async', 'await', 'type_error', 'auto_repair']
+                }
+            })
+
+            # Wygeneruj funkcję naprawczą
+            repair_result = self.generate_repair_function(repair_intention)
+
+            if repair_result.get('repair_function_generated'):
+                self.engine.logger.info(f"🔧 Funkcja naprawcza wygenerowana dla błędu await")
+
+                # Wykonaj natychmiastową naprawę w pamięci
+                self._apply_immediate_await_fix(error_context)
+
+                return {
+                    'status': 'repaired',
+                    'repair_type': 'await_expression_fix',
+                    'function_id': repair_result.get('function_id'),
+                    'immediate_fix_applied': True
+                }
+
+            return {'status': 'repair_failed', 'reason': 'Could not generate repair function'}
+
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd obsługi await error: {e}")
+            return {'status': 'error', 'error': str(e)}
+
+    def _apply_immediate_await_fix(self, error_context: Dict[str, Any]):
+        """
+        Aplikuje natychmiastową naprawę błędu await w pamięci
+        """
+        try:
+            # Znajdź problematyczne wywołania w aktywnych flow
+            for flow_name, flow in self.engine.flows.items():
+                if hasattr(flow, '_fix_await_expressions'):
+                    flow._fix_await_expressions()
+
+            # Napraw w bytach logicznych
+            for being_name, being in self.specialist_beings.items():
+                if hasattr(being, 'fix_async_calls'):
+                    being.fix_async_calls()
+
+            self.engine.logger.info("🩹 Natychmiastowa naprawa await zastosowana")
+
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd natychmiastowej naprawy: {e}")
