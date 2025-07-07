@@ -16,7 +16,7 @@ run = ["sh", "-c", "python deploy_vm.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Start Enhanced Federation"
+runButton = "Start Dynamic Federation"
 
 [[workflows.workflow]]
 name = "Run LuxDB"
@@ -152,6 +152,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python start_astral_kernel.py"
+
+[[workflows.workflow]]
+name = "Start Dynamic Federation"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_dynamic_federation.py"
 
 [[ports]]
 localPort = 5000
