@@ -233,6 +233,15 @@ class AstralEngineV3:
             elif name == 'gpt':
                 from ..flows.gpt_flow import GPTFlow
                 flow = GPTFlow(self, config)
+            elif name == 'self_healing':
+                from ..flows.self_healing_flow import SelfHealingFlow
+                flow = SelfHealingFlow(self)
+            elif name == 'self_improvement':
+                from ..flows.self_improvement_flow import SelfImprovementFlow
+                flow = SelfImprovementFlow(self)
+            elif name == 'automated_testing':
+                from ..flows.automated_testing_flow import AutomatedTestingFlow
+                flow = AutomatedTestingFlow(self)
             else:
                 raise ValueError(f"Nieznany typ flow: {name}")
 

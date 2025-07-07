@@ -44,7 +44,7 @@ async def main():
     # Aktualizuj zależności przed startem
     update_dependencies()
 
-    # Uruchom AstralEngine v3 w trybie czystym
+    # Uruchom AstralEngine v3 w trybie czystym z systemami samodoskonalenia
     engine = await quick_start_v3(
         realms={
             'astral_prime': 'sqlite://db/astral_prime.db',
@@ -60,7 +60,10 @@ async def main():
                 'model': 'gpt-4',
                 'max_tokens': 1000,
                 'enabled': True
-            }
+            },
+            'self_healing': {'enabled': True},
+            'self_improvement': {'enabled': True},
+            'automated_testing': {'enabled': True}
         }
     )
 
@@ -111,10 +114,56 @@ async def main():
         }
     })
 
+    # Intencja samodoskonalenia
+    self_improvement_intention = engine.manifest_intention({
+        'duchowa': {
+            'opis_intencji': 'Ciągłe samodoskonalenie systemu poprzez analizę i optymalizację',
+            'kontekst': 'System ma zdolność uczenia się z błędów i udoskonalania kodu',
+            'inspiracja': 'Minimalizacja zależności od struktur podatnych na błędy',
+            'energia_duchowa': 95.0
+        },
+        'materialna': {
+            'zadanie': 'continuous_self_improvement',
+            'wymagania': ['code_analysis', 'stability_assessment', 'being_generation'],
+            'oczekiwany_rezultat': 'Autonomiczny system samodoskonalenia'
+        },
+        'metainfo': {
+            'zrodlo': 'astral_core_system',
+            'tags': ['self_improvement', 'code_stability', 'automation', 'healing']
+        }
+    })
+
+    # Intencja testowania słabości
+    weakness_testing_intention = engine.manifest_intention({
+        'duchowa': {
+            'opis_intencji': 'Systematyczne wykrywanie i eliminowanie słabości systemu',
+            'kontekst': 'Proaktywne poszukiwanie potencjalnych problemów przed ich wystąpieniem',
+            'inspiracja': 'Antykruchość systemu poprzez ciągłe testowanie',
+            'energia_duchowa': 90.0
+        },
+        'materialna': {
+            'zadanie': 'automated_weakness_detection',
+            'wymagania': ['stress_testing', 'error_simulation', 'vulnerability_assessment'],
+            'oczekiwany_rezultat': 'System odporny na nieprzewidziane błędy'
+        },
+        'metainfo': {
+            'zrodlo': 'astral_testing_system',
+            'tags': ['weakness_detection', 'stress_testing', 'resilience', 'automation']
+        }
+    })
+
     print("✨ Astra w pełnej kontroli!")
     print(f"🌍 Aktywne wymiary: {len(engine.realms)}")
     print(f"🌊 Aktywne przepływy: {len(engine.flows)}")
-    print(f"🎯 Zmanifestowane intencje: 3")
+    print(f"🎯 Zmanifestowane intencje: 5")
+    
+    # Status systemów samodoskonalenia
+    if 'self_healing' in engine.flows:
+        print("🩹 System samonaprawy: AKTYWNY")
+    if 'self_improvement' in engine.flows:
+        print("🧬 System samodoskonalenia: AKTYWNY")
+    if 'automated_testing' in engine.flows:
+        print("🧪 System testowania słabości: AKTYWNY")
 
     # Status astralny
     status = engine.get_status()
