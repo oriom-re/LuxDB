@@ -371,6 +371,7 @@ class GPTFlow:
         
         # Konfiguracja OpenAI
         self.api_key = self.config.get('openai_api_key') or self._get_api_key_from_env()
+        print(f"🤖 GPT Flow: API Key configured: {bool(self.api_key)}")
         self.model = self.config.get('model', 'gpt-4')
         self.max_tokens = self.config.get('max_tokens', 1000)
         
