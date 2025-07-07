@@ -79,6 +79,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python test_stateful_tasks.py"
 
+[[workflows.workflow]]
+name = "Test Multi-Layer System"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_example_manifest.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
