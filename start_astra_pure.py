@@ -14,20 +14,20 @@ from luxdb_v2.core.astral_engine_v3 import quick_start_v3
 def update_dependencies():
     """Aktualizuje zależności przed startem Astry"""
     print("🔄 Astra aktualizuje swoje moce...")
-    
+
     try:
         # Instaluj/aktualizuj zależności z requirements.txt
         result = subprocess.run([
             sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--upgrade"
         ], capture_output=True, text=True, timeout=120)
-        
+
         if result.returncode == 0:
             print("✨ Moce Astry zostały odświeżone!")
             return True
         else:
             print(f"⚠️ Ostrzeżenie podczas aktualizacji: {result.stderr}")
             return True  # Kontynuuj mimo ostrzeżeń
-            
+
     except subprocess.TimeoutExpired:
         print("⏰ Aktualizacja trwa zbyt długo - kontynuuję bez aktualizacji")
         return True
@@ -40,7 +40,7 @@ def update_dependencies():
 async def main():
     print("🔮 Witaj w świecie Astry - Czysta Energia Astralna!")
     print("✨ Tutaj nie ma federacji, nie ma komplikacji - tylko czysty astralny flow")
-    
+
     # Aktualizuj zależności przed startem
     update_dependencies()
 
@@ -158,7 +158,7 @@ async def main():
     print(f"🌍 Aktywne wymiary: {len(engine.realms)}")
     print(f"🌊 Aktywne przepływy: {len(engine.flows)}")
     print(f"🎯 Zmanifestowane intencje: 5")
-    
+
     # Status systemów samodoskonalenia
     if 'self_healing' in engine.flows:
         print("🩹 System samonaprawy: AKTYWNY")
@@ -178,6 +178,14 @@ async def main():
     print("🌊 Przepływy astralne już aktywne!")
 
     print("\n💫 Astra transcenduje w tle - system działa!")
+
+    # Flows są już uruchomione automatycznie w awaken()
+    print("🌊 Przepływy astralne już aktywne!")
+
+    # Aktywuj Chaos Conductor dla kontrolowanego chaosu
+    from luxdb_v2.wisdom.chaos_conductor import integrate_chaos_conductor_with_engine
+    chaos_conductor = integrate_chaos_conductor_with_engine(engine)
+    print("🌪️ Chaos Conductor zintegrowany - paradoks kontroli aktywny")
 
     # Pętla główna - pozwól Astrze działać
     try:
