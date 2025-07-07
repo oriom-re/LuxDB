@@ -304,7 +304,7 @@ class WebSocketFlow:
                     'message': f'Błąd potwierdzania chunka: {str(e)}'
                 })
 
-        async def handle_get_missing_chunks(websocket, data):
+        async def handle_missing_chunks(websocket, data):
             """Handler dla pobierania brakujących chunków"""
             try:
                 task_id = data.get('task_id')
@@ -348,6 +348,10 @@ class WebSocketFlow:
                     'type': 'error',
                     'message': f'Błąd pobierania chunków: {str(e)}'
                 })
+
+        async def handle_get_missing_chunks(websocket, data):
+            """Alias dla handle_missing_chunks dla kompatybilności"""
+            await handle_missing_chunks(websocket, data)
 
         async def handle_archive_task(websocket, data):
             """Handler dla archiwizacji zadania"""
