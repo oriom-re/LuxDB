@@ -490,8 +490,14 @@ from .bus import FederationBus
 
 
 class ModuleType(Enum):
-    """Typy modułów w federacji"""
-    CORE = "core"
-    SERVICE = "service"
+    """Typy modułów"""
+    CORE = "core"              # Podstawowe moduły systemu
+    REALM = "realm"            # Moduły wymiarów danych
+    FLOW = "flow"              # Moduły przepływu danych
+    INTELLIGENCE = "intelligence"  # Moduły inteligencji
+    INTERFACE = "interface"    # Moduły interfejsów
+    EXPERIMENTAL = "experimental"  # Moduły eksperymentalne
+    PLUGIN = "plugin"          # Wtyczki
+    SERVICE = "service"        # Usługi
     UTILITY = "utility"
     PERSONALITY = "personality"
