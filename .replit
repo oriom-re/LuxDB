@@ -144,6 +144,15 @@ author = 43346420
 task = "shell.exec"
 args = "python kernel/manifest.py"
 
+[[workflows.workflow]]
+name = "Start AstralKernel"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_astral_kernel.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
