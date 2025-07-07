@@ -3,11 +3,13 @@
 🎯 IntentionRealm - Wymiar Intencji Duchowo-Materialnych
 
 Specjalizowany wymiar przechowujący i zarządzający intencjami
+Z persystencją na wypadek blackout'u! 🔋
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
+import os
 
 from .base_realm import BaseRealm
 from ..beings.intention_being import IntentionBeing, IntentionState, IntentionPriority
@@ -20,6 +22,9 @@ class IntentionRealm(BaseRealm):
     
     def __init__(self, name: str, connection_string: str, astral_engine):
         super().__init__(name, connection_string, astral_engine)
+        
+        # Plik persystencji
+        self.persistence_file = f"db/intentions_{name}.json"
         
         # Słownik aktywnych intencji
         self.active_intentions: Dict[str, IntentionBeing] = {}
@@ -46,8 +51,13 @@ class IntentionRealm(BaseRealm):
             # Intention realm zawsze działa w pamięci + opcjonalnie persystencja
             self.is_connected = True
             
+            # Załaduj persystencję jeśli istnieje
+            self._load_persistence()
+            
             if self.engine:
                 self.engine.logger.info(f"🎯 Wymiar Intencji '{self.name}' aktywowany")
+                if os.path.exists(self.persistence_file):
+                    self.engine.logger.info(f"💾 Załadowano {len(self.active_intentions)} intencji z persystencji")
             
             return True
         except Exception as e:
@@ -58,9 +68,13 @@ class IntentionRealm(BaseRealm):
     def disconnect(self) -> bool:
         """Rozłącza z wymiarem intencji"""
         try:
+            # Zapisz persystencję przed rozłączeniem
+            self._save_persistence()
+            
             self.is_connected = False
             if self.engine:
                 self.engine.logger.info(f"🎯 Wymiar Intencji '{self.name}' deaktywowany")
+                self.engine.logger.info(f"💾 Zapisano {len(self.active_intentions)} intencji do persystencji")
             return True
         except Exception as e:
             if self.engine:
@@ -93,6 +107,9 @@ class IntentionRealm(BaseRealm):
             
             # Utwórz kanał komunikacji
             self._create_communication_channel(intention)
+            
+            # Auto-save po dodaniu intencji
+            self._save_persistence()
             
             # Emituj wydarzenie
             if self.engine and hasattr(self.engine, 'callback_flow') and self.engine.callback_flow:
@@ -268,6 +285,9 @@ class IntentionRealm(BaseRealm):
             if intention.state == IntentionState.COMPLETED:
                 self.total_intentions_completed += 1
             
+            # Auto-save po transcendencji
+            self._save_persistence()
+            
             # Emituj wydarzenie
             if self.engine and hasattr(self.engine, 'callback_flow') and self.engine.callback_flow:
                 self.engine.callback_flow.emit_event('intentions', 'intention_transcended', {
@@ -345,6 +365,9 @@ class IntentionRealm(BaseRealm):
                 'changes': new_data,
                 'evolved_at': datetime.now().isoformat()
             })
+            
+            # Auto-save po ewolucji
+            self._save_persistence()
             
             return intention
             
@@ -438,3 +461,122 @@ class IntentionRealm(BaseRealm):
         
         total_harmony = sum(intention._calculate_harmony() for intention in self.active_intentions.values())
         return total_harmony / len(self.active_intentions)
+    
+    def _save_persistence(self):
+        """Zapisuje stan intencji do pliku JSON"""
+        try:
+            # Utwórz folder db jeśli nie istnieje
+            os.makedirs('db', exist_ok=True)
+            
+            persistence_data = {
+                'realm_name': self.name,
+                'saved_at': datetime.now().isoformat(),
+                'total_intentions_created': self.total_intentions_created,
+                'total_intentions_completed': self.total_intentions_completed,
+                'intentions': {}
+            }
+            
+            # Serializuj wszystkie intencje
+            for intention_id, intention in self.active_intentions.items():
+                persistence_data['intentions'][intention_id] = {
+                    'essence': {
+                        'soul_id': intention.essence.soul_id,
+                        'name': intention.essence.name,
+                        'created_at': intention.essence.created_at.isoformat(),
+                        'consciousness_level': intention.essence.consciousness_level,
+                        'energy_level': intention.essence.energy_level
+                    },
+                    'state': intention.state.value,
+                    'priority': intention.priority.value,
+                    'duchowa_warstwa': intention.duchowa.to_dict(),
+                    'materialna_warstwa': intention.materialna.to_dict(),
+                    'metainfo': intention.metainfo.to_dict(),
+                    'interactions': intention.interactions,
+                    'memory': intention.memory
+                }
+            
+            # Zapisz do pliku
+            with open(self.persistence_file, 'w', encoding='utf-8') as f:
+                json.dump(persistence_data, f, indent=2, ensure_ascii=False)
+                
+        except Exception as e:
+            if self.engine:
+                self.engine.logger.error(f"❌ Błąd zapisywania persystencji: {e}")
+    
+    def _load_persistence(self):
+        """Ładuje stan intencji z pliku JSON"""
+        try:
+            if not os.path.exists(self.persistence_file):
+                return
+            
+            with open(self.persistence_file, 'r', encoding='utf-8') as f:
+                persistence_data = json.load(f)
+            
+            # Przywróć statystyki
+            self.total_intentions_created = persistence_data.get('total_intentions_created', 0)
+            self.total_intentions_completed = persistence_data.get('total_intentions_completed', 0)
+            
+            # Przywróć intencje
+            intentions_data = persistence_data.get('intentions', {})
+            
+            for intention_id, intention_data in intentions_data.items():
+                try:
+                    # Rekonstruuj dane intencji
+                    restored_data = {
+                        'nazwa': intention_data['essence']['name'],
+                        'priority': intention_data['priority'],
+                        'duchowa': intention_data['duchowa_warstwa'],
+                        'materialna': intention_data['materialna_warstwa'],
+                        'metainfo': intention_data['metainfo']
+                    }
+                    
+                    # Utwórz intencję bez auto-save
+                    intention = IntentionBeing(restored_data, realm=self)
+                    
+                    # Przywróć stan i właściwości
+                    intention.essence.soul_id = intention_data['essence']['soul_id']
+                    intention.essence.created_at = datetime.fromisoformat(intention_data['essence']['created_at'])
+                    intention.essence.consciousness_level = intention_data['essence']['consciousness_level']
+                    intention.essence.energy_level = intention_data['essence']['energy_level']
+                    intention.state = IntentionState(intention_data['state'])
+                    intention.priority = IntentionPriority(intention_data['priority'])
+                    intention.interactions = intention_data.get('interactions', [])
+                    intention.memory = intention_data.get('memory', [])
+                    
+                    # Dodaj do aktywnych bez triggerowania auto-save
+                    self.active_intentions[intention_id] = intention
+                    self._categorize_intention(intention)
+                    self._being_count += 1
+                    
+                except Exception as e:
+                    if self.engine:
+                        self.engine.logger.error(f"❌ Błąd przywracania intencji {intention_id}: {e}")
+                        
+        except Exception as e:
+            if self.engine:
+                self.engine.logger.error(f"❌ Błąd ładowania persystencji: {e}")
+    
+    def force_save(self):
+        """Wymusza zapisanie persystencji (publiczna metoda)"""
+        self._save_persistence()
+        if self.engine:
+            self.engine.logger.info(f"💾 Wymuszone zapisanie {len(self.active_intentions)} intencji")
+    
+    def get_persistence_info(self) -> Dict[str, Any]:
+        """Zwraca informacje o persystencji"""
+        persistence_exists = os.path.exists(self.persistence_file)
+        file_size = 0
+        last_modified = None
+        
+        if persistence_exists:
+            stat = os.stat(self.persistence_file)
+            file_size = stat.st_size
+            last_modified = datetime.fromtimestamp(stat.st_mtime).isoformat()
+        
+        return {
+            'persistence_file': self.persistence_file,
+            'file_exists': persistence_exists,
+            'file_size_bytes': file_size,
+            'last_modified': last_modified,
+            'active_intentions_count': len(self.active_intentions)
+        }
