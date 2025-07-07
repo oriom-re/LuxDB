@@ -197,8 +197,66 @@ async def test_multi_layer_system():
     
     # 8. Demonstracja warstw niejawnych
     print("\n" + "="*60)
-    print("🔍 DEMONSTRACJA WARSTW NIEJAWNYCH")
+    print("🔍 DEMONSTRACJA WARSTW NIEJAWNYCH I SYSTEMU SANDBOX")
     print("="*60)
+    
+    # Test systemu bezpiecznego generowania kodu
+    healing_flow = engine.flows.get('self_healing')
+    if healing_flow and hasattr(healing_flow, 'secure_code_flow'):
+        print("\n🔐 Testowanie systemu bezpiecznego generowania kodu...")
+        
+        # Stwórz intencję wymagającą generowania kodu
+        code_intention = IntentionBeing({
+            'duchowa': {
+                'opis_intencji': 'Stwórz funkcję do przetwarzania manifestu',
+                'kontekst': 'Bezpieczne środowisko sandbox',
+                'inspiracja': 'Automatyzacja przez bezpieczny kod',
+                'energia_duchowa': 88.0
+            },
+            'materialna': {
+                'zadanie': 'code_generation_for_manifest',
+                'wymagania': ['text_processing', 'security_validation', 'sandbox_execution'],
+                'oczekiwany_rezultat': 'Bezpieczna funkcja w warstwie wymiaru'
+            },
+            'metainfo': {
+                'zrodlo': 'test_multi_layer_system',
+                'tags': ['code_generation', 'sandbox', 'security']
+            }
+        })
+        
+        # Generuj bezpieczną funkcję
+        code_result = healing_flow.secure_code_flow.generate_secure_function(
+            code_intention, {'context': 'manifest_processing'}
+        )
+        
+        if code_result.get('status') == 'generated':
+            print(f"   ✅ Funkcja wygenerowana: {code_result['function_name']}")
+            print(f"   🔐 Warstwa wymiaru: {code_result['dimension_layer']}")
+            print(f"   ✨ ID funkcji: {code_result['function_id']}")
+            
+            # Spróbuj wykonać wygenerowaną funkcję
+            exec_result = healing_flow.secure_code_flow.execute_dimension_function(
+                code_result['function_id'],
+                args=[{'title': 'Test Manifest', 'content': 'Test content'}]
+            )
+            
+            if exec_result.get('status') == 'executed':
+                print(f"   🚀 Funkcja wykonana pomyślnie")
+                print(f"   📊 Wynik: {str(exec_result.get('result', 'No result'))[:100]}...")
+            else:
+                print(f"   ❌ Błąd wykonania: {exec_result.get('error', 'Unknown')}")
+        
+        else:
+            print(f"   ❌ Generowanie nieudane: {code_result.get('reason', 'Unknown')}")
+        
+        # Pokaż status warstw wymiarów
+        layers_info = healing_flow.secure_code_flow.list_dimension_functions()
+        print(f"\n📊 Warstwy wymiarów:")
+        for layer, count in layers_info.get('all_layers', {}).items():
+            print(f"   • {layer}: {count} funkcji")
+        print(f"   📈 Razem funkcji: {layers_info.get('total_functions', 0)}")
+
+    print("\n" + "="*60)
     
     # Uruchom cykle uczenia bytów logicznych
     print("\n🧠 Uruchamianie cykli uczenia bytów logicznych...")

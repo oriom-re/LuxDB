@@ -23,6 +23,7 @@ class LogicType(Enum):
     """Typy logiki bytów"""
     ANALYTICAL = "analytical"      # Analityczna
     CREATIVE = "creative"          # Kreatywna
+    ARTISTIC = "artistic"          # Artystyczna
     ADAPTIVE = "adaptive"          # Adaptacyjna
     COLLABORATIVE = "collaborative" # Współpracująca
     EMERGENT = "emergent"          # Emergentna
