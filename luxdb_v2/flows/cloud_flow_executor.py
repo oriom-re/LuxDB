@@ -1,4 +1,3 @@
-
 """
 ☁️ CloudFlowExecutor - Wykonawca Flow z Chmury
 
@@ -25,20 +24,20 @@ class CloudFlowExecutor:
 
     def __init__(self, astral_engine):
         self.engine = astral_engine
-        
+
         # Załadowane flow z chmury
         self.cloud_flows: Dict[str, Dict[str, Any]] = {}
-        
+
         # Kolejka zadań
         self.execution_queue = queue.PriorityQueue()
-        
+
         # Worker
         self._execution_worker: Optional[threading.Thread] = None
         self._running = False
-        
+
         # Callback namespace
         self.callback_namespace: Optional[CallbackNamespace] = None
-        
+
         # Statystyki
         self.execution_statistics = {
             'flows_loaded': 0,
@@ -46,22 +45,22 @@ class CloudFlowExecutor:
             'execution_errors': 0,
             'repairs_requested': 0
         }
-        
+
         self.start_time = datetime.now()
 
     def initialize(self):
         """Inicjalizuje wykonawcę flow z chmury"""
-        
+
         # Utwórz namespace callbacków
         if hasattr(self.engine, 'callback_flow') and self.engine.callback_flow:
             self.callback_namespace = self.engine.callback_flow.create_namespace('cloud_executor')
             self._setup_cloud_callbacks()
-        
+
         # Uruchom worker
         self._running = True
         self._execution_worker = threading.Thread(target=self._execution_worker_loop, daemon=True)
         self._execution_worker.start()
-        
+
         self.engine.logger.info("☁️ CloudFlowExecutor zainicjalizowany")
 
     def start(self) -> bool:
@@ -82,7 +81,7 @@ class CloudFlowExecutor:
             """Callback gdy wystąpi błąd wykonania flow"""
             error_data = event.data
             flow_id = error_data.get('flow_id')
-            
+
             # Zgłoś do RepairFlow
             if hasattr(self.engine, 'repair_flow'):
                 self.engine.repair_flow.request_flow_repair(flow_id, error_data)
@@ -92,7 +91,7 @@ class CloudFlowExecutor:
             """Callback gdy flow zostanie naprawiony"""
             repair_data = event.data
             flow_id = repair_data.get('flow_id')
-            
+
             # Przeładuj naprawiony flow
             self._reload_cloud_flow(flow_id)
 
@@ -102,47 +101,102 @@ class CloudFlowExecutor:
 
     def load_flow_from_cloud(self, flow_name: str, force_reload: bool = False) -> Dict[str, Any]:
         """
-        Ładuje flow z bazy danych/chmury
+        Ładuje flow z prototypów lub chmury (bazy danych)
         """
         try:
-            # Sprawdź czy już załadowany
+            # Sprawdź czy flow już jest załadowany
             if flow_name in self.cloud_flows and not force_reload:
-                return {'success': True, 'message': 'Flow już załadowany', 'cached': True}
+                return {'success': True, 'message': f'Flow {flow_name} już załadowany'}
 
-            # Pobierz flow z bazy
+            # Najpierw spróbuj załadować z prototypów
+            prototype_result = self._load_flow_from_prototypes(flow_name)
+            if prototype_result['success']:
+                return prototype_result
+
+            # Jeśli nie ma w prototypach, spróbuj z chmury
+            return self._load_flow_from_database(flow_name)
+
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd ładowania flow: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def _load_flow_from_prototypes(self, flow_name: str) -> Dict[str, Any]:
+        """
+        Ładuje flow z katalogu prototypes/flows/
+        """
+        try:
+            import os
+            import importlib.util
+
+            # Ścieżka do prototypu
+            prototype_path = f"prototypes/flows/{flow_name}.py"
+
+            if not os.path.exists(prototype_path):
+                return {'success': False, 'error': f'Prototyp {flow_name} nie istnieje'}
+
+            # Załaduj moduł z prototypu
+            spec = importlib.util.spec_from_file_location(flow_name, prototype_path)
+            if not spec or not spec.loader:
+                return {'success': False, 'error': f'Nie można załadować prototypu {flow_name}'}
+
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # Sprawdź czy ma funkcję create_flow
+            if not hasattr(module, 'create_flow'):
+                return {'success': False, 'error': f'Prototyp {flow_name} nie ma funkcji create_flow'}
+
+            # Utwórz instancję flow
+            flow_instance = module.create_flow(self.engine, {})
+
+            if flow_instance:
+                self.cloud_flows[flow_name] = {
+                    'instance': flow_instance,
+                    'loaded_at': datetime.now().isoformat(),
+                    'source': 'prototype'
+                }
+                self.engine.logger.info(f"☁️ Flow {flow_name} załadowany z prototypu")
+                return {'success': True, 'flow_name': flow_name, 'source': 'prototype'}
+            else:
+                return {'success': False, 'error': f'Nie udało się utworzyć instancji flow {flow_name}'}
+
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def _load_flow_from_database(self, flow_name: str) -> Dict[str, Any]:
+        """
+        Ładuje flow z bazy danych (chmury)
+        """
+        try:
+            # Pobierz definicję flow z bazy
             flow_realm = self.engine.realms.get('astral_prime')
             if not flow_realm:
-                return {'success': False, 'error': 'Brak dostępu do bazy flow'}
+                return {'success': False, 'error': 'Brak realm astral_prime'}
 
-            # Znajdź flow w bazie
-            flow_results = flow_realm.contemplate('find_cloud_flow', flow_name=flow_name)
-            
-            if not flow_results:
+            # Szukaj flow w bazie
+            flows = flow_realm.contemplate("find_beings", category="flow", name=flow_name)
+
+            if not flows:
                 return {'success': False, 'error': f'Flow {flow_name} nie znaleziony w chmurze'}
 
-            flow_being = flow_results[0]
-            flow_code = flow_being.materialna.flow_code
-            flow_config = flow_being.materialna.flow_config
-            
-            # Kompiluj i załaduj flow
-            compiled_flow = self._compile_cloud_flow(flow_name, flow_code, flow_config)
-            
-            if compiled_flow['success']:
+            flow_data = flows[0]
+
+            # Sprawdź czy flow ma kod
+            if 'code' not in flow_data.material:
+                return {'success': False, 'error': f'Flow {flow_name} nie ma kodu'}
+
+            # Wykonaj kod i stwórz instancję
+            flow_instance = self._execute_flow_code(flow_name, flow_data.material['code'])
+
+            if flow_instance:
                 self.cloud_flows[flow_name] = {
-                    'code': flow_code,
-                    'config': flow_config,
-                    'compiled': compiled_flow['flow_class'],
-                    'instance': None,
-                    'loaded_at': datetime.now(),
-                    'hash': hashlib.sha256(flow_code.encode()).hexdigest()[:16]
+                    'instance': flow_instance,
+                    'loaded_at': datetime.now().isoformat(),
+                    'source': 'cloud_database'
                 }
-                
-                self.execution_statistics['flows_loaded'] += 1
-                self.engine.logger.info(f"☁️ Flow '{flow_name}' załadowany z chmury")
-                
-                return {'success': True, 'flow_hash': self.cloud_flows[flow_name]['hash']}
+                return {'success': True, 'flow_name': flow_name, 'source': 'database'}
             else:
-                return compiled_flow
+                return {'success': False, 'error': f'Nie udało się utworzyć instancji flow {flow_name}'}
 
         except Exception as e:
             self.engine.logger.error(f"❌ Błąd ładowania flow z chmury: {e}")
@@ -165,13 +219,13 @@ class CloudFlowExecutor:
                 'Any': Any,
                 'Optional': Optional
             }
-            
+
             # Wykonaj kod flow
             exec(flow_code, flow_namespace)
-            
+
             # Znajdź klasę flow (powinna być nazwana jak flow_name + 'Flow')
             expected_class_name = f"{flow_name.title()}Flow"
-            
+
             if expected_class_name in flow_namespace:
                 flow_class = flow_namespace[expected_class_name]
                 return {'success': True, 'flow_class': flow_class}
@@ -180,7 +234,7 @@ class CloudFlowExecutor:
                 for name, obj in flow_namespace.items():
                     if isinstance(obj, type) and name.endswith('Flow') and name != 'Flow':
                         return {'success': True, 'flow_class': obj}
-                
+
                 return {'success': False, 'error': f'Nie znaleziono klasy flow w kodzie'}
 
         except Exception as e:
@@ -191,7 +245,7 @@ class CloudFlowExecutor:
         Wykonuje akcję na flow z chmury
         """
         params = params or {}
-        
+
         try:
             # Sprawdź czy flow jest załadowany
             if flow_name not in self.cloud_flows:
@@ -200,25 +254,25 @@ class CloudFlowExecutor:
                     return load_result
 
             flow_data = self.cloud_flows[flow_name]
-            
+
             # Utwórz instancję flow jeśli nie istnieje
             if flow_data['instance'] is None:
                 flow_class = flow_data['compiled']
                 flow_data['instance'] = flow_class(self.engine, flow_data['config'])
-                
+
                 # Zainicjalizuj flow
                 if hasattr(flow_data['instance'], 'initialize'):
                     flow_data['instance'].initialize()
 
             # Wykonaj akcję
             flow_instance = flow_data['instance']
-            
+
             if hasattr(flow_instance, action):
                 method = getattr(flow_instance, action)
                 result = method(**params)
-                
+
                 self.execution_statistics['flows_executed'] += 1
-                
+
                 return {
                     'success': True,
                     'result': result,
@@ -234,7 +288,7 @@ class CloudFlowExecutor:
 
         except Exception as e:
             self.execution_statistics['execution_errors'] += 1
-            
+
             # Zgłoś błąd do naprawy
             error_data = {
                 'flow_id': flow_name,
@@ -244,12 +298,12 @@ class CloudFlowExecutor:
                 'error_type': type(e).__name__,
                 'timestamp': datetime.now().isoformat()
             }
-            
+
             if self.callback_namespace:
                 self.callback_namespace.emit('flow_execution_error', error_data)
-            
+
             self.engine.logger.error(f"❌ Błąd wykonania flow {flow_name}.{action}: {e}")
-            
+
             return {
                 'success': False,
                 'error': str(e),
@@ -264,18 +318,18 @@ class CloudFlowExecutor:
             try:
                 # Pobierz zadanie z kolejki (timeout 1s)
                 priority, queued_time, task = self.execution_queue.get(timeout=1.0)
-                
+
                 # Wykonaj zadanie
                 result = self.execute_cloud_flow(
                     task['flow_name'],
                     task['action'],
                     task.get('params', {})
                 )
-                
+
                 # Powiadom o wyniku jeśli potrzeba
                 if task.get('callback'):
                     task['callback'](result)
-                
+
                 self.execution_queue.task_done()
 
             except queue.Empty:
@@ -295,7 +349,7 @@ class CloudFlowExecutor:
             'callback': callback,
             'queued_at': datetime.now()
         }
-        
+
         self.execution_queue.put((priority, datetime.now(), task))
         self.engine.logger.info(f"☁️ Zadanie {flow_name}.{action} dodane do kolejki")
 
@@ -310,10 +364,10 @@ class CloudFlowExecutor:
                 if old_instance and hasattr(old_instance, 'stop'):
                     old_instance.stop()
                 del self.cloud_flows[flow_name]
-            
+
             # Załaduj ponownie
             load_result = self.load_flow_from_cloud(flow_name, force_reload=True)
-            
+
             if load_result['success']:
                 self.engine.logger.info(f"☁️ Flow '{flow_name}' przeładowany po naprawie")
             else:
@@ -333,7 +387,7 @@ class CloudFlowExecutor:
 
             # Pobierz wszystkie flow z bazy
             all_flows = flow_realm.contemplate('list_cloud_flows')
-            
+
             available_flows = []
             for flow_being in all_flows:
                 flow_info = {
@@ -344,7 +398,7 @@ class CloudFlowExecutor:
                     'last_modified': flow_being.materialna.last_modified
                 }
                 available_flows.append(flow_info)
-            
+
             return {
                 'success': True,
                 'flows': available_flows,
@@ -369,7 +423,7 @@ class CloudFlowExecutor:
     def stop(self):
         """Zatrzymuje wykonawcę flow z chmury"""
         self._running = False
-        
+
         # Zatrzymaj wszystkie załadowane flow
         for flow_name, flow_data in self.cloud_flows.items():
             instance = flow_data.get('instance')
@@ -378,9 +432,9 @@ class CloudFlowExecutor:
                     instance.stop()
                 except Exception as e:
                     self.engine.logger.error(f"❌ Błąd zatrzymywania flow {flow_name}: {e}")
-        
+
         # Poczekaj na zakończenie kolejki
         if not self.execution_queue.empty():
             self.execution_queue.join()
-        
+
         self.engine.logger.info("☁️ CloudFlowExecutor zatrzymany")
