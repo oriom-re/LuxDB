@@ -13,6 +13,10 @@ requiredFiles = [".replit", "replit.nix"]
 run = ["sh", "-c", "python start_astra_pure.py"]
 deploymentTarget = "cloudrun"
 
+[[ports]]
+localPort = 5000
+externalPort = 80
+
 [workflows]
 runButton = "Start Astra Pure"
 
