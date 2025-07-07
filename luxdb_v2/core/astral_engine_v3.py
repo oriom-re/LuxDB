@@ -216,6 +216,8 @@ class AstralEngineV3:
     async def load_flow_module(self, name: str, config: Dict[str, Any]):
         """Dynamicznie ładuje moduł flow"""
         try:
+            flow = None
+            
             if name == 'rest':
                 from ..flows.rest_flow import RestFlow
                 flow = RestFlow(self, config)
@@ -228,21 +230,28 @@ class AstralEngineV3:
             elif name == 'gpt':
                 from ..flows.gpt_flow import GPTFlow
                 flow = GPTFlow(self, config)
-                if flow.start():
-                    self.logger.info("🤖 GPT Flow uruchomiony pomyślnie")
-                else:
-                    self.logger.warning("⚠️ GPT Flow nie mógł się uruchomić (sprawdź klucz API)")
             else:
                 raise ValueError(f"Nieznany typ flow: {name}")
 
             self.flows[name] = flow
             self.luxbus.register_module(f"flow_{name}", flow)
 
+            # Uruchom flow
+            if hasattr(flow, 'start'):
+                success = flow.start()
+                if success:
+                    self.logger.info(f"🌊 Flow '{name}' uruchomiony pomyślnie")
+                else:
+                    self.logger.warning(f"⚠️ Flow '{name}' nie mógł się uruchomić")
+            else:
+                self.logger.info(f"🌊 Flow '{name}' załadowany (bez metody start)")
+
             self.logger.info(f"🌊 Flow '{name}' załadowany")
             return {'success': True, 'flow': name}
 
         except Exception as e:
             self.logger.error(f"❌ Błąd ładowania flow '{name}': {e}")
+            return {'success': False, 'error': str(e)}adowania flow '{name}': {e}")
             return {'success': False, 'error': str(e)}
 
     def load_dynamic_module(self, module_name: str, config: Dict[str, Any]) -> Dict[str, Any]:

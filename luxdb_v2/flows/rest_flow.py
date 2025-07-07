@@ -599,16 +599,19 @@ class RestFlow:
                     'error': str(e)
                 }), 500
 
-    def start(self, debug: bool = False) -> None:
+    def start(self, debug: bool = False) -> bool:
         """
         Uruchamia przepływ REST
 
         Args:
             debug: Tryb debug Flask
+            
+        Returns:
+            True jeśli uruchomiono pomyślnie
         """
         if self._running:
             self.engine.logger.warning("RestFlow już działa")
-            return
+            return True
 
         self.start_time = datetime.now()
         self._running = True
@@ -633,6 +636,7 @@ class RestFlow:
         time.sleep(1)
 
         self.engine.logger.info(f"🌐 REST Flow aktywny na http://{self.host}:{self.port}")
+        return True
 
     def stop(self) -> None:
         """Zatrzymuje przepływ REST"""
