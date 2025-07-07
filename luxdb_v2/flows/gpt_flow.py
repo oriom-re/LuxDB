@@ -390,7 +390,6 @@ class GPTFlow:
         self._running = False
         
         if self.api_key:
-            openai.api_key = self.api_key
             self.engine.logger.info("🤖 GPT Flow zainicjalizowany z OpenAI API")
         else:
             self.engine.logger.warning("⚠️ GPT Flow: Brak klucza OpenAI API")
