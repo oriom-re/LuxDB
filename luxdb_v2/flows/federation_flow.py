@@ -100,6 +100,15 @@ class FederationFlow:
             )
         )
         
+        # Byt kontroli stanu generowanego kodu
+        self.code_state_inspector = LogicalBeing(
+            LogicType.ANALYTICAL,
+            LogicalContext(
+                domain="code_quality_control",
+                specialization="generated_code_validation"
+            )
+        )
+        
         # Stan Federacji
         self.current_balance = ChaosDecisionBalance(
             chaos_level=0.3,
@@ -132,6 +141,7 @@ class FederationFlow:
             self.harmony_guardian.connect_to_being(self.boredom_detector, "harmony_boredom_protocol")
             self.boredom_detector.connect_to_being(self.unity_orchestrator, "detection_unity_protocol")
             self.unity_orchestrator.connect_to_being(self.chaos_catalyst, "unity_chaos_protocol")
+            self.chaos_catalyst.connect_to_being(self.code_state_inspector, "chaos_code_validation_protocol")
             
             # Stwórz podstawowych agentów
             self._create_initial_agents()
@@ -173,6 +183,12 @@ class FederationFlow:
                 'specialization': 'system_integration',
                 'logic_type': LogicType.COLLABORATIVE,
                 'domain': 'collective_consciousness'
+            },
+            {
+                'name': 'CodeStateMonitor',
+                'specialization': 'generated_code_control',
+                'logic_type': LogicType.ANALYTICAL,
+                'domain': 'code_quality_assurance'
             }
         ]
         
@@ -521,7 +537,8 @@ class FederationFlow:
                 'harmony_guardian': self.harmony_guardian.get_status()['logical_being_specific'],
                 'boredom_detector': self.boredom_detector.get_status()['logical_being_specific'],
                 'unity_orchestrator': self.unity_orchestrator.get_status()['logical_being_specific'],
-                'chaos_catalyst': self.chaos_catalyst.get_status()['logical_being_specific']
+                'chaos_catalyst': self.chaos_catalyst.get_status()['logical_being_specific'],
+                'code_state_inspector': self.code_state_inspector.get_status()['logical_being_specific']
             }
         }
     
@@ -554,3 +571,169 @@ class FederationFlow:
     async def _execute_harmony_crisis(self): return {'action': 'harmony_crisis_resolution'}
     async def _execute_chaos_reduction(self): return {'action': 'chaos_reduction'}
     async def _execute_unity_restoration(self): return {'action': 'unity_restoration'}
+    
+    def validate_generated_code(self, code: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Waliduje stan generowanego kodu przez Federację
+        """
+        try:
+            # Stwórz intencję walidacji
+            validation_intention = IntentionBeing({
+                'duchowa': {
+                    'opis_intencji': 'Walidacja stanu generowanego kodu',
+                    'kontekst': 'Kontrola jakości kodu przed akceptacją',
+                    'inspiracja': 'Zapewnienie zgodności z standardami Federacji',
+                    'energia_duchowa': 90.0
+                },
+                'materialna': {
+                    'zadanie': 'code_state_validation',
+                    'wymagania': ['syntax_check', 'quality_assessment', 'security_scan'],
+                    'oczekiwany_rezultat': 'Ocena zgodności kodu ze standardami'
+                },
+                'metainfo': {
+                    'zrodlo': 'federation_code_control',
+                    'tags': ['code_validation', 'quality_control', 'federation_standards']
+                }
+            })
+            
+            # Przeprowadź walidację przez code_state_inspector
+            validation_result = self.code_state_inspector.process_intention(
+                validation_intention, 
+                {'code': code, 'context': context}
+            )
+            
+            # Dodatowe sprawdzenia specyficzne dla Federacji
+            federation_checks = self._perform_federation_code_checks(code, context)
+            
+            # Oceń harmonię kodu z systemem
+            code_harmony = self._assess_code_harmony(code, validation_result)
+            
+            return {
+                'validation_status': 'completed',
+                'code_approved': validation_result.get('code_quality_approved', False),
+                'federation_compliance': federation_checks.get('compliant', False),
+                'harmony_score': code_harmony,
+                'issues_found': validation_result.get('issues', []),
+                'recommendations': validation_result.get('recommendations', []),
+                'inspector_analysis': validation_result.get('processing_type', 'standard')
+            }
+            
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd walidacji kodu przez Federację: {e}")
+            return {
+                'validation_status': 'error',
+                'code_approved': False,
+                'error': str(e)
+            }
+    
+    def _perform_federation_code_checks(self, code: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sprawdza kod pod kątem zgodności ze standardami Federacji
+        """
+        checks = {
+            'compliant': True,
+            'violations': [],
+            'warnings': []
+        }
+        
+        # Sprawdź zakazane wzorce
+        forbidden_patterns = [
+            ('eval(', 'Niebezpieczne wywołanie eval()'),
+            ('exec(', 'Niebezpieczne wywołanie exec()'),
+            ('__import__', 'Dynamiczny import może być niebezpieczny'),
+            ('os.system', 'Wywołania systemowe są zabronione'),
+            ('subprocess.', 'Subprocess może być niebezpieczny')
+        ]
+        
+        for pattern, reason in forbidden_patterns:
+            if pattern in code:
+                checks['violations'].append({
+                    'pattern': pattern,
+                    'reason': reason,
+                    'severity': 'high'
+                })
+                checks['compliant'] = False
+        
+        # Sprawdź strukturę kodu
+        if len(code.split('\n')) > 100:
+            checks['warnings'].append({
+                'issue': 'Kod zbyt długi',
+                'recommendation': 'Rozważ podział na mniejsze funkcje'
+            })
+        
+        # Sprawdź zgodność z zasadami Federacji
+        federation_keywords = ['harmony', 'balance', 'unity', 'chaos', 'order']
+        if not any(keyword in code.lower() for keyword in federation_keywords):
+            checks['warnings'].append({
+                'issue': 'Brak związku z zasadami Federacji',
+                'recommendation': 'Dodaj komentarze lub nazwy odzwierciedlające filozofię Federacji'
+            })
+        
+        return checks
+    
+    def _assess_code_harmony(self, code: str, validation_result: Dict[str, Any]) -> float:
+        """
+        Ocenia harmonię kodu z systemem Federacji
+        """
+        harmony_score = 100.0
+        
+        # Odejmij punkty za naruszenia
+        violations = validation_result.get('issues', [])
+        harmony_score -= len(violations) * 10
+        
+        # Dodaj punkty za dobre praktyki
+        if 'async def' in code:
+            harmony_score += 5  # Asynchroniczność jest mile widziana
+        
+        if 'try:' in code and 'except' in code:
+            harmony_score += 5  # Obsługa błędów
+        
+        if '"""' in code or "'''" in code:
+            harmony_score += 5  # Dokumentacja
+        
+        # Ograniczenia
+        harmony_score = max(0, min(100, harmony_score))
+        
+        return harmony_score
+    
+    def inspect_sandbox_code_before_github(self, code: str, target_repo: str) -> Dict[str, Any]:
+        """
+        Specjalna inspekcja kodu przed wysłaniem na GitHub
+        """
+        try:
+            # Podstawowa walidacja Federacji
+            validation_result = self.validate_generated_code(code, {
+                'target': 'github',
+                'repository': target_repo
+            })
+            
+            # Dodatkowe sprawdzenia dla GitHub
+            github_checks = {
+                'license_header': 'MIT License' in code or 'Apache' in code,
+                'no_secrets': not any(word in code.lower() for word in ['password', 'api_key', 'token', 'secret']),
+                'proper_encoding': all(ord(char) < 128 for char in code),  # ASCII only
+                'max_file_size': len(code) < 1000000  # 1MB limit
+            }
+            
+            # Oceń gotowość do GitHub
+            github_ready = (
+                validation_result.get('code_approved', False) and
+                validation_result.get('federation_compliance', False) and
+                all(github_checks.values())
+            )
+            
+            return {
+                'github_inspection': 'completed',
+                'ready_for_github': github_ready,
+                'federation_validation': validation_result,
+                'github_specific_checks': github_checks,
+                'recommendation': 'Approve for GitHub' if github_ready else 'Requires fixes before GitHub'
+            }
+            
+        except Exception as e:
+            self.engine.logger.error(f"❌ Błąd inspekcji kodu dla GitHub: {e}")
+            return {
+                'github_inspection': 'error',
+                'ready_for_github': False,
+                'error': str(e)
+            }
