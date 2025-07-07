@@ -61,7 +61,7 @@ class AstralEngineV3:
         self.luxbus.register_module("astral_engine", self)
 
         print(f"🔮 AstralEngine v3 zainicjalizowany: {self.engine_id}")
-        
+
         # Lista nieudanych flow, do ponownego uruchomienia
         self.failed_flows: Dict[str, Any] = {}
 
@@ -190,7 +190,7 @@ class AstralEngineV3:
         # Załaduj flows
         for flow_name, flow_config in self.config.flows.items():
             await self.load_flow_module(flow_name, flow_config)
-            
+
     async def load_realm_module(self, name: str, config: str):
         """Dynamicznie ładuje moduł realm"""
         try:
@@ -248,6 +248,9 @@ class AstralEngineV3:
             elif name == 'repair_flow':
                 from ..flows.repair_flow import RepairFlow
                 flow = RepairFlow(self)
+            elif name == 'hybrid_gpt':
+                from ..flows.hybrid_gpt_flow import HybridGPTFlow
+                flow = HybridGPTFlow(self, config)
             else:
                 raise ValueError(f"Nieznany typ flow: {name}")
 
@@ -523,7 +526,7 @@ class AstralEngineV3:
 
         except Exception as e:
             self.logger.error(f"❌ Błąd ponownego ładowania flow '{flow_id}': {e}")
-            
+
     def _load_flow(self, flow_id: str, flow_config: Dict[str, Any]):
         """
         Pomocnicza funkcja do ładowania flow (wykorzystywana przy ponownym uruchomieniu)
@@ -543,6 +546,9 @@ class AstralEngineV3:
             elif flow_id == 'gpt':
                 from ..flows.gpt_flow import GPTFlow
                 flow = GPTFlow(self, flow_config)
+            elif flow_id == 'hybrid_gpt':
+                from ..flows.hybrid_gpt_flow import HybridGPTFlow
+                flow = HybridGPTFlow(self, flow_config)
             else:
                 raise ValueError(f"Nieznany typ flow: {flow_id}")
 
@@ -574,7 +580,7 @@ class AstralEngineV3:
                 'timestamp': datetime.now().isoformat(),
                 'config': flow_config
             }
-            
+
     def transcend(self):
         """🕊️ Transcendencja - zamknięcie silnika"""
         self.logger.info("🕊️ Rozpoczynanie transcendencji...")
@@ -766,3 +772,4 @@ async def quick_start_v3(realms: Dict[str, str] = None, flows: Dict[str, Dict] =
     await engine.awaken()
 
     return engine
+```The code modification adds support for loading `hybrid_gpt` flow modules, alongside existing flow types.

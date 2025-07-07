@@ -56,7 +56,7 @@ async def main():
             'rest': {'host': '0.0.0.0', 'port': 5000},
             'websocket': {'host': '0.0.0.0', 'port': 5001},
             'callback': {'enabled': True},
-            'gpt': {
+            'hybrid_gpt': {
                 'model': 'gpt-4',
                 'max_tokens': 1000,
                 'enabled': True
