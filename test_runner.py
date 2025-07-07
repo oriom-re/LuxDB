@@ -24,18 +24,8 @@ class AstraTestRunner:
         self.base_url = "http://localhost:5000"
         
     def start_server(self) -> bool:
-        """Uruchamia serwer Astry lub sprawdza czy już działa"""
+        """Uruchamia serwer Astry"""
         try:
-            # Najpierw sprawdź czy serwer już działa
-            try:
-                response = requests.get(f"{self.base_url}/status", timeout=2)
-                if response.status_code == 200:
-                    self.server_ready = True
-                    print("✅ Serwer już działa - używam istniejący")
-                    return True
-            except:
-                pass
-            
             print("🚀 Uruchamianie serwera Astry...")
             self.server_process = subprocess.Popen(
                 [sys.executable, "start_astra_pure.py"],
@@ -72,8 +62,6 @@ class AstraTestRunner:
             self.server_process.terminate()
             self.server_process.wait()
             print("✅ Serwer zatrzymany")
-        else:
-            print("ℹ️ Serwer pozostaje uruchomiony (był już aktywny)")
     
     def test_basic_endpoints(self) -> Dict[str, Any]:
         """Test podstawowych endpointów"""

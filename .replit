@@ -13,10 +13,6 @@ requiredFiles = [".replit", "replit.nix"]
 run = ["sh", "-c", "python start_astra_pure.py"]
 deploymentTarget = "cloudrun"
 
-[[ports]]
-localPort = 5000
-externalPort = 80
-
 [workflows]
 runButton = "Start Astra Pure"
 
@@ -74,15 +70,14 @@ mode = "sequential"
 task = "shell.exec"
 args = "python simple_test.py"
 
-[[workflows.workflow]]
-name = "Test GPT - Replit Ready"
-author = 43346420
-mode = "sequential"
+[[ports]]
+localPort = 5000
+externalPort = 5000
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 2"
+[[ports]]
+localPort = 5001
+externalPort = 80
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python test_gpt_chat.py"
+[[ports]]
+localPort = 8000
+externalPort = 8000
