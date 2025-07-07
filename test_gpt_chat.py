@@ -98,6 +98,8 @@ async def test_luxbus_gpt_communication():
         await asyncio.sleep(1)
     
     print(f"\n🚌 Test LuxBus zakończony. Wysłano {len(test_messages)} wiadomości.")
+    print("💡 Zaawansowane funkcje dostępne przez WebSocket i LuxBus!")
+    print("🌐 REST API uproszczone do podstawowych zapytań o stan")
 
 if __name__ == "__main__":
     asyncio.run(test_luxbus_gpt_communication())
