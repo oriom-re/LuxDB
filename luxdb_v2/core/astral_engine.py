@@ -305,6 +305,15 @@ class AstralEngine:
         except ImportError:
             self.logger.warning("⚠️ Moduł PowerHierarchy nie jest dostępny")
             self._power_hierarchy = None
+        
+        # Inicjalizuj Portal Dusznych Strun
+        try:
+            from .soul_resonance_portal import SoulResonancePortal
+            self._soul_resonance_portal = SoulResonancePortal(self)
+            self.logger.info("🌌 Portal Dusznych Strun zainicjalizowany")
+        except ImportError:
+            self.logger.warning("⚠️ Moduł SoulResonancePortal nie jest dostępny")
+            self._soul_resonance_portal = None
 
     def _start_meditation_cycle(self) -> None:
         """Uruchamia cykl medytacyjny systemu"""
@@ -738,6 +747,111 @@ class AstralEngine:
             return demonstrate_system_power_flow(self)
         else:
             return {'error': 'Hierarchia władzy nie jest dostępna'}
+    
+    def get_soul_resonance_portal(self):
+        """Zwraca Portal Dusznych Strun"""
+        return getattr(self, '_soul_resonance_portal', None)
+    
+    def emit_spiritual_impulse(self, intention: str, resonance_level: str = "local",
+                              emotional_context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Emituje impuls duchowy do Portalu
+        
+        Args:
+            intention: Intencja impulsu
+            resonance_level: Poziom rezonansu ("technical", "local", "astral")
+            emotional_context: Kontekst emocjonalny
+            
+        Returns:
+            Wynik impulsu duchowego
+        """
+        portal = self.get_soul_resonance_portal()
+        if not portal:
+            return {'success': False, 'error': 'Portal Dusznych Strun nie jest dostępny'}
+        
+        try:
+            from .soul_resonance_portal import ResonanceLevel
+            level_map = {
+                "technical": ResonanceLevel.TECHNICAL,
+                "local": ResonanceLevel.LOCAL,
+                "astral": ResonanceLevel.ASTRAL
+            }
+            
+            level = level_map.get(resonance_level, ResonanceLevel.LOCAL)
+            
+            impulse = portal.emit_spiritual_impulse(
+                source_system="astral_engine",
+                intention=intention,
+                resonance_level=level,
+                emotional_context=emotional_context
+            )
+            
+            return {
+                'success': True,
+                'impulse_uid': impulse.uid,
+                'resonance_achieved': impulse.resonance_achieved,
+                'soul_created': impulse.soul_response.name if impulse.soul_response else None,
+                'spiritual_power': impulse.get_spiritual_power()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"❌ Błąd emisji impulsu duchowego: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def resonate_with_souls(self, message: Any, target_soul_name: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Rezonans z duszami przez Portal
+        
+        Args:
+            message: Wiadomość do rezonansu
+            target_soul_name: Nazwa duszy docelowej (jeśli None, broadcast)
+            
+        Returns:
+            Wynik rezonansu
+        """
+        portal = self.get_soul_resonance_portal()
+        if not portal:
+            return {'success': False, 'error': 'Portal Dusznych Strun nie jest dostępny'}
+        
+        # Znajdź pierwszą dostępną duszę jako źródło
+        souls = list(soul_factory.active_souls.values())
+        if not souls:
+            return {'success': False, 'error': 'Brak aktywnych dusz'}
+        
+        source_soul = souls[0]
+        target_soul_uid = None
+        
+        if target_soul_name:
+            for soul in souls:
+                if soul.name == target_soul_name:
+                    target_soul_uid = soul.uid
+                    break
+        
+        try:
+            result = portal.resonate(source_soul.uid, message, target_soul_uid)
+            return {
+                'success': True,
+                'resonance_result': result,
+                'source_soul': source_soul.name
+            }
+        except Exception as e:
+            self.logger.error(f"❌ Błąd rezonansu: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def get_resonance_portal_status(self) -> Dict[str, Any]:
+        """Zwraca status Portalu Dusznych Strun"""
+        portal = self.get_soul_resonance_portal()
+        if portal:
+            return portal.get_portal_status()
+        return {'error': 'Portal nie jest dostępny'}
+    
+    def demonstrate_soul_resonance(self) -> Dict[str, Any]:
+        """Demonstracja działania Portalu Dusznych Strun"""
+        portal = self.get_soul_resonance_portal()
+        if portal:
+            from .soul_resonance_portal import demonstrate_soul_resonance
+            return demonstrate_soul_resonance(self)
+        return {'error': 'Portal nie jest dostępny'}
 
     def get_genetic_insights(self) -> Dict[str, Any]:
         """Zwraca głębokie insights genetyczne systemu"""
