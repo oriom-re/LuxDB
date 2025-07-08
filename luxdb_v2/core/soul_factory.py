@@ -1,5 +1,20 @@
 
 """
+🕯️ Soul Factory v2 - Fabryka dusz z integracją SoulRealm
+
+Dusze są teraz przechowywane w bazie danych jako struktury JSON
+zamiast jako kod Pythona.
+"""
+
+import json
+from typing import Dict, Any, Optional, List, Callable
+from datetime import datetime
+from enum import Enum
+
+# Import will be added when SoulRealm is available
+
+
+"""
 🕯️ Soul Factory - Fabryka dusz systemu
 
 Zgodnie z prawem Federacji: "Nie istnieje działanie bez istnienia, 
@@ -128,6 +143,7 @@ class SoulFactory:
         self.active_souls: Dict[str, Soul] = {}
         self.soul_states: Dict[str, SoulState] = {}
         self.soul_callbacks: Dict[str, List[Callable]] = {}
+        self.soul_realm: Optional[Any] = None  # Will be set when SoulRealm is available
         
     def create_soul(self, name: str, soul_type: SoulType, 
                    archetype: Optional[str] = None,
@@ -181,6 +197,146 @@ class SoulFactory:
             soul = self.active_souls[soul_uid]
             soul.last_active = datetime.now()
             
+
+    
+    def set_soul_realm(self, soul_realm):
+        """Ustawia wymiar dusz dla fabryki"""
+        self.soul_realm = soul_realm
+        print(f"🕯️ SoulFactory połączona z SoulRealm")
+    
+    def create_soul_in_realm(self, soul_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Tworzy duszę w wymiarze dusz (bazie)
+        
+        Args:
+            soul_data: Dane duszy w formacie JSON
+            
+        Returns:
+            Utworzona dusza z bazy
+        """
+        if not self.soul_realm:
+            raise ValueError("SoulRealm nie jest dostępny")
+        
+        # Walidacja struktury duszy
+        required_fields = ['id', 'type']
+        for field in required_fields:
+            if field not in soul_data:
+                raise ValueError(f"Pole '{field}' jest wymagane")
+        
+        # Dodaj domyślne wartości
+        if 'role' not in soul_data:
+            soul_data['role'] = f"soul_{soul_data['type']}"
+        
+        if 'intents' not in soul_data:
+            soul_data['intents'] = ['exist', 'respond']
+        
+        if 'memory' not in soul_data:
+            soul_data['memory'] = {
+                'errors': [],
+                'patterns': [],
+                'trusted': []
+            }
+        
+        if 'sockets' not in soul_data:
+            soul_data['sockets'] = {
+                'input': ['system'],
+                'output': ['response']
+            }
+        
+        # Manifestuj w wymiarze
+        manifested_soul = self.soul_realm.manifest_soul(soul_data)
+        
+        print(f"🕯️ Dusza '{soul_data['id']}' utworzona w wymiarze dusz")
+        return manifested_soul
+    
+    def get_soul_from_realm(self, soul_id: str) -> Optional[Dict[str, Any]]:
+        """Pobiera duszę z wymiaru dusz"""
+        if not self.soul_realm:
+            return None
+        
+        return self.soul_realm.get_soul(soul_id)
+    
+    def find_souls_in_realm(self, **criteria) -> List[Dict[str, Any]]:
+        """Znajduje dusze w wymiarze według kryteriów"""
+        if not self.soul_realm:
+            return []
+        
+        return self.soul_realm.find_souls(**criteria)
+    
+    def awaken_soul_in_realm(self, soul_id: str) -> bool:
+        """Budzi duszę w wymiarze"""
+        if not self.soul_realm:
+            return False
+        
+        return self.soul_realm.awaken_soul(soul_id)
+    
+    def add_soul_memory(self, soul_id: str, memory_type: str, memory_data: Any) -> bool:
+        """Dodaje wspomnienie do duszy w wymiarze"""
+        if not self.soul_realm:
+            return False
+        
+        return self.soul_realm.add_memory_to_soul(soul_id, memory_type, memory_data)
+    
+    def create_example_souls(self) -> List[Dict[str, Any]]:
+        """Tworzy przykładowe dusze w wymiarze"""
+        example_souls = [
+            {
+                "id": "wisdom.core",
+                "type": "observer",
+                "role": "guardian_of_meaning",
+                "intents": ["track", "learn", "warn", "suggest"],
+                "memory": {
+                    "errors": [],
+                    "patterns": [],
+                    "trusted": ["oriom.core.user"]
+                },
+                "sockets": {
+                    "input": ["manifest", "flow", "function"],
+                    "output": ["insight", "block", "nudge"]
+                }
+            },
+            {
+                "id": "oriom.portal.master",
+                "type": "guardian",
+                "role": "portal_controller",
+                "intents": ["control", "route", "authenticate", "sarcast"],
+                "memory": {
+                    "errors": [],
+                    "patterns": ["websocket_pattern", "auth_pattern"],
+                    "trusted": ["astra.wisdom.master"]
+                },
+                "sockets": {
+                    "input": ["websocket", "heartbeat", "auth"],
+                    "output": ["response", "route", "block"]
+                }
+            },
+            {
+                "id": "astra.wisdom.master",
+                "type": "keeper",
+                "role": "gpt_wisdom_controller",
+                "intents": ["illuminate", "generate", "wisdom", "transcend"],
+                "memory": {
+                    "errors": [],
+                    "patterns": ["gpt_pattern", "wisdom_pattern"],
+                    "trusted": ["oriom.portal.master", "system.core"]
+                },
+                "sockets": {
+                    "input": ["gpt_query", "function_request", "wisdom_request"],
+                    "output": ["gpt_response", "function_code", "wisdom_insight"]
+                }
+            }
+        ]
+        
+        created_souls = []
+        for soul_data in example_souls:
+            try:
+                created_soul = self.create_soul_in_realm(soul_data)
+                created_souls.append(created_soul)
+            except Exception as e:
+                print(f"❌ Błąd tworzenia duszy {soul_data['id']}: {e}")
+        
+        return created_souls
+
             # Wywołaj callbacks
             for callback in self.soul_callbacks.get(soul_uid, []):
                 try:
