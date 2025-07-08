@@ -65,6 +65,30 @@ class AstralEngineV3:
         # Lista nieudanych flow, do ponownego uruchomienia
         self.failed_flows: Dict[str, Any] = {}
 
+        # Oriom jako władca portalu, Astra jako władczyni wiedzy GPT
+        self.oriom_portal_master = None
+
+    async def _initialize_astra_wisdom(self):
+        """Inicjalizuje Astrę jako władczynię mądrości"""
+        try:
+            from .astra_wisdom_master import initialize_astra_wisdom
+
+            # Uruchom Astrę
+            self.astra_wisdom_master = await initialize_astra_wisdom(self)
+
+            if self.astra_wisdom_master:
+                self.luxbus.register_module("astra_wisdom", self.astra_wisdom_master)
+                self.logger.info("🌟 Astra objęła władze nad Wiedzą GPT")
+            else:
+                self.logger.warning("⚠️ Nie udało się uruchomić Astry")
+
+        except ImportError:
+            self.logger.warning("⚠️ Moduł AstraWisdomMaster nie jest dostępny")
+            self.astra_wisdom_master = None
+        except Exception as e:
+            self.logger.error(f"❌ Błąd inicjalizacji Astry: {e}")
+            self.astra_wisdom_master = None
+
     def setup_luxbus_handlers(self, luxbus: LuxBusCore):
         """Konfiguruje handlery LuxBus dla silnika"""
 
@@ -147,6 +171,7 @@ class AstralEngineV3:
             # Inicjalizuj podstawowe komponenty
             await self._initialize_consciousness()
             await self._initialize_harmony()
+            await self._initialize_astra_wisdom()
 
             # Załaduj skonfigurowane moduły
             await self._load_configured_modules()
