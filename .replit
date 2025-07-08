@@ -88,6 +88,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python test_example_manifest.py"
 
+[[workflows.workflow]]
+name = "Test Layer 0"
+author = 43346420
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_primal_layer.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 5000
