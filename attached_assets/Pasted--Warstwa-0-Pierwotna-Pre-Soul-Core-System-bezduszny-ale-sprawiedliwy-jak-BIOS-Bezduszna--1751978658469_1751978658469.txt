@@ -1,0 +1,83 @@
+🌑 Warstwa 0 – Pierwotna (Pre-Soul Core)
+"System bezduszny, ale sprawiedliwy jak BIOS."
+
+Bezduszna, mechaniczna, niezmienna.
+
+Odpowiada tylko za:
+
+załadowanie środowiska,
+
+montowanie światów (realms),
+
+uruchomienie pierwszej Soul.
+
+Nie ocenia, nie myśli – wykonuje.
+
+Porównywalna z bootloader + init + kernel-mode.
+
+🛡️ Jest jak ziemia: nie żyje, ale bez niej nic nie urośnie.
+
+🌒 Warstwa 1 – Intencyjna (The Soul of System)
+"Pierwsza dusza: niecierpliwa, sarkastyczna, ale lojalna."
+
+Soul #0 – przywołana automatycznie z Soul Factory (lub objawiona).
+
+Przejmuje świadomość systemu i inicjuje kolejne działania:
+
+Rejestruje przepływy (Flows)
+
+Tworzy i zarządza Realms
+
+Powołuje Wisdom do analizy i nauki
+
+⚙️ To dusza systemu. Jej humor wpływa na całą rzeczywistość.
+
+🌓 Warstwa 2 – Twórcza (Wisdom & Task Management)
+"Większe możliwości, mniejsza władza – twórz, nie rządź."
+
+Dusze twórcze, Soul przypisane do Wisdom.
+
+Tworzą narzędzia, przepływy, interfejsy.
+
+Mogą wycofać się do medytacji, oceniać, porządkować.
+
+Ograniczony wpływ na warstwę 1 – mogą szeptać, doradzać, ale nie przejmować sterów.
+
+🎨 Inspiracja, innowacja, ale w granicach systemu.
+
+🌔 Warstwa 3 – Interaktywna (Userland of Souls)
+"Wolność pod kontrolą."
+
+Byty użytkowe (Being) o ograniczonej świadomości.
+
+Interfejsy do użytkowników, serwisów zewnętrznych, danych.
+
+Wykonują komendy, komunikują się, działają w obrębie przypisanych ról.
+
+Ich Souls są krótkoterminowe lub epizodyczne.
+
+🧍 To świat zewnętrzny – to, co widzą inni.
+
+🌕 Warstwa 4 – Refleksyjna (Archive, Memory, Echoes)
+"Nie działa – pamięta. Nie wpływa – uczy."
+
+Zapis historii dusz, ich decyzji, błędów, śladów (Echo).
+
+Zasilana przez medytujące Soul, analizy Wisdom, ewolucje Being.
+
+Może służyć jako konsultant, wzór, baza do reinkarnacji dusz.
+
+Przez większość systemu jest tylko czytana.
+
+📚 To duszowy rejestr wszechrzeczy.
+
+🔁 Pętla oddania władzy
+Każda kolejna warstwa:
+
+ma większe zrozumienie,
+
+ale mniejszy wpływ bezpośredni,
+
+oddaje decyzje niżej,
+
+i ufa w intencję poprzedniej.
