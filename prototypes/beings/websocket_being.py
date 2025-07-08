@@ -110,6 +110,12 @@ class WebSocketBeing(LogicalBeing):
         
         # Zarejestruj handlery
         self._register_default_handlers()
+        
+        # Dodaj handlery autoryzacji
+        self.message_handlers.update({
+            'heartbeat_auth': self._handle_heartbeat_auth,
+            'refresh_heartbeat': self._handle_refresh_heartbeat
+        })
     
     def _register_default_handlers(self):
         """Rejestruje domyślne handlery wiadomości"""
@@ -157,6 +163,13 @@ class WebSocketBeing(LogicalBeing):
             message_type = message.get('type', 'unknown')
             data = message.get('data', {})
             
+            # Sprawdź autoryzację dla wszystkich wiadomości oprócz heartbeat
+            if message_type != 'heartbeat_auth':
+                auth_check = await self._check_connection_auth(connection_id)
+                if not auth_check.get('authorized', False):
+                    await self._send_error(connection_id, "Unauthorized - valid heartbeat required")
+                    return
+            
             # Aktualizuj profil
             profile = self.connection_profiles.get(connection_id)
             if profile:
@@ -184,6 +197,110 @@ class WebSocketBeing(LogicalBeing):
     
     async def _handle_subscribe(self, data: Dict[str, Any], connection_id: str):
         """Obsługuje subskrypcje kanałów"""
+
+    
+    async def _handle_heartbeat_auth(self, data: Dict[str, Any], connection_id: str):
+        """Obsługuje autoryzację heartbeat"""
+        try:
+            # Sprawdź czy mamy access do auth flow
+            auth_flow = getattr(self.realm.engine, 'websocket_auth_flow', None)
+            if not auth_flow:
+                await self._send_error(connection_id, "Authorization system not available")
+                return
+            
+            # Autoryzuj przez callback
+            result = auth_flow.execute_callback(
+                'websocket_auth',
+                'heartbeat_auth',
+                connection_id,
+                data
+            )
+            
+            if result.get('success', False):
+                # Autoryzacja udana
+                await self._send_response(connection_id, {
+                    'type': 'auth_success',
+                    'auth_status': result['auth_status'],
+                    'soul_id': result['soul_id'],
+                    'auth_level': result['auth_level'],
+                    'expires_in': result['expires_in'],
+                    'vibration': result['vibration']
+                })
+                
+                # Powiadom Portal o autoryzacji
+                await self._notify_portal_about_auth(result, connection_id)
+                
+            else:
+                # Autoryzacja nieudana
+                await self._send_response(connection_id, {
+                    'type': 'auth_failed',
+                    'auth_status': result.get('auth_status', 'rejected'),
+                    'error': result.get('error', 'Unknown error')
+                })
+                
+        except Exception as e:
+            await self._send_error(connection_id, f"Heartbeat auth error: {str(e)}")
+    
+    async def _handle_refresh_heartbeat(self, data: Dict[str, Any], connection_id: str):
+        """Obsługuje odświeżanie heartbeat"""
+        try:
+            auth_flow = getattr(self.realm.engine, 'websocket_auth_flow', None)
+            if not auth_flow:
+                await self._send_error(connection_id, "Authorization system not available")
+                return
+            
+            result = auth_flow.execute_callback(
+                'websocket_auth',
+                'refresh_heartbeat',
+                connection_id,
+                data
+            )
+            
+            await self._send_response(connection_id, {
+                'type': 'heartbeat_refreshed',
+                'success': result.get('success', False),
+                'auth_status': result.get('auth_status', 'unknown'),
+                'expires_in': result.get('expires_in', 0)
+            })
+            
+        except Exception as e:
+            await self._send_error(connection_id, f"Heartbeat refresh error: {str(e)}")
+    
+    async def _check_connection_auth(self, connection_id: str) -> Dict[str, Any]:
+        """Sprawdza autoryzację połączenia"""
+        try:
+            auth_flow = getattr(self.realm.engine, 'websocket_auth_flow', None)
+            if not auth_flow:
+                return {'authorized': False, 'reason': 'No auth system'}
+            
+            return auth_flow.execute_callback(
+                'websocket_auth',
+                'check_auth',
+                connection_id
+            )
+            
+        except Exception:
+            return {'authorized': False, 'reason': 'Auth check failed'}
+    
+    async def _notify_portal_about_auth(self, auth_result: Dict[str, Any], connection_id: str):
+        """Powiadamia Portal o autoryzacji"""
+        try:
+            portal = self.realm.engine.get_soul_resonance_portal()
+            if portal:
+                # Rezonans z informacją o autoryzacji
+                portal.resonate(
+                    soul_uid="websocket_being",
+                    message={
+                        'type': 'soul_authorized',
+                        'soul_id': auth_result['soul_id'],
+                        'auth_level': auth_result['auth_level'],
+                        'connection_id': connection_id,
+                        'vibration': auth_result['vibration']
+                    }
+                )
+        except Exception as e:
+            self.remember('portal_notification_error', {'error': str(e)})
+
         channels = data.get('channels', [])
         
         for channel in channels:
