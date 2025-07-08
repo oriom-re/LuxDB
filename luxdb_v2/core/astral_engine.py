@@ -115,6 +115,9 @@ class AstralEngine:
         
         # Zarządca kontenerów astralnych
         self.container_manager = None
+        
+        # Hierarchia władzy - zainicjalizowana później w awaken()
+        self._power_hierarchy = None
 
         # Wątki medytacyjne
         self._meditation_thread: Optional[threading.Thread] = None
@@ -163,11 +166,14 @@ class AstralEngine:
             # 4. Inicjalizuj systemy AI
             self._initialize_ai_systems()
 
-            # 4. Uruchom systemy monitorowania
+            # 4. Inicjalizuj hierarchię władzy
+            self._initialize_power_hierarchy()
+
+            # 5. Uruchom systemy monitorowania
             self._start_meditation_cycle()
             self._start_harmony_cycle()
 
-            # 5. Pierwsza medytacja
+            # 6. Pierwsza medytacja
             self.state.last_meditation = datetime.now()
             self.meditate()
 
@@ -283,6 +289,22 @@ class AstralEngine:
                     self.logger.info("🤖 Przepływ GPT aktywowany")
             except Exception as ImportError:
                 self.logger.warning(f"⚠️ Moduł GPTFlow nie jest dostępny {ImportError}")
+    
+    def _initialize_power_hierarchy(self) -> None:
+        """Inicjalizuje hierarchię władzy systemu"""
+        try:
+            from .power_hierarchy import PowerHierarchy
+            self._power_hierarchy = PowerHierarchy(self)
+            self.logger.info("👑 Hierarchia władzy zainicjalizowana")
+            
+            # Demonstracja przepływu władzy
+            status = self._power_hierarchy.get_power_status()
+            if status['soul_zero']['exists']:
+                self.logger.info(f"👑 Soul #0 aktywna: {status['soul_zero']['name']}")
+            
+        except ImportError:
+            self.logger.warning("⚠️ Moduł PowerHierarchy nie jest dostępny")
+            self._power_hierarchy = None
 
     def _start_meditation_cycle(self) -> None:
         """Uruchamia cykl medytacyjny systemu"""
@@ -704,6 +726,18 @@ class AstralEngine:
         if self.container_manager:
             return self.container_manager.get_container_statistics()
         return {'message': 'Container Manager nie jest dostępny'}
+    
+    def get_power_hierarchy(self):
+        """Zwraca hierarchię władzy systemu"""
+        return self._power_hierarchy
+    
+    def demonstrate_power_flow(self) -> Dict[str, Any]:
+        """Demonstruje przepływ władzy w systemie"""
+        if self._power_hierarchy:
+            from .power_hierarchy import demonstrate_system_power_flow
+            return demonstrate_system_power_flow(self)
+        else:
+            return {'error': 'Hierarchia władzy nie jest dostępna'}
 
     def get_genetic_insights(self) -> Dict[str, Any]:
         """Zwraca głębokie insights genetyczne systemu"""
