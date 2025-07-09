@@ -1,0 +1,25 @@
+name: load_environment
+description: Bezpieczne ładowanie konfiguracji środowiska
+
+steps:
+  - id: check_file_exists
+    function: system/filesystem.check_file
+    args:
+      path: "config/env.yaml"
+
+  - id: open_file
+    function: system/filesystem.open_file
+    args:
+      path: "config/env.yaml"
+    if: check_file_exists.result == True
+
+  - id: parse_yaml
+    function: system/yaml_loader.parse_yaml
+    args:
+      content: open_file.result
+    if: open_file.status == "ok"
+
+  - id: merge_env
+    function: system/env.merge_with_os_environ
+    args:
+      config: parse_yaml.result
