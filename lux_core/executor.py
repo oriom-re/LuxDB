@@ -1,20 +1,30 @@
-from .routing import resolve_function
+from lux_core.routing import resolve
+
+# run_step obsługuje uniwersalnie: uri, function, call_remote
 
 def run_step(step, locals_, functions=None):
-    if 'function' in step:
-        func_path = step['function']
+    if 'uri' in step:
+        uri = step['uri']
         args = step.get('args', {})
-        func = resolve_function(func_path)
+        func = resolve(uri)
+        result = func(**args)
+    elif 'function' in step:
+        # Wsteczna kompatybilność
+        uri = step['function']
+        args = step.get('args', {})
+        func = resolve(uri)
         result = func(**args)
     elif 'call_remote' in step:
+        # call_remote jako zunifikowany remote://service.function
         remote_call = step['call_remote']
         service = remote_call['service']
         func_name = remote_call['function']
         args = remote_call.get('args', {})
-        # call_remote to be implemented or imported
-        result = call_remote(service, func_name, args)
+        uri = f"remote://{service}.{func_name}"
+        func = resolve(uri)
+        result = func(**args)
     else:
-        raise ValueError("Step must contain 'function' or 'call_remote'")
+        raise ValueError("Step must contain 'uri', 'function' or 'call_remote'")
     if 'save_as' in step:
         locals_[step['save_as']] = result
     return result
