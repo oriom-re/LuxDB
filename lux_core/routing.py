@@ -1,5 +1,6 @@
 from .loader import load_from_file, load_from_module, load_from_db, call_remote_function, generate_ai_function
 from .registry import LUX_ROUTING
+from .logger import log_event
 
 # Centralny rejestr handlerów dla różnych typów URI
 ROUTER_HANDLERS = {
@@ -9,8 +10,7 @@ ROUTER_HANDLERS = {
     "remote": call_remote_function,
     "lux": lambda path: resolve_lux_uri(path),
     "ai": generate_ai_function,
-    # "entity": load_entity,  # Przykład na przyszłość
-    # "data": load_data,
+    "logger": lambda path_and_level: (lambda **kwargs: log_event(path_and_level, kwargs.get("message", ""))),
 }
 
 class LuxFunction:

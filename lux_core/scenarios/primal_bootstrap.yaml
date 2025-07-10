@@ -1,0 +1,65 @@
+# primal_bootstrap.yaml
+# Scenariusz startowy warstwy 0 (primal layer) w formacie YAML
+
+steps:
+  - name: Bootstrap środowiska
+    description: Inicjalizacja i ładowanie zmiennych środowiskowych
+    steps:
+      - uri: lux://system/loader/load_env@v1
+        args:
+          config: default
+        save_as: env
+        entity:
+          id: env-001
+          type: Environment
+          meta:
+            description: Środowisko startowe warstwy 0
+
+  - name: Walidacja środowiska
+    description: Sprawdzenie integralności i poprawności środowiska
+    steps:
+      - uri: lux://system/loader/validate_data@v1
+        args:
+          data: init
+        save_as: validation_result
+        entity:
+          id: val-001
+          type: ValidationResult
+          meta:
+            description: Wynik walidacji środowiska
+
+  - name: Monitoring zasobów
+    description: Odczyt i monitoring CPU, RAM, dysku, sieci
+    steps:
+      - uri: lux://system/resources/monitor@v1
+        args: {}
+        save_as: system_status
+
+  - name: Montowanie realms
+    description: Montowanie podstawowych przestrzeni
+    steps:
+      - uri: lux://system/realm/mount@v1
+        args:
+          realm: storage
+        save_as: storage_realm
+
+  - name: Protokoły bezpieczeństwa
+    description: Weryfikacja uprawnień i integralności
+    steps:
+      - uri: lux://system/safety/check@v1
+        args: {}
+        save_as: safety_status
+
+  - name: Interfejs do warstwy 1
+    description: Udostępnianie API i statusów
+    steps:
+      - uri: lux://system/interface/init@v1
+        args: {}
+        save_as: interface_status
+
+  - name: Logowanie i audyt
+    description: Zbieranie logów i audyt operacji
+    steps:
+      - uri: lux://system/logger/start@v1
+        args: {}
+        save_as: logger_status
