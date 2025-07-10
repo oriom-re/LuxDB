@@ -5,7 +5,11 @@ steps:
   - name: Bootstrap środowiska
     description: Inicjalizacja i ładowanie zmiennych środowiskowych
     steps:
-      - uri: lux://system/loader/load_env@v1
+      - uri: lux://system/core/init@v1
+        args: {}
+        save_as: init_status
+        
+      - uri: lux://system/bootstrap/env/load@v1
         args:
           config: default
         save_as: env

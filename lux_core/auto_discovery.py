@@ -34,7 +34,6 @@ def discover_and_load_modules(base_path: str = None):
         "lux_core.layer0.realm_mounter",
         "lux_core.layer0.layer0_interface",
         "lux_core.layer0.validation",
-        "lux_core.layer0.logger"
     ]
     
     for modname in layer0_modules:

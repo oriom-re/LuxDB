@@ -21,3 +21,4 @@ def load_env(config="default"):
         "secret_key": env_vars.get("LUX_SECRET_KEY", "")
     }
     return result
+

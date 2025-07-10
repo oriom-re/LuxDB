@@ -11,6 +11,7 @@ logging.basicConfig(
 
 logger = logging.getLogger("lux_core")
 
+
 def start_logger():
     # Tu można zaimplementować logikę startu loggera
     return {"logger": "started"}
