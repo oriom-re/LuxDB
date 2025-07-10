@@ -1,0 +1,802 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuxCore Interactive System Map</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .main-content {
+            flex: 1;
+            position: relative;
+        }
+        #network {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .control-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .control-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stats-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .legend {
+            margin-top: 20px;
+        }
+        .legend-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        .route-list {
+            margin-top: 20px;
+        }
+        .route-category {
+            margin-bottom: 15px;
+        }
+        .route-category-title {
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 8px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .route-item {
+            font-size: 0.9em;
+            padding: 5px 10px;
+            background: white;
+            border-radius: 3px;
+            margin-bottom: 3px;
+            border-left: 3px solid #3498db;
+        }
+        .route-item.dynamic {
+            border-left-color: #e74c3c;
+        }
+        .filter-controls {
+            margin-top: 20px;
+        }
+        .filter-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 3px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .filter-btn.active {
+            background: #e74c3c;
+        }
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 200px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="title">🌟 LuxCore Map</div>
+            
+            <div class="stats-box">
+                <div class="stat-item">
+                    <span>Total Routes:</span>
+                    <span><strong>22</strong></span>
+                </div>
+                <div class="stat-item">
+                    <span>Static:</span>
+                    <span><strong>10</strong></span>
+                </div>
+                <div class="stat-item">
+                    <span>Dynamic:</span>
+                    <span><strong>12</strong></span>
+                </div>
+                <div class="stat-item">
+                    <span>Modules:</span>
+                    <span><strong>21</strong></span>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-title">🎨 Kategorie</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>System Routes</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>API Routes</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Custom Routes</span>
+                </div>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="legend-title">🔍 Filtry</div>
+                <button class="filter-btn active" onclick="filterNodes('all')">Wszystkie</button>
+                <button class="filter-btn" onclick="filterNodes('system')">System</button>
+                <button class="filter-btn" onclick="filterNodes('api')">API</button>
+                <button class="filter-btn" onclick="filterNodes('static')">Statyczne</button>
+                <button class="filter-btn" onclick="filterNodes('dynamic')">Dynamiczne</button>
+            </div>
+            
+            <div class="route-list">
+                <div class="legend-title">📋 Route List</div>
+                <div id="routeList"></div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="controls">
+                <button class="control-btn" onclick="network.fit()">🔍 Fit All</button>
+                <button class="control-btn" onclick="togglePhysics()">⚡ Physics</button>
+                <button class="control-btn" onclick="exportNetwork()">💾 Export</button>
+            </div>
+            
+            <div id="network"></div>
+            
+            <div class="info-panel" id="infoPanel">
+                <div id="nodeInfo"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dane dla sieci
+        const nodes = new vis.DataSet([
+        {
+                "id": "system/loader/load_env@v1",
+                "label": "\u2699\ufe0f load_env@v1",
+                "title": "<b>system/loader/load_env@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/loader/validate_data@v1",
+                "label": "\u2699\ufe0f validate_data@v1",
+                "title": "<b>system/loader/validate_data@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/resources/monitor@v1",
+                "label": "\u2699\ufe0f monitor@v1",
+                "title": "<b>system/resources/monitor@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/resources/detect@v1",
+                "label": "\u2699\ufe0f detect@v1",
+                "title": "<b>system/resources/detect@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/resources/analyze@v1",
+                "label": "\u2699\ufe0f analyze@v1",
+                "title": "<b>system/resources/analyze@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/realm/mount@v1",
+                "label": "\u2699\ufe0f mount@v1",
+                "title": "<b>system/realm/mount@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/safety/check@v1",
+                "label": "\u2699\ufe0f check@v1",
+                "title": "<b>system/safety/check@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/interface/init@v1",
+                "label": "\u2699\ufe0f init@v1",
+                "title": "<b>system/interface/init@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/logger/start@v1",
+                "label": "\u2699\ufe0f start@v1",
+                "title": "<b>system/logger/start@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/bootstrap/env@v1",
+                "label": "\u2699\ufe0f env@v1",
+                "title": "<b>system/bootstrap/env@v1</b><br>Type: static<br>Description: N/A",
+                "color": "#3498db",
+                "group": "system",
+                "type": "static"
+        },
+        {
+                "id": "system/routing/discover@v1",
+                "label": "\u2699\ufe0f discover@v1",
+                "title": "<b>system/routing/discover@v1</b><br>Type: dynamic<br>Description: Wykonaj auto-discovery i za\u0142aduj wszystkie modu\u0142y",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "system/routing/stats@v1",
+                "label": "\u2699\ufe0f stats@v1",
+                "title": "<b>system/routing/stats@v1</b><br>Type: dynamic<br>Description: Zwr\u00f3\u0107 statystyki wszystkich route",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "system/bootstrap/env@v2",
+                "label": "\u2699\ufe0f env@v2",
+                "title": "<b>system/bootstrap/env@v2</b><br>Type: dynamic<br>Description: Bootstrap \u015brodowiska - podstawowe ustawienia",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "system/safety/check@v2",
+                "label": "\u2699\ufe0f check@v2",
+                "title": "<b>system/safety/check@v2</b><br>Type: dynamic<br>Description: Sprawd\u017a protoko\u0142y bezpiecze\u0144stwa systemu",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "system/resources/monitor@v2",
+                "label": "\u2699\ufe0f monitor@v2",
+                "title": "<b>system/resources/monitor@v2</b><br>Type: dynamic<br>Description: Monitoruj zasoby systemowe w czasie rzeczywistym",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "system/resources/detect@v2",
+                "label": "\u2699\ufe0f detect@v2",
+                "title": "<b>system/resources/detect@v2</b><br>Type: dynamic<br>Description: Wykryj wszystkie dost\u0119pne zasoby sprz\u0119towe",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "system/resources/analyze@v2",
+                "label": "\u2699\ufe0f analyze@v2",
+                "title": "<b>system/resources/analyze@v2</b><br>Type: dynamic<br>Description: Analizuj pojemno\u015b\u0107 systemu i daj rekomendacje",
+                "color": "#3498db",
+                "group": "system",
+                "type": "dynamic"
+        },
+        {
+                "id": "api/routing/add@v1",
+                "label": "\ud83d\udd0c add@v1",
+                "title": "<b>api/routing/add@v1</b><br>Type: dynamic<br>Description: Dodaj now\u0105 route dynamicznie",
+                "color": "#e74c3c",
+                "group": "api",
+                "type": "dynamic"
+        },
+        {
+                "id": "api/routing/remove@v1",
+                "label": "\ud83d\udd0c remove@v1",
+                "title": "<b>api/routing/remove@v1</b><br>Type: dynamic<br>Description: Usu\u0144 route dynamiczn\u0105",
+                "color": "#e74c3c",
+                "group": "api",
+                "type": "dynamic"
+        },
+        {
+                "id": "api/routing/list@v1",
+                "label": "\ud83d\udd0c list@v1",
+                "title": "<b>api/routing/list@v1</b><br>Type: dynamic<br>Description: Lista wszystkich route",
+                "color": "#e74c3c",
+                "group": "api",
+                "type": "dynamic"
+        },
+        {
+                "id": "api/routing/info@v1",
+                "label": "\ud83d\udd0c info@v1",
+                "title": "<b>api/routing/info@v1</b><br>Type: dynamic<br>Description: Informacje o konkretnej route",
+                "color": "#e74c3c",
+                "group": "api",
+                "type": "dynamic"
+        },
+        {
+                "id": "api/routing/search@v1",
+                "label": "\ud83d\udd0c search@v1",
+                "title": "<b>api/routing/search@v1</b><br>Type: dynamic<br>Description: Wyszukaj route",
+                "color": "#e74c3c",
+                "group": "api",
+                "type": "dynamic"
+        }
+]);
+        const edges = new vis.DataSet([
+        {
+                "from": "system/loader/load_env@v1",
+                "to": "system/loader/validate_data@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v1",
+                "to": "system/resources/detect@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v1",
+                "to": "system/resources/analyze@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v1",
+                "to": "system/resources/monitor@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v1",
+                "to": "system/resources/detect@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v1",
+                "to": "system/resources/analyze@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/detect@v1",
+                "to": "system/resources/analyze@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/detect@v1",
+                "to": "system/resources/monitor@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/detect@v1",
+                "to": "system/resources/detect@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/detect@v1",
+                "to": "system/resources/analyze@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/analyze@v1",
+                "to": "system/resources/monitor@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/analyze@v1",
+                "to": "system/resources/detect@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/analyze@v1",
+                "to": "system/resources/analyze@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/safety/check@v1",
+                "to": "system/safety/check@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/bootstrap/env@v1",
+                "to": "system/bootstrap/env@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/routing/discover@v1",
+                "to": "system/routing/stats@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v2",
+                "to": "system/resources/detect@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/monitor@v2",
+                "to": "system/resources/analyze@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "system/resources/detect@v2",
+                "to": "system/resources/analyze@v2",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/add@v1",
+                "to": "api/routing/remove@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/add@v1",
+                "to": "api/routing/list@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/add@v1",
+                "to": "api/routing/info@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/add@v1",
+                "to": "api/routing/search@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/remove@v1",
+                "to": "api/routing/list@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/remove@v1",
+                "to": "api/routing/info@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/remove@v1",
+                "to": "api/routing/search@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/list@v1",
+                "to": "api/routing/info@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/list@v1",
+                "to": "api/routing/search@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        },
+        {
+                "from": "api/routing/info@v1",
+                "to": "api/routing/search@v1",
+                "color": {
+                        "color": "#95a5a6",
+                        "opacity": 0.3
+                }
+        }
+]);
+        
+        // Konfiguracja sieci
+        const options = {
+            nodes: {
+                shape: 'dot',
+                size: 16,
+                font: {
+                    size: 12,
+                    color: '#2c3e50'
+                },
+                borderWidth: 2,
+                shadow: true
+            },
+            edges: {
+                width: 1,
+                color: {inherit: 'from'},
+                smooth: {
+                    type: 'continuous'
+                }
+            },
+            physics: {
+                enabled: true,
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    centralGravity: 0.3,
+                    springLength: 95,
+                    springConstant: 0.04,
+                    damping: 0.09
+                }
+            },
+            interaction: {
+                hover: true,
+                hoverConnectedEdges: true,
+                selectConnectedEdges: true
+            },
+            layout: {
+                improvedLayout: true
+            }
+        };
+        
+        // Inicjalizacja sieci
+        const container = document.getElementById('network');
+        const data = {
+            nodes: nodes,
+            edges: edges
+        };
+        const network = new vis.Network(container, data, options);
+        
+        // Obsługa zdarzeń
+        network.on('click', function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                showNodeInfo(node);
+            }
+        });
+        
+        network.on('hoverNode', function (params) {
+            const nodeId = params.node;
+            const node = nodes.get(nodeId);
+            showNodeInfo(node);
+        });
+        
+        network.on('blurNode', function (params) {
+            hideNodeInfo();
+        });
+        
+        // Funkcje pomocnicze
+        function showNodeInfo(node) {
+            const infoPanel = document.getElementById('infoPanel');
+            const nodeInfo = document.getElementById('nodeInfo');
+            
+            nodeInfo.innerHTML = `
+                <h4>${node.label}</h4>
+                <p><strong>Path:</strong> ${node.id}</p>
+                <p><strong>Type:</strong> ${node.type}</p>
+                <p><strong>Group:</strong> ${node.group}</p>
+            `;
+            
+            infoPanel.style.display = 'block';
+        }
+        
+        function hideNodeInfo() {
+            const infoPanel = document.getElementById('infoPanel');
+            infoPanel.style.display = 'none';
+        }
+        
+        function filterNodes(filterType) {
+            // Aktualizuj przyciski
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filtrowanie węzłów
+            const allNodes = nodes.get();
+            let filteredNodes;
+            
+            if (filterType === 'all') {
+                filteredNodes = allNodes;
+            } else if (filterType === 'static' || filterType === 'dynamic') {
+                filteredNodes = allNodes.filter(node => node.type === filterType);
+            } else {
+                filteredNodes = allNodes.filter(node => node.group === filterType);
+            }
+            
+            // Aktualizuj sieć
+            const filteredNodeIds = filteredNodes.map(node => node.id);
+            const filteredEdges = edges.get().filter(edge => 
+                filteredNodeIds.includes(edge.from) && filteredNodeIds.includes(edge.to)
+            );
+            
+            network.setData({
+                nodes: filteredNodes,
+                edges: filteredEdges
+            });
+        }
+        
+        function togglePhysics() {
+            const physicsEnabled = network.physics.physicsEnabled;
+            network.setOptions({physics: {enabled: !physicsEnabled}});
+        }
+        
+        function exportNetwork() {
+            const canvas = network.canvas.frame.canvas;
+            const dataURL = canvas.toDataURL();
+            const link = document.createElement('a');
+            link.download = 'luxcore_network.png';
+            link.href = dataURL;
+            link.click();
+        }
+        
+        // Wypełnij listę route
+        function populateRouteList() {
+            const routeList = document.getElementById('routeList');
+            const routes = ["system/loader/load_env@v1", "system/loader/validate_data@v1", "system/resources/monitor@v1", "system/resources/detect@v1", "system/resources/analyze@v1", "system/realm/mount@v1", "system/safety/check@v1", "system/interface/init@v1", "system/logger/start@v1", "system/bootstrap/env@v1", "system/routing/discover@v1", "system/routing/stats@v1", "system/bootstrap/env@v2", "system/safety/check@v2", "system/resources/monitor@v2", "system/resources/detect@v2", "system/resources/analyze@v2", "api/routing/add@v1", "api/routing/remove@v1", "api/routing/list@v1", "api/routing/info@v1", "api/routing/search@v1"];
+            const routeInfo = {"system/loader/load_env@v1": {"type": "static", "metadata": {}}, "system/loader/validate_data@v1": {"type": "static", "metadata": {}}, "system/resources/monitor@v1": {"type": "static", "metadata": {}}, "system/resources/detect@v1": {"type": "static", "metadata": {}}, "system/resources/analyze@v1": {"type": "static", "metadata": {}}, "system/realm/mount@v1": {"type": "static", "metadata": {}}, "system/safety/check@v1": {"type": "static", "metadata": {}}, "system/interface/init@v1": {"type": "static", "metadata": {}}, "system/logger/start@v1": {"type": "static", "metadata": {}}, "system/bootstrap/env@v1": {"type": "static", "metadata": {}}, "system/routing/discover@v1": {"type": "dynamic", "metadata": {"description": "Wykonaj auto-discovery i za\u0142aduj wszystkie modu\u0142y", "permissions": [], "cache_ttl": null, "module": "lux_core.auto_discovery", "name": "perform_auto_discovery"}}, "system/routing/stats@v1": {"type": "dynamic", "metadata": {"description": "Zwr\u00f3\u0107 statystyki wszystkich route", "permissions": [], "cache_ttl": null, "module": "lux_core.auto_discovery", "name": "get_routing_stats"}}, "system/bootstrap/env@v2": {"type": "dynamic", "metadata": {"description": "Bootstrap \u015brodowiska - podstawowe ustawienia", "permissions": [], "cache_ttl": null, "module": "lux_core.layer0.bootstrap", "name": "bootstrap_env"}}, "system/safety/check@v2": {"type": "dynamic", "metadata": {"description": "Sprawd\u017a protoko\u0142y bezpiecze\u0144stwa systemu", "permissions": [], "cache_ttl": null, "module": "lux_core.layer0.safety_protocols", "name": "check_safety"}}, "system/resources/monitor@v2": {"type": "dynamic", "metadata": {"description": "Monitoruj zasoby systemowe w czasie rzeczywistym", "permissions": [], "cache_ttl": null, "module": "lux_core.layer0.system_resources", "name": "monitor_resources"}}, "system/resources/detect@v2": {"type": "dynamic", "metadata": {"description": "Wykryj wszystkie dost\u0119pne zasoby sprz\u0119towe", "permissions": [], "cache_ttl": null, "module": "lux_core.layer0.system_resources", "name": "detect_hardware"}}, "system/resources/analyze@v2": {"type": "dynamic", "metadata": {"description": "Analizuj pojemno\u015b\u0107 systemu i daj rekomendacje", "permissions": [], "cache_ttl": null, "module": "lux_core.layer0.system_resources", "name": "analyze_capacity"}}, "api/routing/add@v1": {"type": "dynamic", "metadata": {"description": "Dodaj now\u0105 route dynamicznie", "permissions": [], "cache_ttl": null, "module": "lux_core.routing_api", "name": "add_route_api"}}, "api/routing/remove@v1": {"type": "dynamic", "metadata": {"description": "Usu\u0144 route dynamiczn\u0105", "permissions": [], "cache_ttl": null, "module": "lux_core.routing_api", "name": "remove_route_api"}}, "api/routing/list@v1": {"type": "dynamic", "metadata": {"description": "Lista wszystkich route", "permissions": [], "cache_ttl": null, "module": "lux_core.routing_api", "name": "list_routes_api"}}, "api/routing/info@v1": {"type": "dynamic", "metadata": {"description": "Informacje o konkretnej route", "permissions": [], "cache_ttl": null, "module": "lux_core.routing_api", "name": "get_route_info_api"}}, "api/routing/search@v1": {"type": "dynamic", "metadata": {"description": "Wyszukaj route", "permissions": [], "cache_ttl": null, "module": "lux_core.routing_api", "name": "search_routes_api"}}};
+            
+            const categories = {};
+            routes.forEach(route => {
+                const parts = route.split('/');
+                const category = parts[0] || 'unknown';
+                if (!categories[category]) {
+                    categories[category] = [];
+                }
+                categories[category].push(route);
+            });
+            
+            let html = '';
+            Object.keys(categories).forEach(category => {
+                html += `<div class="route-category">`;
+                html += `<div class="route-category-title">${category.toUpperCase()}</div>`;
+                categories[category].forEach(route => {
+                    const routeData = routeInfo[route];
+                    const routeClass = routeData.type === 'dynamic' ? 'dynamic' : '';
+                    html += `<div class="route-item ${routeClass}">${route}</div>`;
+                });
+                html += `</div>`;
+            });
+            
+            routeList.innerHTML = html;
+        }
+        
+        // Inicjalizacja
+        populateRouteList();
+    </script>
+</body>
+</html>
+    
