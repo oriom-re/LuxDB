@@ -11,6 +11,10 @@ logging.basicConfig(
 
 logger = logging.getLogger("lux_core")
 
+def start_logger():
+    # Tu można zaimplementować logikę startu loggera
+    return {"logger": "started"}
+
 def log_event(level, message):
     if level == "info":
         logger.info(message)

@@ -6,5 +6,5 @@ LUX_ROUTING = {
     "system/realm/mount@v1": "module://lux_core.layer0.realm_mounter:mount_realm",
     "system/safety/check@v1": "module://lux_core.layer0.safety_protocols:check_safety",
     "system/interface/init@v1": "module://lux_core.layer0.layer0_interface:init_interface",
-    "system/logger/start@v1": "module://lux_core.layer0.logger:start_logger"
+    "system/logger/start@v1": "module://lux_core.logger:start_logger"
 }
