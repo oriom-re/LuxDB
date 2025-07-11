@@ -152,7 +152,7 @@ warstwa_4_refleksyjna/   # Archive & Echo
 ## � AKTUALIZACJA: Rozdzielenie Frontendu (11 lipca 2025)
 
 ### 🏗️ Podział Architektoniczny
-- **Frontend** ➜ `osobne repozytorium` (https://github.com/oriom/federacja-frontend)
+- **Frontend** ➜ `osobne repozytorium` (https://github.com/oriom-re/federation_front)
 - **Backend** ➜ `pozostaje w tym repozytorium` (LuxDB + API)
 
 ### ✅ Korzyści Rozdziału

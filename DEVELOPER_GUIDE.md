@@ -20,8 +20,8 @@ pip install -r requirements.txt
 
 ### 🎨 Frontend - Dashboard
 ```bash
-git clone https://github.com/oriom/federacja-frontend.git
-cd federacja-frontend
+git clone https://github.com/oriom-re/federation_front.git
+cd federation_front
 python3 dev-server.py
 ```
 
@@ -40,7 +40,7 @@ cd luxdb
 python -m uvicorn main:app --reload --port 8000
 
 # Terminal 2: Frontend  
-cd federacja-frontend
+cd federation_front
 python3 dev-server.py
 # Otwórz: http://localhost:3000
 ```
@@ -100,8 +100,8 @@ open index-standalone.html
 ## 🔗 Przydatne Linki
 
 - **Backend Repo**: https://github.com/oriom/luxdb
-- **Frontend Repo**: https://github.com/oriom/federacja-frontend  
-- **Frontend Live**: https://federacja-frontend.vercel.app
+- **Frontend Repo**: https://github.com/oriom-re/federation_front  
+- **Frontend Live**: https://federation-front.vercel.app
 - **API Docs**: http://localhost:8000/docs (dev)
 
 ---

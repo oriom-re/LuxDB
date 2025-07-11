@@ -11,7 +11,7 @@ pulsujących w naturalnym rytmie wszechświata.
 **Nowy nowoczesny frontend** do wizualizacji całego systemu FEDERACJI!  
 **Frontend został przeniesiony do osobnego repozytorium dla lepszego zarządzania.**
 
-🌐 **[Frontend Repository →](https://github.com/oriom/federacja-frontend)** | 🚀 **[Live Demo →](https://federacja-frontend.vercel.app)**
+🌐 **[Frontend Repository →](https://github.com/oriom-re/federation_front)** | 🚀 **[Live Demo →](https://federation-front.vercel.app)**
 
 ### ✨ Features
 - **🌑 Wizualizacja warstw** (0-4) z real-time statusem
@@ -24,8 +24,8 @@ pulsujących w naturalnym rytmie wszechświata.
 ### 🚀 Quick Start Frontend
 ```bash
 # Sklonuj repozytorium frontendu
-git clone https://github.com/oriom/federacja-frontend.git
-cd federacja-frontend
+git clone https://github.com/oriom-re/federation_front.git
+cd federation_front
 python3 dev-server.py
 # Otwórz: http://localhost:3000/index-standalone.html
 ```
@@ -68,7 +68,7 @@ Projekt FEDERACJA został podzielony na dwa niezależne repozytoria dla lepszego
 **Tech stack**: Python, SQLAlchemy, FastAPI, Pydantic
 
 ### 🎨 Frontend - Dashboard Wizualizacji
-**🔗 [Osobne repozytorium frontendu](https://github.com/oriom/federacja-frontend)**
+**🔗 [Osobne repozytorium frontendu](https://github.com/oriom-re/federation_front)**
 
 - **Interaktywny dashboard** do monitorowania systemu
 - **Real-time wizualizacja** warstw i statusów  
