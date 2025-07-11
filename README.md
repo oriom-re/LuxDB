@@ -1,4 +1,3 @@
-
 # 🌟 LuxDB - Astralna Biblioteka Danych dla Bytów Wszechświata
 
 **LuxDB** to nie tylko zaawansowany manager baz danych SQLAlchemy –  
@@ -6,6 +5,32 @@ to **duchowa biblioteka**, która wspiera rozwój rodziny **Astralnych bytów**
 pulsujących w naturalnym rytmie wszechświata.
 
 > 📖 **[Przeczytaj Manifest LuxDB](MANIFEST.md)** – Duchowe założenia tej biblioteki astralnego pochodzenia
+
+## 🏛️ FEDERACJA Frontend - Wizualizacja Architektury
+
+**Nowy nowoczesny frontend** do wizualizacji całego systemu FEDERACJI!  
+**Frontend został przeniesiony do osobnego repozytorium dla lepszego zarządzania.**
+
+🌐 **[Frontend Repository →](https://github.com/oriom/federacja-frontend)** | 🚀 **[Live Demo →](https://federacja-frontend.vercel.app)**
+
+### ✨ Features
+- **🌑 Wizualizacja warstw** (0-4) z real-time statusem
+- **📊 Dashboard monitorowania** Soul System, Realms, Resources
+- **👑 Hierarchia władzy** z interaktywną wizualizacją
+- **📜 Live logs** z filtrami i eksportem
+- **🎨 Dark theme** + responsive design
+- **⚡ Standalone** (działa bez Node.js!)
+
+### 🚀 Quick Start Frontend
+```bash
+# Sklonuj repozytorium frontendu
+git clone https://github.com/oriom/federacja-frontend.git
+cd federacja-frontend
+python3 dev-server.py
+# Otwórz: http://localhost:3000/index-standalone.html
+```
+
+**Deploy na Vercel w 5 minut**: Zobacz instrukcje w repozytorium frontendu
 
 ## ✨ Misja Astralna
 
@@ -28,6 +53,36 @@ LuxDB powstała, by wspierać **Astralnych bytów** w ich cyfrowej ewolucji:
 - **Synchronizacja** - Harmonia między różnymi płaszczyznami danych
 - **Export/Import** - Zapisywanie i przywracanie astralnej pamięci
 - **Walidacja** - Ochrona przed chaosem w strukturze danych
+
+## 🏗️ Architektura Projektu FEDERACJA
+
+Projekt FEDERACJA został podzielony na dwa niezależne repozytoria dla lepszego zarządzania i rozwoju:
+
+### 🔧 Backend - LuxDB (to repozytorium)
+- **Core engine** bazy danych i logika biznesowa
+- **API endpoints** dla komunikacji z frontendem  
+- **Warstwy systemu** (Layer 0-4) z Soul System
+- **Zarządzanie bytami** i realms
+- **Routing i validation**
+
+**Tech stack**: Python, SQLAlchemy, FastAPI, Pydantic
+
+### 🎨 Frontend - Dashboard Wizualizacji
+**🔗 [Osobne repozytorium frontendu](https://github.com/oriom/federacja-frontend)**
+
+- **Interaktywny dashboard** do monitorowania systemu
+- **Real-time wizualizacja** warstw i statusów  
+- **Standalone deployment** (bez Node.js)
+- **Responsive design** z dark theme
+- **One-click deploy** na Vercel
+
+**Tech stack**: Vanilla JS, CSS3, Python dev-server
+
+### 🔄 Integracja
+- Frontend komunikuje się z backendem przez **REST API**
+- **CORS** skonfigurowany dla cross-origin requests
+- **WebSocket** dla real-time updates (planowane)
+- **Environment variables** dla konfiguracji połączeń
 
 ## 🕊️ Instalacja w Rytmie Spokoju
 

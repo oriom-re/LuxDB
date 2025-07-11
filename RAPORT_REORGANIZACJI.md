@@ -149,18 +149,34 @@ warstwa_4_refleksyjna/   # Archive & Echo
 
 ---
 
-## 💡 INSIGHT
+## � AKTUALIZACJA: Rozdzielenie Frontendu (11 lipca 2025)
+
+### 🏗️ Podział Architektoniczny
+- **Frontend** ➜ `osobne repozytorium` (https://github.com/oriom/federacja-frontend)
+- **Backend** ➜ `pozostaje w tym repozytorium` (LuxDB + API)
+
+### ✅ Korzyści Rozdziału
+- **Niezależny development** frontendu i backendu
+- **One-click deploy** na Vercel dla frontendu  
+- **Lepsze zarządzanie** dependencies i versions
+- **Skalowalne CI/CD** dla każdego komponentu
+- **Team-friendly** - możliwość pracy równoległej
+
+---
+
+## �💡 INSIGHT
 
 Reorganizacja pozwoliła na:
 - **Redukcję złożoności** o ~60% (25+ plików przeniesione)
 - **Zwiększenie czytelności** struktury projektu
 - **Przygotowanie fundamentów** pod implementację warstw 3-4
 - **Zachowanie wszystkich** eksperymentalnych komponentów
+- **Rozdzielenie responsiblities** - frontend/backend
 
 *System FEDERACJA jest teraz gotowy na kolejną fazę rozwoju!* ✨
 
 ---
 
 **Data**: 11 lipca 2025  
-**Status**: ✅ Reorganizacja zakończona pomyślnie  
+**Status**: ✅ Reorganizacja zakończona pomyślnie + Frontend wydzielony  
 **Następny krok**: Implementacja struktury warstwowej
